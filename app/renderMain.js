@@ -4,49 +4,169 @@ const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
 
-console.log('Electron: ' + electron); 
-
 const orbProcess = childProcess.spawn('orb'); 
 
-console.log(orbProcess);
-console.log('stdin: ' + orbProcess.stdin);
-console.log('stdout: ' + orbProcess.stdout);
 orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
 orbProcess.stderr.on('data', d => console.log('Err received from orb: ' + d));
-orbProcess.on('close', code => console.log('LS closed with code ' + code));
+orbProcess.on('close', code => console.log('Orb closed with code ' + code));
 orbProcess.on('error', (e) => console.log('Error: ' + e)); 
 
 // orbProcess.kill();
 
-const editorRoot = document.getElementById('editor-root');
-const editor = new EditorView(editorRoot);
+// TODO: Cache 'quickKeyReferences - actions which don't need to be sent to
+// model before completion. These can be queried from the model upon process start/buffer creation. 
 
+const editorRoot = document.getElementById('editor-root');
+const editor = new EditorController(orbProcess); 
+
+// This is top-level. 
+function EditorController(orbProcess) {
+    this.activeBufferController = null; 
+    this.bufferControllers = [];
+
+    document.body.addEventListener('keydown', this.onKeyDown);
+    orbProcess.stdout.on('data', this.handleModelMessage);
+    orbProcess.stderr.on('data', this.handleModelError); 
+    orbProcess.on('close', this.handleOrbClose);
+    orbProcess.on('error', this.handleOrbError);
+}
+
+EditorController.prototype.onKeyDown = function(e) {
+    console.log('KeyDown: ' + e.keyCode); 
+    const key = String.fromCodePoint(e.keyCode); // TODO: Fix. It seems Mozilla discourages use of this. 
+    this.orbProcess.stdin.write(JSON.stringify({
+        type: 'KEY_DOWN',
+        key: key
+    }));
+};
+
+EditorController.prototype.handleModelMessage = function(d) {
+    const message = JSON.parse(d);
+    this.handleAction(message); 
+};
+
+EditorController.prototype.handleModelError = function(e) {
+    
+};
+
+EditorController.prototype.handleOrbClose = function(code) {
+    
+};
+
+EditorController.prototype.handleOrbError = function(code) {
+    
+};
+
+EditorController.prototype.handleAction = function(action) {
+    switch (action.type) {
+    default:
+        throw new Error('Not implemented.'); 
+    }
+};
+
+function BufferController(view) {
+    this.view = view;
+    this.isActive = false; 
+}
+
+BufferController.prototype.setActive = function(on) {
+    this.isActive = on; 
+};
+
+BufferController.prototype.handleAction = function(action) {
+    switch (action.type) {
+    case 'MOVE_CURSOR_LEFT':
+    case 'MOVE_CURSOR_RIGHT':
+    case 'MOVE_CURSOR_UP':
+    case 'MOVE_CURSOR_DOWN':
+    }
+};
+
+// This is really a BufferView if we use consistent terminology.
+// It's not top level, but it's not just the editable text field either... 
 function EditorView(domNode) {
     console.log('EditorView created.');
     this.domNode = domNode;
-    this.bufferViews = [];
-    
-    const bufferRoot = document.createElement('div');
-    bufferRoot.setAttribute('id', 'buffer-root');
-    this.bufferViews.push(new BufferView(bufferRoot)); 
+    this.gutterView = null;
+    this.bufferView = null; 
 }
 
 function BufferView(domNode) {
     console.log('BufferView created.');
     this.domNode = domNode;
-    
-    document.body.addEventListener('keydown', (e) => {
-        console.log('BufferView: key pressed');
-        console.log(e.keyCode);
-        ipcRenderer.send('asynchronous-message',
-                         {type: 'BUFFER_VIEW_KEY_PRESS',
-                          key: e.keyCode});
-        ipcRenderer.on('asynchronous-message', (event, arg) => {
-            console.log('Event: ' + event);
-            console.log('Arg: ' + arg);
-            console.log('Key: ' + arg.key);
-        });
-        
-    });
 }
 
+BufferView.prototype.appendLine = function(text) {
+    const span = document.createElement('span');
+    span.innerHTML = text;
+    span.setAttribute('class', 'line');
+    this.domNode.appendChild(span); 
+};
+
+BufferView.prototype.changeLine = function(num, text) {
+    
+};
+
+BufferView.prototype.insertLine = function(num, text) {
+    
+};
+
+BufferView.prototype.removeLine = function(num) {
+    
+};
+
+function GutterView(domNode) {
+    console.log('GutterView created.');
+    this.domNode = domNode; 
+}
+
+GutterView.prototype.hide = function() {
+    
+};
+
+GutterView.prototype.show = function() {
+    
+};
+
+function TabCollectionView(domNode) {
+    console.log('TabCollectionView created.');
+    this.domNode = domNode; 
+}
+
+TabCollectionView.prototype.addTabView = function(view) {
+    
+};
+
+TabCollectionView.prototype.removeTabView = function(name) {
+    
+};
+
+function TabView(domNode) {
+    console.log('TabView created.'); 
+    this.domNode = domNode;
+}
+
+TabView.prototype.setName = function(name) {
+    
+};
+
+function CursorView(domNode) {
+    console.log('CursorView created.'); 
+    this.domNode = domNode; 
+}
+
+CursorView.prototype.moveLeft = function(delta) {
+    
+};
+
+CursorView.prototype.moveRight = function(delta) {
+    
+};
+
+CursorView.prototype.moveDown = function(delta) {
+    
+};
+
+CursorView.prototype.moveUp = function(delta) {
+    
+};
