@@ -1,0 +1,24 @@
+
+html {
+  text-align: center;
+}
+
+body {
+  background-color: #68A7EF;
+}
+
+#hello-msg {
+  font-size: 2em;
+  position: relative;
+  left: 33%;
+}
+
+#hello-tag {
+  color: 'red';
+}
+
+#cursor {
+  height: 20px;
+  width: 1px;
+  border-left: thick solid #ff0000; 
+}
