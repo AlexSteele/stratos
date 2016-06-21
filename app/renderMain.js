@@ -4,27 +4,12 @@ const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
 
-const orbProcess = childProcess.spawn('orb'); 
-
-orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
-orbProcess.stderr.on('data', d => console.log('Err received from orb: ' + d));
-orbProcess.on('close', code => console.log('Orb closed with code ' + code));
-orbProcess.on('error', (e) => console.log('Error: ' + e)); 
-
-// orbProcess.kill();
-
-// TODO: Cache 'quickKeyReferences - actions which don't need to be sent to
-// model before completion. These can be queried from the model upon process start/buffer creation. 
-
-const editorRoot = document.getElementById('editor-root');
-const editor = new EditorController(orbProcess); 
-
 // This is top-level. 
 function EditorController(orbProcess) {
     this.activeBufferController = null; 
     this.bufferControllers = [];
 
-    document.body.addEventListener('keydown', this.onKeyDown);
+    document.body.addEventListener('keydown', (e) => this.onKeyDown(e));
     orbProcess.stdout.on('data', this.handleModelMessage);
     orbProcess.stderr.on('data', this.handleModelError); 
     orbProcess.on('close', this.handleOrbClose);
@@ -32,8 +17,8 @@ function EditorController(orbProcess) {
 }
 
 EditorController.prototype.onKeyDown = function(e) {
-    console.log('KeyDown: ' + e.keyCode); 
-    const key = String.fromCodePoint(e.keyCode); // TODO: Fix. It seems Mozilla discourages use of this. 
+    console.log('KeyDown: ' + e.key);
+    const key = String.fromCodePoint(e.key); // TODO: Fix. It seems Mozilla discourages use of this. 
     this.orbProcess.stdin.write(JSON.stringify({
         type: 'KEY_DOWN',
         key: key
@@ -170,3 +155,18 @@ CursorView.prototype.moveDown = function(delta) {
 CursorView.prototype.moveUp = function(delta) {
     
 };
+
+const orbProcess = childProcess.spawn('orb'); 
+
+orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
+orbProcess.stderr.on('data', d => console.log('Err received from orb: ' + d));
+orbProcess.on('close', code => console.log('Orb closed with code ' + code));
+orbProcess.on('error', (e) => console.log('Error: ' + e)); 
+
+// orbProcess.kill();
+
+// TODO: Cache 'quickKeyReferences - actions which don't need to be sent to
+// model before completion. These can be queried from the model upon process start/buffer creation. 
+
+const editorRoot = document.getElementById('editor-root');
+const editor = new EditorController(orbProcess); 
