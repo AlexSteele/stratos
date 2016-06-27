@@ -1,5 +1,5 @@
 
-function CursorView(domNode) {
+function CursorView(domRoot) {
     console.log('CursorView created.');
 
     this.top = 100; // TODO: FIX HARD CODED.
@@ -7,7 +7,7 @@ function CursorView(domNode) {
     this.charWidth = 10;
     this.charHeight = 20; 
 
-    this.domNode = domNode || document.createElement('div');
+    this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';
     this.domNode.style.width = 0.5 + 'px';
     this.domNode.style.height = this.charHeight + 'px'; 
@@ -25,6 +25,12 @@ function CursorView(domNode) {
                 this.domNode.style.visibility = 'hidden'; 
             }
         }, 500);
+
+    if (domRoot) {
+        domRoot.appendChild(this.domNode);
+    } else {
+        document.body.appendChild(this.domNode); 
+    }
 }
 
 CursorView.prototype.moveLeft = function(delta) {
