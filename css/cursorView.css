@@ -1,8 +1,5 @@
 
 .cursor {
   position: absolute;
-  left: 0px; 
-  height: 0px;
-  width: 1px;
   border-left: solid #ffffff; 
 }
