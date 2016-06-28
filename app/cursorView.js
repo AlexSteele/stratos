@@ -1,11 +1,14 @@
 
-function CursorView(rootElem) {
+function CursorView(rootElem, config) {
     console.log('CursorView created.');
 
-    this.col = 1;
-    this.row = 1; 
-    this.charWidth = 10;
-    this.charHeight = 20;
+    const _config = config || {};
+
+    this.col = _config.col || 1;
+    this.row = _config.row || 1;
+    this.charWidth = _config.charWidth || 10;
+    this.charHeight = _config.charHeight || 20;
+    this.leftOffset = _config.leftOffset || 25;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';
@@ -83,7 +86,7 @@ CursorView.prototype.setBlink = function(on) {
 };
 
 CursorView.prototype._colToPix = function() {
-    return ((+this.col - 1) * +this.charWidth) + 'px';
+    return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
 };
 
 CursorView.prototype._rowToPix = function() {
