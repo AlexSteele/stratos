@@ -3,12 +3,10 @@
 const electron = require('electron'); 
 const {app, BrowserWindow, ipcMain} = electron; 
 
-console.log('Electron: \n' + electron);          // TODO: ???
-
 let win;
 
 function createWindow() {
-    win = new BrowserWindow({width: 800, height: 600});
+    win = new BrowserWindow({width: 1200, height: 800});
     win.on('closed', () => {
         win = null; 
     });
