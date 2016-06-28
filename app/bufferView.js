@@ -1,13 +1,22 @@
 
-function BufferView(rootElem) {
+function BufferView(rootElem, config) {
     console.log('BufferView created.');
 
-    this.lineElems = [null]; 
+    const _config = config || {};
+
+    this.lineElems = [null];
+    this.charWidth = _config.charWidth || 10; // pixels
+    this.charHeight = _config.charHeight || 20; // pixels
+    this.maxColumns = _config.maxColumns || 100;
+    this.maxRows = _config.maxRows || 50;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
-    this.domNode.style.width = '50%';
-    this.domNode.style.height = '100%'; 
+    this.domNode.style.width = (this.maxColumns * this.charWidth) + 'px';
+    this.domNode.style.height = (this.maxRows * this.charHeight) + 'px';
+
+    // Start with empty line.
+    this.appendLine('');
 
     if (rootElem) {
         rootElem.appendChild(this.domNode); 
@@ -34,8 +43,11 @@ BufferView.prototype.changeLine = function(num, text) {
 };
 
 BufferView.prototype.insertLine = function(num, text) {
-    if (num < 1 || num > this.lineElems.length()) {
+    if (num < 1 || num > this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
+    }
+    if (num === this.lineElems.length) {
+        this.appendLine(text);
     }
     
     const line = document.createElement('span');
@@ -47,12 +59,15 @@ BufferView.prototype.insertLine = function(num, text) {
 };
 
 BufferView.prototype.removeLine = function(num) {
-    const removed = this.lineElems.splice(num, 1)[0];
-    if (!removed) {
+    if (num < 1 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
-    
+    const removed = this.lineElems.splice(num, 1)[0];
     this.domNode.removeChild(removed); 
+};
+
+BufferView.prototype.lastRowNum = function() {
+    return this.lineElems.length - 1;
 };
 
 module.exports.BufferView = BufferView; 
