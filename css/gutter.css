@@ -1,0 +1,17 @@
+
+.gutter {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  background-color: #525151;
+}
+
+.gutter-row {
+  display: block;
+  font-size: 1em;
+  color: #ffffff;
+}
+
+.gutter-row-active {
+  font-weight: bold;
+}
