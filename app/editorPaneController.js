@@ -10,7 +10,7 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
 
     this.bufferView = bufferView || new BufferView(domRoot, sharedViewConfig);
     this.cursorView = cursorView || new CursorView(domRoot, sharedViewConfig);
-    this.gutterView = gutterView || new GutterView(domRoot); 
+    this.gutterView = gutterView || new GutterView(domRoot, sharedViewConfig); 
 
     document.body.addEventListener('keydown', (e) => {
         e.preventDefault();

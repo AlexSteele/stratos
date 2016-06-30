@@ -8,7 +8,7 @@ function CursorView(rootElem, config) {
     this.row = _config.row || 1;
     this.charWidth = _config.charWidth || 10;
     this.charHeight = _config.charHeight || 20;
-    this.leftOffset = _config.leftOffset || 25;
+    this.leftOffset = _config.leftOffset || 25; // TODO: HARD CODED
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';

@@ -1,13 +1,23 @@
+const {EventEmitter} = require('events');
 
-function GutterView(rootElem) {
+function GutterView(rootElem, config) {
     console.log('GutterView created.');
+
+    this.emitter = new EventEmitter(); 
 
     this.activeRowElem = null;
     this.rowElems = [null];
+
+    const _config = config || {};
+
+    this.leftPad = 2;
+    this.charWidth = _config.charWidth || 5;
+    this.rightPad = 2;
+    // this.minWidth = ; // TODO: IMPLEMENT
     
     this.domNode = document.createElement('div');
     this.domNode.className = 'gutter';
-    this.domNode.style.width = 25 + 'px'; // TODO: hard-coded
+    this.domNode.style.width = this.getWidth() + 'px'; // TODO: hard-coded
     this.domNode.style.height = '100%';
 
     // Start with one row.
@@ -59,6 +69,15 @@ GutterView.prototype.show = function() {
 
 GutterView.prototype.lastRowNum = function() {
     return this.rowElems.length - 1;
+};
+
+GutterView.prototype.getWidth = function() {
+    return this.leftPad + this.charWidth + this.rightPad;
+};
+
+// TODO: USE THIS.
+GutterView.prototype.onWidthChanged = function(callback) {
+    this.emitter.on('width-changed', callback); 
 };
 
 module.exports.GutterView = GutterView;
