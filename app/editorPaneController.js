@@ -1,12 +1,15 @@
 const {BufferView} = require('./bufferView.js'); 
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
+const {viewHelpers} = require('./viewHelpers.js');
 
 function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
     console.log('EditorPaneController created.');
 
-    this.bufferView = bufferView || new BufferView(domRoot);
-    this.cursorView = cursorView || new CursorView(domRoot);
+    const sharedViewConfig = viewHelpers.getSharedViewConfig(domRoot);
+
+    this.bufferView = bufferView || new BufferView(domRoot, sharedViewConfig);
+    this.cursorView = cursorView || new CursorView(domRoot, sharedViewConfig);
     this.gutterView = gutterView || new GutterView(domRoot); 
 
     document.body.addEventListener('keydown', (e) => {
@@ -22,7 +25,7 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
         const action = keyMap[e.key];
         if (action) {
             this.handleAction(action); 
-        } else if (action.key !== 'Shift'){
+        } else if (e.key !== 'Shift' && e.key !== 'Backspace' && e.key !== 'Meta'){
             this.handleAction({
                 type: 'INSERT',
                 key: e.key
@@ -47,28 +50,28 @@ EditorPaneController.prototype.handleAction = function(action) {
         this.gutterView.appendRow();
         this.gutterView.setActiveRow(this.cursorView.row);
         break;
-    // case 'INSERT_TAB':
-	// case 'DELETE_BACK_CHAR':
-    // case 'DELETE_FORWARD_CHAR':
-	// case 'DELETE_BACK_WORD':
-	// case 'DELETE_FORWARD_WORD':
-	// case 'KILL_BACK_LINE':
-	// case 'KILL_FORWARD_LINE':
-	// case 'KILL_LINE':
-	// case 'REPEAT_LAST_ACTION':
-	// case 'UNDO_ACTION':
-	// case 'REDO_ACTION':
-	// case 'SEARCH_BACK':
-	// case 'WRAP_LINES':
-	// case 'GET_SENTENCE_BEGINNING':
-	// case 'GET_SENTENCE_END':
-	// case 'GET_PARAGRAPH_BEGINNING':
-	// case 'GET_PARAGRAPH_END':
-	// case 'GET_LINE':
-	// case 'GET_MAX_OFFSET_FOR_LINE':
-	// case 'GET_LINE_RANGE':
-	// case 'GET_LINES':
-	// case 'SET_MODE':
+        // case 'INSERT_TAB':
+	    // case 'DELETE_BACK_CHAR':
+        // case 'DELETE_FORWARD_CHAR':
+	    // case 'DELETE_BACK_WORD':
+	    // case 'DELETE_FORWARD_WORD':
+	    // case 'KILL_BACK_LINE':
+	    // case 'KILL_FORWARD_LINE':
+	    // case 'KILL_LINE':
+	    // case 'REPEAT_LAST_ACTION':
+	    // case 'UNDO_ACTION':
+	    // case 'REDO_ACTION':
+	    // case 'SEARCH_BACK':
+	    // case 'WRAP_LINES':
+	    // case 'GET_SENTENCE_BEGINNING':
+	    // case 'GET_SENTENCE_END':
+	    // case 'GET_PARAGRAPH_BEGINNING':
+	    // case 'GET_PARAGRAPH_END':
+	    // case 'GET_LINE':
+	    // case 'GET_MAX_OFFSET_FOR_LINE':
+	    // case 'GET_LINE_RANGE':
+	    // case 'GET_LINES':
+	    // case 'SET_MODE':
     case 'MOVE_CURSOR_LEFT':
         if (this.cursorView.col > 1) {
             this.cursorView.moveLeft();
@@ -91,19 +94,19 @@ EditorPaneController.prototype.handleAction = function(action) {
             this.gutterView.setActiveRow(this.cursorView.row); 
         }
         break;
-	// case 'MOVE_CURSOR_END_OF_LINE':
-	// case 'MOVE_CURSOR_BEGINNING_OF_LINE':
-	// case 'MOVE_CURSOR_BUFFER_END':
-	// case 'MOVE_CURSOR_BUFFER_BEGINNING':
-	// case 'MOVE_CURSOR_END_OF_PARAGRAPH':
-	// case 'MOVE_CURSOR_BEGINNING_OF_PARAGRAPH':
-	// case 'MOVE_CURSOR_END_OF_SENTENCE':
-	// case 'MOVE_CURSOR_BEGINNING_OF_SENTENCE':
-	// case 'MOVE_CURSOR_PREV_POS':
-	// case 'SCROLL_UP':
-	// case 'SCROLL_DOWN':
-	// case 'PAGE_UP':
-	// case 'PAGE_DOWN':
+	    // case 'MOVE_CURSOR_END_OF_LINE':
+	    // case 'MOVE_CURSOR_BEGINNING_OF_LINE':
+	    // case 'MOVE_CURSOR_BUFFER_END':
+	    // case 'MOVE_CURSOR_BUFFER_BEGINNING':
+	    // case 'MOVE_CURSOR_END_OF_PARAGRAPH':
+	    // case 'MOVE_CURSOR_BEGINNING_OF_PARAGRAPH':
+	    // case 'MOVE_CURSOR_END_OF_SENTENCE':
+	    // case 'MOVE_CURSOR_BEGINNING_OF_SENTENCE':
+	    // case 'MOVE_CURSOR_PREV_POS':
+	    // case 'SCROLL_UP':
+	    // case 'SCROLL_DOWN':
+	    // case 'PAGE_UP':
+	    // case 'PAGE_DOWN':
     default:
         throw new Error('EditorPaneController: Action handler not implemented.'); 
     }

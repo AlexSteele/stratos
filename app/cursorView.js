@@ -63,10 +63,8 @@ CursorView.prototype.moveTo = function(col, row) {
     this.col = col;
     this.row = row;
     this.setBlink(false);
-    this.domNode.style.visibility = 'hidden';
     this.domNode.style.left = this._colToPix();
     this.domNode.style.top = this._rowToPix();
-    this.domNode.style.visibility = 'visible';
     this.setBlink(true); 
 };
 
