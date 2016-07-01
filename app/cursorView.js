@@ -14,8 +14,8 @@ function CursorView(rootElem, config) {
     this.domNode.className = 'cursor';
     this.domNode.style.width = 0.5 + 'px';
     this.domNode.style.height = this.charHeight + 'px'; 
-    this.domNode.style.left = '0px';
-    this.domNode.style.top = '0px'; 
+    this.domNode.style.left = this._colToPix();
+    this.domNode.style.top = this._rowToPix(); 
     this.domNode.style.visibility = 'visible';
 
     this.setBlink(true); 
