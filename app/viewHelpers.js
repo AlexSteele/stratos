@@ -10,6 +10,7 @@ function getSharedViewConfig(domNode) {
 // Returns a tuple of the average default character width and height (in pixels).
 function measureCharWidthAndHeight(domNode) {
     const line = document.createElement('span');
+    line.className = 'line';
     line.innerHTML = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV';
     line.style.position = 'absolute';
     line.style.height = 'auto';

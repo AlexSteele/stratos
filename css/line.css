@@ -1,6 +1,7 @@
 
 .line {
   display: block;
+  font-family: Consolas, monospace;
   font-size: 1em;
   color: #ffffff;
 }
