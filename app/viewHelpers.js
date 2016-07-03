@@ -14,7 +14,7 @@ function measureCharWidthAndHeight(domNode) {
     line.style.position = 'absolute';
     line.style.height = 'auto';
     line.style.width = 'auto';
-    line.style.whiteSpace = 'nowrap'; // TODO: Style attribute may be incorrectly named.
+    line.style['whiteSpace'] = 'nowrap'; // TODO: Style attribute may be incorrectly named.
     line.style.visibility = 'hidden';
     domNode.appendChild(line);
     const bounds = line.getBoundingClientRect();

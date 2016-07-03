@@ -1,17 +1,26 @@
 
+const defaultSettings = {
+    charWidth: 10,
+    charHeight: 20,
+    maxColumns: 120,
+    maxRows: 50,
+    leftOffset: 0
+};
+
 function BufferView(rootElem, config) {
     console.log('BufferView created.');
 
     const _config = config || {};
 
     this.lineElems = [null];
-    this.charWidth = _config.charWidth || 10; // pixels
-    this.charHeight = _config.charHeight || 20; // pixels
-    this.maxColumns = _config.maxColumns || 100;
-    this.maxRows = _config.maxRows || 50;
+    this.charWidth = _config.charWidth || defaultSettings.charWidth; // pixels
+    this.charHeight = _config.charHeight || defaultSettings.charHeight; // pixels
+    this.maxColumns = _config.maxColumns || defaultSettings.maxColumns;
+    this.maxRows = _config.maxRows || defaultSettings.maxRows;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
+    this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
     this.domNode.style.width = (this.maxColumns * this.charWidth) + 'px';
     this.domNode.style.height = (this.maxRows * this.charHeight) + 'px';
 
@@ -68,6 +77,10 @@ BufferView.prototype.removeLine = function(num) {
 
 BufferView.prototype.lastRowNum = function() {
     return this.lineElems.length - 1;
+};
+
+BufferView.prototype.setLeftOffset = function(width) {
+    this.domNode.style.left = width + 'px';
 };
 
 module.exports.BufferView = BufferView; 

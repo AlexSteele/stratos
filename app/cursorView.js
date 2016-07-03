@@ -1,14 +1,24 @@
 
+const defaultSettings = {
+    startingCol: 1,
+    startingRow: 1,
+    charWidth: 10,
+    charHeight: 20,
+    topOffset: 0,
+    leftOffset: 25
+};
+
 function CursorView(rootElem, config) {
     console.log('CursorView created.');
 
     const _config = config || {};
 
-    this.col = _config.col || 1;
-    this.row = _config.row || 1;
-    this.charWidth = _config.charWidth || 10;
-    this.charHeight = _config.charHeight || 20;
-    this.leftOffset = _config.leftOffset || 25; // TODO: HARD CODED
+    this.col = _config.startingCol || defaultSettings.startingCol;
+    this.row = _config.startingRow || defaultSettings.startingRow;;
+    this.charWidth = _config.charWidth || defaultSettings.charWidth;
+    this.charHeight = _config.charHeight || defaultSettings.charHeight;
+    this.topOffset = _config.topOffset || defaultSettings.topOffset; 
+    this.leftOffset = _config.leftOffset || defaultSettings.leftOffset;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';
@@ -83,12 +93,17 @@ CursorView.prototype.setBlink = function(on) {
     }
 };
 
+CursorView.prototype.setLeftOffset = function(width) {
+    this.leftOffset = width;
+    this.domNode.style.left = this._colToPix();
+};
+
 CursorView.prototype._colToPix = function() {
     return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
 };
 
 CursorView.prototype._rowToPix = function() {
-    return ((this.row - 1) * this.charHeight) + 'px';
+    return (this.topOffset + (this.row - 1) * this.charHeight) + 'px';
 };
 
 module.exports.CursorView = CursorView; 

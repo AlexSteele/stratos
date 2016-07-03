@@ -10,7 +10,7 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
 
     this.bufferView = bufferView || new BufferView(domRoot, sharedViewConfig);
     this.cursorView = cursorView || new CursorView(domRoot, sharedViewConfig);
-    this.gutterView = gutterView || new GutterView(domRoot, sharedViewConfig); 
+    this.gutterView = gutterView || new GutterView(domRoot, sharedViewConfig);
 
     document.body.addEventListener('keydown', (e) => {
         e.preventDefault();
@@ -32,7 +32,20 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
             });
         }
     });
+
+    this._initComponents(); 
 }
+
+EditorPaneController.prototype._initComponents = function() {
+
+    this.cursorView.setLeftOffset(this.gutterView.getWidth());
+    this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
+    
+    this.gutterView.onWidthChanged((width) => {
+        this.cursorView.setLeftOffset(width);
+        this.bufferView.setLeftOffset(width); 
+    });
+};
 
 EditorPaneController.prototype.handleAction = function(action) {
     console.log('EditorPaneController: Handling action ' + action);

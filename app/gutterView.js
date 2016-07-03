@@ -1,5 +1,10 @@
 const {EventEmitter} = require('events');
 
+const defaultSettings = {
+    topOffset: 0,
+    leftOffset: 0
+};
+
 function GutterView(rootElem, config) {
     console.log('GutterView created.');
 
@@ -13,11 +18,12 @@ function GutterView(rootElem, config) {
     this.leftPad = 2;
     this.charWidth = _config.charWidth || 5;
     this.rightPad = 2;
-    // this.minWidth = ; // TODO: IMPLEMENT
     
     this.domNode = document.createElement('div');
     this.domNode.className = 'gutter';
-    this.domNode.style.width = this.getWidth() + 'px'; // TODO: hard-coded
+    this.domNode.style.top = (_config.topOffset || defaultSettings.topOffset) + 'px';
+    this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
+    this.domNode.style.width = this.getWidth() + 'px';
     this.domNode.style.height = '100%';
 
     // Start with one row.
@@ -37,6 +43,8 @@ GutterView.prototype.appendRow = function() {
 
     this.rowElems.push(row);
     this.domNode.appendChild(row);
+
+    this._checkUpdateWidth(); 
 };
 
 GutterView.prototype.removeRow = function() {
@@ -45,6 +53,8 @@ GutterView.prototype.removeRow = function() {
     }
     const removed = this.rowElems.splice(this.rowElems.length - 1, 1)[0];
     this.domNode.removeChild(removed);
+    
+    this._checkUpdateWidth();
 };
 
 GutterView.prototype.setActiveRow = function(num) {
@@ -75,7 +85,10 @@ GutterView.prototype.getWidth = function() {
     return this.leftPad + this.charWidth + this.rightPad;
 };
 
-// TODO: USE THIS.
+GutterView.prototype._checkUpdateWidth = function() {
+        //TODO: IMPLEMENT
+};
+
 GutterView.prototype.onWidthChanged = function(callback) {
     this.emitter.on('width-changed', callback); 
 };
