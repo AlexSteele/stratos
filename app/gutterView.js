@@ -12,6 +12,7 @@ function GutterView(rootElem, config) {
 
     this.activeRowElem = null;
     this.rowElems = [null];
+    this.lastRowNumDigits = 1; // The number of digits in the last row's number.
 
     const _config = config || {};
 
@@ -82,11 +83,38 @@ GutterView.prototype.lastRowNum = function() {
 };
 
 GutterView.prototype.getWidth = function() {
-    return this.leftPad + this.charWidth + this.rightPad;
+    return this.leftPad + (this.lastRowNumDigits * this.charWidth) + this.rightPad;
 };
 
 GutterView.prototype._checkUpdateWidth = function() {
-        //TODO: IMPLEMENT
+
+    // TODO: Brute forcing this under assumption that
+    //             1) efficiency gains are worthwhile
+    //         and 2) the number of lines in a file won't exceed 100000 :)
+    
+    const lastRowNum = this.lastRowNum();
+    
+    let actualLastRowNumDigits;
+    if (lastRowNum < 10) {
+        actualLastRowNumDigits = 1;
+    } else if (lastRowNum < 100) {
+        actualLastRowNumDigits = 2;
+    } else if (lastRowNum < 1000) {
+        actualLastRowNumDigits = 3;
+    } else if (lastRowNum < 10000) {
+        actualLastRowNumDigits = 4;
+    } else if (lastRowNum < 100000) {
+        actualLastRowNumDigits = 5;
+    } else {
+        throw new Error("GutterView: Way too many lines! Can't set gutter width.");
+    }
+
+    if (actualLastRowNumDigits != this.lastRowNumDigits) {
+        this.lastRowNumDigits = actualLastRowNumDigits;
+        const width = this.getWidth();
+        this.domNode.style.width = width + 'px';
+        this.emitter.emit('width-changed', width);
+    }
 };
 
 GutterView.prototype.onWidthChanged = function(callback) {
