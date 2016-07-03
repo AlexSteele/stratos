@@ -7,6 +7,8 @@ const defaultSettings = {
     leftOffset: 0
 };
 
+// TODO: Fix setting of height after insertion/line removal.
+
 function BufferView(rootElem, config) {
     console.log('BufferView created.');
 
@@ -21,11 +23,11 @@ function BufferView(rootElem, config) {
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
     this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
-    this.domNode.style.width = (this.maxColumns * this.charWidth) + 'px';
-    this.domNode.style.height = (this.maxRows * this.charHeight) + 'px';
+    this.domNode.style.width = this.getWidth() + 'px';
+    this.domNode.style.height = this.getHeight() + 'px';
 
     // Start with empty line.
-    this.appendLine(' ');
+    this.appendLine('');
 
     if (rootElem) {
         rootElem.appendChild(this.domNode); 
@@ -35,22 +37,20 @@ function BufferView(rootElem, config) {
 }
 
 BufferView.prototype.appendLine = function(text) {
-    const line = document.createElement('span');
-    line.className = 'line';
-    line.style.height = this.charHeight;
-    line.innerHTML = text;
-
-    this.lineElems.push(line);
-    this.domNode.appendChild(line);
+    this.insertLine(this.lineElems.length, text);
 };
 
 BufferView.prototype.changeLine = function(num, text) {
-    const line = this.lineElems[num];
-    if (!line) {
-        throw new Error('BufferView: No line with number ' + num); 
+    if (num < 1 || num > this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + num);
     }
 
-    console.log('Changing line ' + num); // TODO: remove
+    if (text.length > this.maxColumns) {
+        this.maxColumns += 10;
+        this.domNode.style.width = this.getWidth() + 'px'; 
+    }
+    
+    const line = this.lineElems[num];
     line.innerHTML = text; 
 };
 
@@ -58,17 +58,28 @@ BufferView.prototype.insertLine = function(num, text) {
     if (num < 1 || num > this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
-    if (num === this.lineElems.length) {
-        this.appendLine(text);
-        return;
+
+    if (text.length > this.maxColumns) {
+        this.maxColumns += 10;
+        this.domNode.style.width = this.getWidth() + 'px';
     }
     
+    if (this.lastRowNum() >= this.maxRows) {
+        this.maxRows++;
+        this.domNode.style.height = this.getHeight() + 'px';
+    }
+
     const line = document.createElement('span');
     line.className = 'line';
+    line.style.height = this.charHeight;
     line.innerHTML = text;
 
     this.lineElems.splice(num, 0, line);
-    this.domNode.insertBefore(line, this.lineElems[num + 1]); 
+    if (num == this.lineElems.length) {
+        this.domNode.appendChild(line);
+    } else {
+        this.domNode.insertBefore(line, this.lineElems[num + 1]);         
+    }
 };
 
 BufferView.prototype.removeLine = function(num) {
@@ -86,5 +97,8 @@ BufferView.prototype.lastRowNum = function() {
 BufferView.prototype.setLeftOffset = function(width) {
     this.domNode.style.left = width + 'px';
 };
+
+BufferView.prototype.getWidth = function() { return this.maxColumns * this.charWidth; };
+BufferView.prototype.getHeight = function() { return this.maxRows * this.charHeight; };
 
 module.exports.BufferView = BufferView; 
