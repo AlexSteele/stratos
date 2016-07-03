@@ -99,8 +99,13 @@ BufferView.prototype.setLeftOffset = function(width) {
     this.domNode.style.left = width + 'px';
 };
 
-BufferView.prototype.getWidth = function() { return this.maxColumns * this.charWidth; };
-BufferView.prototype.getHeight = function() { return this.maxRows * this.charHeight; };
+BufferView.prototype.getWidth = function() {
+    return this.maxColumns * this.charWidth;
+};
+
+BufferView.prototype.getHeight = function() {
+    return this.maxRows * this.charHeight;
+};
 
 BufferView.prototype.getLineWidthChars = function(num) {
     if (num < 1 || num >= this.lineElems.length) {
