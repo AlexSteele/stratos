@@ -3,8 +3,7 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
-const {EditorPaneController} = require('./app/editorPaneController.js');
-const {EditorViewController} = require('./app/editorViewController.js');
+const {EditorPane} = require('./app/editorPane.js');
 const {CursorView} = require('./app/cursorView.js');
 const {BufferView} = require('./app/bufferView.js'); 
 
@@ -30,4 +29,5 @@ const {BufferView} = require('./app/bufferView.js');
 // });
 
 const editorRoot = document.getElementById('editor-root');
-const editorController = new EditorPaneController(editorRoot); 
+const editorPane = new EditorPane(editorRoot);
+editorPane.setFocused();

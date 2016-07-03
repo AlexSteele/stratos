@@ -1,11 +1,58 @@
 
-body {
+html, body {
   width: 100%;
   height: 100%;
-  padding: 0;
   margin: 0;
+  overflow: hidden;
 }
 
 #editor-root {
   position: relative;
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
+}
+
+.editor-pane {
+  height: 100%;
+  overflow: auto;
+}
+
+.buffer {
+  position: relative;
+  height: 100%; 
+  overflow: auto;
+  background-color: #333333;
+}
+
+.line {
+  display: block;
+  font-family: Consolas, monospace;
+  font-size: 1em;
+  color: #ffffff;
+}
+
+.gutter {
+  position: absolute;
+  background-color: #525151;
+  overflow: hidden;
+}
+
+.gutter-row {
+  display: block;
+  font-size: 1em;
+  color: ##d9d9d9;
+}
+
+/* TODO: DRY */
+.gutter-row-active {
+  display: block;
+  font-size: 1em;
+  color: #ffffff;
+}
+
+.cursor {
+  position: absolute;
+  border-left: solid #ffffff; 
 }

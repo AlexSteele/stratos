@@ -3,16 +3,20 @@ const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
 const {viewHelpers} = require('./viewHelpers.js');
 
-function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
-    console.log('EditorPaneController created.');
+function EditorPane(rootElem) {
+    console.log('EditorPane created.');
 
-    const sharedViewConfig = viewHelpers.getSharedViewConfig(domRoot);
+    this.domNode = document.createElement('div');
+    this.domNode.className = 'editor-pane';
+    this.domNode.tabIndex = 1;
+    
+    const sharedViewConfig = viewHelpers.getSharedViewConfig(rootElem);
 
-    this.bufferView = bufferView || new BufferView(domRoot, sharedViewConfig);
-    this.cursorView = cursorView || new CursorView(domRoot, sharedViewConfig);
-    this.gutterView = gutterView || new GutterView(domRoot, sharedViewConfig);
+    this.bufferView = new BufferView(this.domNode, sharedViewConfig);
+    this.cursorView = new CursorView(this.domNode, sharedViewConfig);
+    this.gutterView = new GutterView(this.domNode, sharedViewConfig);
 
-    document.body.addEventListener('keydown', (e) => {
+    this.domNode.addEventListener('keydown', (e) => {
         e.preventDefault();
         const keyMap = {
             'Enter': {type: 'INSERT_NEW_LINE'},
@@ -34,10 +38,16 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
         }
     });
 
-    this._initComponents(); 
+    window.onscroll = () => {
+        console.log('scrolled'); // TODO: remove
+    };
+
+    this._initComponents();
+    
+    rootElem.appendChild(this.domNode);
 }
 
-EditorPaneController.prototype._initComponents = function() {
+EditorPane.prototype._initComponents = function() {
 
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
@@ -48,11 +58,17 @@ EditorPaneController.prototype._initComponents = function() {
     });
 };
 
-EditorPaneController.prototype.handleAction = function(action) {
-    console.log('EditorPaneController: Handling action ' + action);
+EditorPane.prototype.setFocused = function() {
+    this.domNode.focus();
+};
+
+EditorPane.prototype.handleAction = function(action) {
+    console.log('EditorPane: Handling action ' + action);
+    console.log('First visible row: ' + this.bufferView.firstVisibleRowNum());
+    console.log('Last visible row: ' + this.bufferView.lastVisibleRowNum());
     switch (action.type) {
     case 'INSERT':
-        this.bufferView.changeLine(this.cursorView.row,
+            this.bufferView.changeLine(this.cursorView.row,
                                    this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col - 1) +
                                    action.key +
                                    this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(this.cursorView.col - 1));
@@ -151,8 +167,8 @@ EditorPaneController.prototype.handleAction = function(action) {
 	    // case 'PAGE_UP':
 	    // case 'PAGE_DOWN':
     default:
-        throw new Error('EditorPaneController: Action handler not implemented for ' + action); 
+        throw new Error('EditorPane: Action handler not implemented for ' + action); 
     }
 };
 
-module.exports.EditorPaneController = EditorPaneController;
+module.exports.EditorPane = EditorPane;

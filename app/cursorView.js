@@ -32,11 +32,7 @@ function CursorView(rootElem, config) {
 
     this.setBlink(true); 
 
-    if (rootElem) {
-        rootElem.appendChild(this.domNode);
-    } else {
-        document.body.appendChild(this.domNode); 
-    }
+    rootElem.appendChild(this.domNode);
 }
 
 CursorView.prototype.moveLeft = function(delta) {

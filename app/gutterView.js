@@ -31,11 +31,7 @@ function GutterView(rootElem, config) {
     this.appendRow();
     this.setActiveRow(1);
 
-    if (rootElem) {
-        rootElem.appendChild(this.domNode);
-    } else {
-        document.body.appendChild(this.domNode); 
-    }
+    rootElem.appendChild(this.domNode);
 }
 
 GutterView.prototype.appendRow = function() {

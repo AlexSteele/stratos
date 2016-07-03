@@ -7,8 +7,6 @@ const defaultSettings = {
     leftOffset: 0
 };
 
-// TODO: Fix setting of height after insertion/line removal.
-
 function BufferView(rootElem, config) {
     console.log('BufferView created.');
 
@@ -23,17 +21,13 @@ function BufferView(rootElem, config) {
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
     this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
-    this.domNode.style.width = this.getWidth() + 'px';
-    this.domNode.style.height = this.getHeight() + 'px';
+    //this.domNode.style.width = this.getWidth() + 'px';
+    //this.domNode.style.height = this.getHeight() + 'px';
 
     // Start with empty line.
     this.appendLine('');
 
-    if (rootElem) {
-        rootElem.appendChild(this.domNode); 
-    } else {
-        document.body.appendChild(this.domNode); 
-    }
+    rootElem.appendChild(this.domNode);
 }
 
 BufferView.prototype.appendLine = function(text) {
@@ -120,7 +114,7 @@ BufferView.prototype.firstVisibleRowNum = function() {
 };
 
 BufferView.prototype.lastVisibleRowNum = function() {
-    return 50;                  // TODO: implement.
+    return (this.domNode.scrollHeight / this.charHeight) + this.firstVisibleRowNum() - 1;
 };
 
 BufferView.prototype.scrollDownRow = function(delta) {
