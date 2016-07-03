@@ -28,7 +28,8 @@ function GutterView(rootElem, config) {
     this.domNode.style.height = '100%';
 
     // Start with one row.
-    this.appendRow(); 
+    this.appendRow();
+    this.setActiveRow(1);
 
     if (rootElem) {
         rootElem.appendChild(this.domNode);
@@ -66,7 +67,7 @@ GutterView.prototype.setActiveRow = function(num) {
     if (this.activeRowElem) {
         this.activeRowElem.className = 'gutter-row'; 
     }
-    row.className += 'gutter-row-active';
+    row.className = 'gutter-row-active';
     this.activeRowElem = row; 
 };
 

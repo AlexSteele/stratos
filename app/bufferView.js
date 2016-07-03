@@ -25,7 +25,7 @@ function BufferView(rootElem, config) {
     this.domNode.style.height = (this.maxRows * this.charHeight) + 'px';
 
     // Start with empty line.
-    this.appendLine('');
+    this.appendLine(' ');
 
     if (rootElem) {
         rootElem.appendChild(this.domNode); 
@@ -37,6 +37,7 @@ function BufferView(rootElem, config) {
 BufferView.prototype.appendLine = function(text) {
     const line = document.createElement('span');
     line.className = 'line';
+    line.style.height = this.charHeight;
     line.innerHTML = text;
 
     this.lineElems.push(line);
@@ -48,6 +49,8 @@ BufferView.prototype.changeLine = function(num, text) {
     if (!line) {
         throw new Error('BufferView: No line with number ' + num); 
     }
+
+    console.log('Changing line ' + num); // TODO: remove
     line.innerHTML = text; 
 };
 
@@ -57,6 +60,7 @@ BufferView.prototype.insertLine = function(num, text) {
     }
     if (num === this.lineElems.length) {
         this.appendLine(text);
+        return;
     }
     
     const line = document.createElement('span');

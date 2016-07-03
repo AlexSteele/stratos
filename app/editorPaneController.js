@@ -19,13 +19,14 @@ function EditorPaneController(domRoot, bufferView, cursorView, gutterView) {
             'ArrowLeft': {type: 'MOVE_CURSOR_LEFT'},
             'ArrowRight': {type: 'MOVE_CURSOR_RIGHT'},
             'ArrowUp': {type: 'MOVE_CURSOR_UP'},
-            'ArrowDown': {type: 'MOVE_CURSOR_DOWN'}
+            'ArrowDown': {type: 'MOVE_CURSOR_DOWN'},
+            'Backspace': {type: 'DELETE_BACK_CHAR'}
         };
 
         const action = keyMap[e.key];
         if (action) {
             this.handleAction(action); 
-        } else if (e.key !== 'Shift' && e.key !== 'Backspace' && e.key !== 'Meta'){
+        } else if (e.key !== 'Shift' && e.key !== 'Meta'){
             this.handleAction({
                 type: 'INSERT',
                 key: e.key
@@ -52,9 +53,9 @@ EditorPaneController.prototype.handleAction = function(action) {
     switch (action.type) {
     case 'INSERT':
         this.bufferView.changeLine(this.cursorView.row,
-                                   this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col) +
+                                   this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col - 1) +
                                    action.key +
-                                   this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(this.cursorView.col));
+                                   this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(this.cursorView.col - 1));
         this.cursorView.moveRight();
         break;
 	case 'INSERT_NEW_LINE':
@@ -64,7 +65,8 @@ EditorPaneController.prototype.handleAction = function(action) {
         this.gutterView.setActiveRow(this.cursorView.row);
         break;
         // case 'INSERT_TAB':
-	    // case 'DELETE_BACK_CHAR':
+	case 'DELETE_BACK_CHAR':
+        break;
         // case 'DELETE_FORWARD_CHAR':
 	    // case 'DELETE_BACK_WORD':
 	    // case 'DELETE_FORWARD_WORD':
@@ -121,7 +123,7 @@ EditorPaneController.prototype.handleAction = function(action) {
 	    // case 'PAGE_UP':
 	    // case 'PAGE_DOWN':
     default:
-        throw new Error('EditorPaneController: Action handler not implemented.'); 
+        throw new Error('EditorPaneController: Action handler not implemented for ' + action); 
     }
 };
 
