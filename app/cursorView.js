@@ -2,6 +2,7 @@
 const defaultSettings = {
     startingCol: 1,
     startingRow: 1,
+    goalCol: 1,
     charWidth: 10,
     charHeight: 20,
     topOffset: 0,
@@ -14,7 +15,8 @@ function CursorView(rootElem, config) {
     const _config = config || {};
 
     this.col = _config.startingCol || defaultSettings.startingCol;
-    this.row = _config.startingRow || defaultSettings.startingRow;;
+    this.row = _config.startingRow || defaultSettings.startingRow;
+    this.goalCol = _config.goalCol || defaultSettings.goalCol;
     this.charWidth = _config.charWidth || defaultSettings.charWidth;
     this.charHeight = _config.charHeight || defaultSettings.charHeight;
     this.topOffset = _config.topOffset || defaultSettings.topOffset; 
@@ -41,6 +43,7 @@ CursorView.prototype.moveLeft = function(delta) {
     const amount = delta || 1;
     this.setBlink(false);
     this.col -= amount;
+    this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true); 
 };
@@ -49,6 +52,7 @@ CursorView.prototype.moveRight = function(delta) {
     const amount = delta || 1;
     this.setBlink(false);
     this.col += amount;
+    this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true);
 };
@@ -58,6 +62,7 @@ CursorView.prototype.moveDown = function(delta) {
     this.setBlink(false);
     this.row += amount;
     this.domNode.style.top = this._rowToPix();
+    this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
@@ -66,6 +71,7 @@ CursorView.prototype.moveUp = function(delta) {
     this.setBlink(false);
     this.row -= amount;
     this.domNode.style.top = this._rowToPix();
+    this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
@@ -76,6 +82,12 @@ CursorView.prototype.moveTo = function(col, row) {
     this.domNode.style.left = this._colToPix();
     this.domNode.style.top = this._rowToPix();
     this.setBlink(true); 
+};
+
+// A fast lateral move. Does not affect the goal column.
+CursorView.prototype.setCol = function(col) {
+    this.col = col;
+    this.domNode.style.left = this._colToPix();
 };
 
 CursorView.prototype.setBlink = function(on) {

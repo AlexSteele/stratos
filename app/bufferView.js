@@ -41,7 +41,7 @@ BufferView.prototype.appendLine = function(text) {
 };
 
 BufferView.prototype.changeLine = function(num, text) {
-    if (num < 1 || num > this.lineElems.length) {
+    if (num < 1 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num);
     }
 
@@ -86,6 +86,7 @@ BufferView.prototype.removeLine = function(num) {
     if (num < 1 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
+    
     const removed = this.lineElems.splice(num, 1)[0];
     this.domNode.removeChild(removed); 
 };
@@ -100,5 +101,31 @@ BufferView.prototype.setLeftOffset = function(width) {
 
 BufferView.prototype.getWidth = function() { return this.maxColumns * this.charWidth; };
 BufferView.prototype.getHeight = function() { return this.maxRows * this.charHeight; };
+
+BufferView.prototype.getLineWidthChars = function(num) {
+    if (num < 1 || num >= this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + num);
+    }
+
+    return this.lineElems[num].innerHTML.length;
+};
+
+BufferView.prototype.firstVisibleRowNum = function() {
+    return (this.domNode.scrollTop / this.charHeight) + 1;
+};
+
+BufferView.prototype.lastVisibleRowNum = function() {
+    return 50;                  // TODO: implement.
+};
+
+BufferView.prototype.scrollDownRow = function(delta) {
+    const amount = delta || 1;
+    this.domNode.scrollTop = +this.domNode.scrollTop + (this.charHeight * amount);
+};
+
+BufferView.prototype.scrollUpRow = function(delta) {
+    const amount = delta || 1;
+    this.domNode.scrollTop = +this.domNode.scrollTop - (this.charHeight * amount); 
+};
 
 module.exports.BufferView = BufferView; 
