@@ -66,6 +66,11 @@ EditorPaneController.prototype.handleAction = function(action) {
         break;
         // case 'INSERT_TAB':
 	case 'DELETE_BACK_CHAR':
+        if (this.cursorView.col > 1) {
+            this.bufferView.changeLine(this.cursorView.row,
+                                       this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col - 2));
+            this.cursorView.moveLeft();             
+        }
         break;
         // case 'DELETE_FORWARD_CHAR':
 	    // case 'DELETE_BACK_WORD':
@@ -93,31 +98,54 @@ EditorPaneController.prototype.handleAction = function(action) {
         }
         break;
 	case 'MOVE_CURSOR_RIGHT':
-        if (this.cursorView.col < this.bufferView.maxColumns) {
+        if (this.cursorView.col <= this.bufferView.getLineWidthChars(this.cursorView.row)) {
             this.cursorView.moveRight();            
         }
         break;
 	case 'MOVE_CURSOR_UP':
         if (this.cursorView.row > 1) {
             this.cursorView.moveUp();
+            const lineWidth = this.bufferView.getLineWidthChars(this.cursorView.row);
+            if (this.cursorView.col > lineWidth + 1) {
+                this.cursorView.setCol(lineWidth + 1);
+            }
+            if (this.cursorView.row < this.bufferView.firstVisibleRowNum()) {
+                this.bufferView.scrollUpRow();
+            }
             this.gutterView.setActiveRow(this.cursorView.row);
         }
         break;
 	case 'MOVE_CURSOR_DOWN':
         if (this.cursorView.row < this.bufferView.lastRowNum()) {
             this.cursorView.moveDown();
+            const lineWidth = this.bufferView.getLineWidthChars(this.cursorView.row);
+            if (this.cursorView.col > lineWidth + 1) {
+                this.cursorView.setCol(lineWidth + 1);
+            } 
+            if (this.cursorView.row > this.bufferView.lastVisibleRowNum()) {
+                this.bufferView.scrollDownRow(); 
+            }
             this.gutterView.setActiveRow(this.cursorView.row); 
         }
         break;
-	    // case 'MOVE_CURSOR_END_OF_LINE':
-	    // case 'MOVE_CURSOR_BEGINNING_OF_LINE':
-	    // case 'MOVE_CURSOR_BUFFER_END':
-	    // case 'MOVE_CURSOR_BUFFER_BEGINNING':
-	    // case 'MOVE_CURSOR_END_OF_PARAGRAPH':
-	    // case 'MOVE_CURSOR_BEGINNING_OF_PARAGRAPH':
-	    // case 'MOVE_CURSOR_END_OF_SENTENCE':
-	    // case 'MOVE_CURSOR_BEGINNING_OF_SENTENCE':
-	    // case 'MOVE_CURSOR_PREV_POS':
+	case 'MOVE_CURSOR_END_OF_LINE':
+        break;
+	case 'MOVE_CURSOR_BEGINNING_OF_LINE':
+        break;
+	case 'MOVE_CURSOR_BUFFER_END':
+        break;
+	case 'MOVE_CURSOR_BUFFER_BEGINNING':
+        break;
+	case 'MOVE_CURSOR_END_OF_PARAGRAPH':
+        break;
+	case 'MOVE_CURSOR_BEGINNING_OF_PARAGRAPH':
+        break;
+	case 'MOVE_CURSOR_END_OF_SENTENCE':
+        break;
+	case 'MOVE_CURSOR_BEGINNING_OF_SENTENCE':
+        break;
+	case 'MOVE_CURSOR_PREV_POS':
+        break;
 	    // case 'SCROLL_UP':
 	    // case 'SCROLL_DOWN':
 	    // case 'PAGE_UP':
