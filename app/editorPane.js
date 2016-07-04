@@ -48,7 +48,12 @@ EditorPane.prototype.insertText = function(text) {
 };
 
 EditorPane.prototype.insertNewLine = function() {
-    this.bufferView.insertLine(this.cursorView.row + 1, '');
+    const line = this.bufferView.lineElems[this.cursorView.row].innerHTML;
+    const toRemain = line.substr(0, this.cursorView.col - 1);
+    const toGo = line.substr(this.cursorView.col - 1, line.length);
+
+    this.bufferView.changeLine(this.cursorView.row, toRemain);
+    this.bufferView.insertLine(this.cursorView.row + 1, toGo);
     this.cursorView.moveTo(1, this.cursorView.row + 1);
     this.gutterView.appendRow();
     this.gutterView.setActiveRow(this.cursorView.row);  
