@@ -3,7 +3,8 @@
 const {EventEmitter} = require('events');
 
 const defaultSettings = {
-    charWidth: 10,
+    charWidth: -1,
+    charHeight: -1,
     topOffset: 0,
     leftOffset: 0
 };
@@ -18,6 +19,7 @@ function GutterView(rootElem, config = defaultSettings) {
 
     this.leftPad = 0;
     this.charWidth = config.charWidth || defaultSettings.charWidth;
+    this.charHeight = config.charHeight || defaultSettings.charHeight;
     this.rightPad = 8;
     
     this.domNode = document.createElement('div');
@@ -27,11 +29,11 @@ function GutterView(rootElem, config = defaultSettings) {
     this.domNode.style.width = this.getWidth() + 'px';
     this.domNode.style.height = '100%';
 
+    rootElem.appendChild(this.domNode);
+
     // Start with one row.
     this.appendRow();
     this.setActiveRow(1);
-
-    rootElem.appendChild(this.domNode);
 }
 
 GutterView.prototype.appendRow = function() {
@@ -42,7 +44,8 @@ GutterView.prototype.appendRow = function() {
     this.rowElems.push(row);
     this.domNode.appendChild(row);
 
-    this._checkUpdateWidth(); 
+    this._checkUpdateWidth();
+    this._checkUpdateHeight();
 };
 
 GutterView.prototype.removeRow = function() {
@@ -54,6 +57,7 @@ GutterView.prototype.removeRow = function() {
     this.domNode.removeChild(removed);
     
     this._checkUpdateWidth();
+    this._checkUpdateHeight();
 };
 
 GutterView.prototype.setActiveRow = function(num) {
@@ -76,7 +80,7 @@ GutterView.prototype.show = function() {
     this.domNode.style.visibility = 'visible';
 };
 
-GutterView.prototype.lastRowNum = function() {
+GutterView.prototype.getLastRowNum = function() {
     return this.rowElems.length - 1;
 };
 
@@ -84,13 +88,25 @@ GutterView.prototype.getWidth = function() {
     return this.leftPad + (this.lastRowNumDigits * this.charWidth) + this.rightPad;
 };
 
+GutterView.prototype.getHeight = function() {
+    return this.charHeight * (this.rowElems.length - 1);
+};
+
+GutterView.prototype.setScrollTop = function(num) {
+    this.domNode.scrollTop = num;
+};
+
+GutterView.prototype.onWidthChanged = function(callback) {
+    this.emitter.on('width-changed', callback); 
+};
+
 GutterView.prototype._checkUpdateWidth = function() {
 
     // TODO: Brute forcing this under assumption that
-    //             1) efficiency gains are worthwhile
-    //         and 2) the number of lines in a file won't exceed 100000 :)
+    //             1) efficiency gains are worthwhile and
+    //             2) the number of lines in a file won't exceed 100000 :)
     
-    const lastRowNum = this.lastRowNum();
+    const lastRowNum = this.getLastRowNum();
     
     let actualLastRowNumDigits;
     if (lastRowNum < 10) {
@@ -115,8 +131,10 @@ GutterView.prototype._checkUpdateWidth = function() {
     }
 };
 
-GutterView.prototype.onWidthChanged = function(callback) {
-    this.emitter.on('width-changed', callback); 
+GutterView.prototype._checkUpdateHeight = function() {
+    if (this.getHeight() > this.domNode.clientHeight) {
+        this.domNode.style.height = this.getHeight() + 'px';
+    }
 };
 
 module.exports.GutterView = GutterView;

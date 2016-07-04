@@ -24,9 +24,14 @@ function EditorPane(rootElem) {
 
 EditorPane.prototype._initComponents = function() {
 
-    this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
-    
+    this.cursorView.setLeftOffset(this.gutterView.getWidth());
+
+    this.bufferView.onScroll((event) => {
+        this.cursorView.setScrollTop(this.bufferView.getScrollTop());
+        this.gutterView.setScrollTop(this.bufferView.getScrollTop());
+    });
+
     this.gutterView.onWidthChanged((width) => {
         this.cursorView.setLeftOffset(width);
         this.bufferView.setLeftOffset(width); 
@@ -100,7 +105,7 @@ EditorPane.prototype.moveCursorUp = function() {
         if (this.cursorView.col > lineWidth + 1) {
             this.cursorView.setCol(lineWidth + 1);
         }
-        if (this.cursorView.row < this.bufferView.firstVisibleRowNum()) {
+        if (this.cursorView.row < this.bufferView.getFirstVisibleRowNum()) {
             this.bufferView.scrollUpRow();
         }
         this.gutterView.setActiveRow(this.cursorView.row);
@@ -108,13 +113,13 @@ EditorPane.prototype.moveCursorUp = function() {
 };
 
 EditorPane.prototype.moveCursorDown = function() {
-    if (this.cursorView.row < this.bufferView.lastRowNum()) {
+    if (this.cursorView.row < this.bufferView.getLastRowNum()) {
         this.cursorView.moveDown();
         const lineWidth = this.bufferView.getLineWidthChars(this.cursorView.row);
         if (this.cursorView.col > lineWidth + 1) {
             this.cursorView.setCol(lineWidth + 1);
         } 
-        if (this.cursorView.row > this.bufferView.lastVisibleRowNum()) {
+        if (this.cursorView.row > this.bufferView.getLastVisibleRowNum()) {
             this.bufferView.scrollDownRow(); 
         }
         this.gutterView.setActiveRow(this.cursorView.row); 

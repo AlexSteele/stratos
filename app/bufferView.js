@@ -1,5 +1,7 @@
 'use strict';
 
+const {EventEmitter} = require('events');
+
 const defaultSettings = {
     charWidth: 10,
     charHeight: 20,
@@ -10,6 +12,8 @@ const defaultSettings = {
 
 function BufferView(rootElem, config = defaultSettings) {
 
+    this.emitter = new EventEmitter();
+
     this.lineElems = [null];
     this.charWidth = config.charWidth || defaultSettings.charWidth; // pixels
     this.charHeight = config.charHeight || defaultSettings.charHeight; //pixels
@@ -19,6 +23,8 @@ function BufferView(rootElem, config = defaultSettings) {
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
     this.domNode.style.left = (config.leftOffset || defaultSettings.leftOffset) + 'px';
+
+    this.domNode.addEventListener('scroll', (e) => this.emitter.emit('scroll', e));
 
     // Start with empty line.
     this.appendLine('');
@@ -54,7 +60,7 @@ BufferView.prototype.insertLine = function(num, text) {
         this.domNode.style.width = this.getWidth() + 'px';
     }
     
-    if (this.lastRowNum() >= this.maxRows) {
+    if (this.getLastRowNum() >= this.maxRows) {
         this.maxRows++;
         this.domNode.style.height = this.getHeight() + 'px';
     }
@@ -89,12 +95,8 @@ BufferView.prototype.getLine = function(num) {
     return this.lineElems[num].innerHTML;
 };
 
-BufferView.prototype.lastRowNum = function() {
+BufferView.prototype.getLastRowNum = function() {
     return this.lineElems.length - 1;
-};
-
-BufferView.prototype.setLeftOffset = function(width) {
-    this.domNode.style.left = width + 'px';
 };
 
 BufferView.prototype.getWidth = function() {
@@ -105,20 +107,28 @@ BufferView.prototype.getHeight = function() {
     return this.maxRows * this.charHeight;
 };
 
-BufferView.prototype.getLineWidthChars = function(num) {
-    if (num < 1 || num >= this.lineElems.length) {
-        throw new Error('BufferView: No line with number ' + num);
-    }
-
-    return this.lineElems[num].innerHTML.length;
+BufferView.prototype.getScrollTop = function() {
+    return this.domNode.scrollTop;
 };
 
-BufferView.prototype.firstVisibleRowNum = function() {
+BufferView.prototype.getLineWidthChars = function(lineNum) {
+    if (lineNum < 1 || lineNum >= this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + lineNum);
+    }
+
+    return this.lineElems[lineNum].innerHTML.length;
+};
+
+BufferView.prototype.getFirstVisibleRowNum = function() {
     return (this.domNode.scrollTop / this.charHeight) + 1;
 };
 
-BufferView.prototype.lastVisibleRowNum = function() {
-    return (this.domNode.scrollHeight / this.charHeight) + this.firstVisibleRowNum() - 1;
+BufferView.prototype.getLastVisibleRowNum = function() {
+    return (this.domNode.scrollHeight / this.charHeight) + this.getFirstVisibleRowNum() - 1;
+};
+
+BufferView.prototype.setLeftOffset = function(width) {
+    this.domNode.style.left = width + 'px';
 };
 
 BufferView.prototype.scrollDownRow = function(delta) {
@@ -129,6 +139,10 @@ BufferView.prototype.scrollDownRow = function(delta) {
 BufferView.prototype.scrollUpRow = function(delta) {
     const amount = delta || 1;
     this.domNode.scrollTop = +this.domNode.scrollTop - (this.charHeight * amount); 
+};
+
+BufferView.prototype.onScroll = function(callback) {
+    this.emitter.on('scroll', callback);
 };
 
 module.exports.BufferView = BufferView; 
