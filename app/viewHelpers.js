@@ -12,18 +12,16 @@ function getSharedViewConfig(domNode) {
 function measureCharWidthAndHeight(domNode) {
     const line = document.createElement('span');
     line.className = 'line';
-    line.innerHTML = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV';
+    line.innerHTML = 'a';
     line.style.position = 'absolute';
     line.style.height = 'auto';
     line.style.width = 'auto';
-    line.style.margin = 0 + 'px';
-    line.style.padding = 0 + 'px';
-    line.style['whiteSpace'] = 'nowrap'; // TODO: Style attribute may be incorrectly named.
+    line.style['white-space'] = 'nowrap';
     line.style.visibility = 'hidden';
     domNode.appendChild(line);
     const bounds = line.getBoundingClientRect();
-    const width = bounds.width / 52;
-    const height = line.offsetHeight;
+    const width = bounds.width;
+    const height = bounds.height;
     domNode.removeChild(line);
     return [width, height];
 };

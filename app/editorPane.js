@@ -11,7 +11,7 @@ function EditorPane(rootElem) {
     this.domNode.className = 'editor-pane';
     this.domNode.tabIndex = 1;
     
-    const sharedViewConfig = viewHelpers.getSharedViewConfig(this.domNode);
+    const sharedViewConfig = viewHelpers.getSharedViewConfig(document.body);
 
     this.bufferView = new BufferView(this.domNode, sharedViewConfig);
     this.cursorView = new CursorView(this.domNode, sharedViewConfig);
