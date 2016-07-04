@@ -3,9 +3,7 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
-const {EditorPane} = require('./app/editorPane.js');
-const {CursorView} = require('./app/cursorView.js');
-const {BufferView} = require('./app/bufferView.js'); 
+const {Editor} = require('./app/editor.js'); 
 
 // const orbProcess = childProcess.spawn('orb');
 // orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
@@ -28,6 +26,4 @@ const {BufferView} = require('./app/bufferView.js');
 //     myBufferView.appendLine(k.key);  
 // });
 
-const editorRoot = document.getElementById('editor-root');
-const editorPane = new EditorPane(editorRoot);
-editorPane.setFocused();
+const editor = new Editor(document.body);

@@ -1,3 +1,4 @@
+'use strict';
 
 function getSharedViewConfig(domNode) {
     const [defaultCharWidth, defaultCharHeight] = measureCharWidthAndHeight(domNode);

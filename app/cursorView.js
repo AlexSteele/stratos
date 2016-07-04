@@ -1,3 +1,4 @@
+'use strict';
 
 const defaultSettings = {
     startingCol: 1,

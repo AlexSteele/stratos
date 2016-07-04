@@ -18,27 +18,22 @@ const defaultKeyMap = (function() {
      'u', 'v', 'w', 'x',
      'y', 'z'].forEach(e => {
          keys[e] = {type: 'INSERT', text: e};
-         keys['Shift-' + e] = {type: 'INSERT', text: e.toUpperCase()};
+         keys[e.toUpperCase()] = {type: 'INSERT', text: e.toUpperCase()};
      });
 
-    const upcaseNums = {
-        1: '!',
-        2: '@',
-        3: '#',
-        4: '$',
-        5: '%',
-        6: '^',
-        7: '&',
-        8: '*',
-        9: '(',
-        10: ')'
-    };
-
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(e => {
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].forEach(e => {
         keys[e] = {type: 'INSERT', text: (e + '')};
-        keys['Shift-' + e] = {type: 'INSERT', text: upcaseNums[e] };
     });
-    
+
+    [' ', ',', '<', '.', '>',
+     '[', '{', ']', '}', '\\',
+     '|', '/', '?', '`', '~',
+     '!', '@', '#', '$', '%',
+     '^', '&', '*', '(', ')',
+     '-', '_', '=', '+', ':',
+     ';', '"', '\''].forEach(e => {
+         keys[e] = {type: 'INSERT', text: e};
+     });
 
     keys[' '] = {type: 'INSERT', text: ' '};
 
@@ -75,8 +70,7 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
     });
 
     function keyIsModifier(key) {
-        return key === 'Shift' ||
-            key === 'Control' ||
+        return key === 'Control' ||
             key === 'Alt' ||
             key === 'Meta'; 
     }
@@ -84,7 +78,7 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
     const allChords = Object.keys(keyMap); 
 
     function isValidActionPrefix(prefix) {
-        const pattern = new Regex(prefix);
+        const pattern = new RegExp(prefix);
         return allChords.find(e => pattern.test(e));
     }
     
