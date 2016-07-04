@@ -39,6 +39,12 @@ Editor.prototype.deleteBackChar = function() {
     }
 };
 
+Editor.prototype.killLine = function() {
+    if (this.activePane) {
+        this.activePane.killLine();
+    }
+}
+
 Editor.prototype.moveCursorLeft = function() {
     if (this.activePane) {
         this.activePane.moveCursorLeft();
@@ -82,6 +88,7 @@ Editor.prototype.handleKeyAction = function(action) {
         'INSERT':                        action => this.insertText(action.text),
         'INSERT_NEW_LINE':               () => this.insertNewLine(),
         'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
+        'KILL_LINE':                     () => this.killLine(),
         'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
         'MOVE_CURSOR_UP':                () => this.moveCursorUp(),

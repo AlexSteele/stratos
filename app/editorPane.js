@@ -6,7 +6,6 @@ const {GutterView} = require('./gutterView.js');
 const {viewHelpers} = require('./viewHelpers.js');
 
 function EditorPane(rootElem) {
-    console.log('EditorPane created.');
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'editor-pane';
@@ -39,20 +38,20 @@ EditorPane.prototype.setFocused = function() {
 };
 
 EditorPane.prototype.insertText = function(text) {
-    this.bufferView.changeLine(this.cursorView.row,
-        this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col - 1) +
-        text +
-        this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(this.cursorView.col - 1));
+    this.bufferView.setLine(this.cursorView.row,
+                               this.bufferView.getLine(this.cursorView.row).slice(0, this.cursorView.col - 1) +
+                               text +
+                               this.bufferView.getLine(this.cursorView.row).slice(this.cursorView.col - 1));
     
     this.cursorView.moveRight(text.length);
 };
 
 EditorPane.prototype.insertNewLine = function() {
-    const line = this.bufferView.lineElems[this.cursorView.row].innerHTML;
+    const line = this.bufferView.getLine(this.cursorView.row);
     const toRemain = line.substr(0, this.cursorView.col - 1);
-    const toGo = line.substr(this.cursorView.col - 1, line.length);
+    const toGo = line.substr(this.cursorView.col - 1);
 
-    this.bufferView.changeLine(this.cursorView.row, toRemain);
+    this.bufferView.setLine(this.cursorView.row, toRemain);
     this.bufferView.insertLine(this.cursorView.row + 1, toGo);
     this.cursorView.moveTo(1, this.cursorView.row + 1);
     this.gutterView.appendRow();
@@ -60,11 +59,26 @@ EditorPane.prototype.insertNewLine = function() {
 };
 
 EditorPane.prototype.deleteBackChar = function() {
-    if (this.cursorView.col > 1) {
-            this.bufferView.changeLine(this.cursorView.row,
-                                       this.bufferView.lineElems[this.cursorView.row].innerHTML.slice(0, this.cursorView.col - 2));
+    if (this.cursorView.row > 1) {
+        const prevLine = this.bufferView.getLine(this.cursorView.row - 1);
+        this.bufferView.setLine(this.cursorView.row - 1,
+                                prevLine + this.bufferView.getLine(this.cursorView.row));
+        this.bufferView.removeLine(this.cursorView.row);
+        this.cursorView.moveTo(prevLine.length + 1, this.cursorView.row - 1);
+        this.gutterView.removeRow();
+        this.gutterView.setActiveRow(this.cursorView.row);
+    } else {
+        const line = this.bufferView.getLine(this.cursorView.row);
+        this.bufferView.setLine(this.cursorView.row,
+                                line.slice(0, this.cursorView.col - 2) +
+                                line.slice(this.cursorView.col - 1));
         this.cursorView.moveLeft();             
     }
+};
+
+EditorPane.prototype.killLine = function() {
+    this.bufferView.setLine(this.cursorView.row,
+                            this.bufferView.getLine(this.cursorView.row).slice(0, this.cursorView.col - 1));
 };
 
 EditorPane.prototype.moveCursorLeft = function() {

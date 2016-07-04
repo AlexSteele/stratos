@@ -10,18 +10,15 @@ const defaultSettings = {
     leftOffset: 25
 };
 
-function CursorView(rootElem, config) {
-    console.log('CursorView created.');
+function CursorView(rootElem, config = defaultSettings) {
 
-    const _config = config || {};
-
-    this.col = _config.startingCol || defaultSettings.startingCol;
-    this.row = _config.startingRow || defaultSettings.startingRow;
-    this.goalCol = _config.goalCol || defaultSettings.goalCol;
-    this.charWidth = _config.charWidth || defaultSettings.charWidth;
-    this.charHeight = _config.charHeight || defaultSettings.charHeight;
-    this.topOffset = _config.topOffset || defaultSettings.topOffset; 
-    this.leftOffset = _config.leftOffset || defaultSettings.leftOffset;
+    this.col = config.startingCol || defaultSettings.startingCol;
+    this.row = config.startingRow || defaultSettings.startingRow;
+    this.goalCol = config.goalCol || defaultSettings.goalCol;
+    this.charWidth = config.charWidth || defaultSettings.charWidth;
+    this.charHeight = config.charHeight || defaultSettings.charHeight;
+    this.topOffset = config.topOffset || defaultSettings.topOffset;
+    this.leftOffset = config.leftOffset || defaultSettings.leftOffset;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';

@@ -3,12 +3,12 @@
 const {EventEmitter} = require('events');
 
 const defaultSettings = {
+    charWidth: 10,
     topOffset: 0,
     leftOffset: 0
 };
 
-function GutterView(rootElem, config) {
-    console.log('GutterView created.');
+function GutterView(rootElem, config = defaultSettings) {
 
     this.emitter = new EventEmitter(); 
 
@@ -16,16 +16,14 @@ function GutterView(rootElem, config) {
     this.rowElems = [null];
     this.lastRowNumDigits = 1; // The number of digits in the last row's number.
 
-    const _config = config || {};
-
     this.leftPad = 0;
-    this.charWidth = _config.charWidth || 5;
+    this.charWidth = config.charWidth || defaultSettings.charWidth;
     this.rightPad = 8;
     
     this.domNode = document.createElement('div');
     this.domNode.className = 'gutter';
-    this.domNode.style.top = (_config.topOffset || defaultSettings.topOffset) + 'px';
-    this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
+    this.domNode.style.top = (config.topOffset || defaultSettings.topOffset) + 'px';
+    this.domNode.style.left = (config.leftOffset || defaultSettings.leftOffset) + 'px';
     this.domNode.style.width = this.getWidth() + 'px';
     this.domNode.style.height = '100%';
 
@@ -51,6 +49,7 @@ GutterView.prototype.removeRow = function() {
     if (this.rowElems.length < 2) {
         throw new Error('GutterView: No row to remove.');
     }
+    
     const removed = this.rowElems.splice(this.rowElems.length - 1, 1)[0];
     this.domNode.removeChild(removed);
     

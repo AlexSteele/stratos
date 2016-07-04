@@ -3,9 +3,13 @@
 const defaultKeyMap = (function() {
     const keys = {
         'Enter':      {type: 'INSERT_NEW_LINE'},
+        'Tab':        {type: 'INSERT', text: '    '}, // TODO: Change this to reflect preferences/mode etc.
         'Backspace':  {type: 'DELETE_BACK_CHAR'},
+        'Control-k':  {type: 'KILL_LINE'},
         'ArrowLeft':  {type: 'MOVE_CURSOR_LEFT'},
+        'Control-b':  {type: 'MOVE_CURSOR_LEFT'},
         'ArrowRight': {type: 'MOVE_CURSOR_RIGHT'},
+        'Control-f':  {type: 'MOVE_CURSOR_RIGHT'},
         'ArrowUp':    {type: 'MOVE_CURSOR_UP'},
         'Control-p':  {type: 'MOVE_CURSOR_UP'},
         'ArrowDown':  {type: 'MOVE_CURSOR_DOWN'},
@@ -39,8 +43,6 @@ const defaultKeyMap = (function() {
          keys[e] = {type: 'INSERT', text: e};
      });
 
-    keys[' '] = {type: 'INSERT', text: ' '};
-
     return keys;
 }());
 
@@ -53,10 +55,6 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
 
         if (keyIsModifier(e.key)) {
             activeModifiers.push(e.key);
-            if (!isValidActionPrefix(activeModifiers.join('-'))) {
-                activeModifiers.splice(0, activeModifiers.length);
-                onKeyError(activeModifiers.join('-'));
-            }
             return;
         }
 
@@ -75,6 +73,19 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
         activeModifiers.splice(0, activeModifiers.length); 
     });
 
+    elem.addEventListener('keypress', (e) => {
+        e.preventDefault();
+    });
+
+    elem.addEventListener('keyup', (e) => {
+        e.preventDefault();
+        
+        const index = activeModifiers.indexOf(e.key);
+        if (index !== -1) {
+            activeModifiers.splice(index, 1);
+        }
+    });
+
     function keyIsModifier(key) {
         return key === 'Control' ||
             key === 'Alt' ||
@@ -88,14 +99,6 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
         return allChords.find(e => pattern.test(e));
     }
     
-    elem.addEventListener('keyup', (e) => {
-        e.preventDefault();
-        
-        const index = activeModifiers.indexOf(e.key);
-        if (index !== -1) {
-            activeModifiers.splice(index, 1);
-        }
-    });
 };
 
 module.exports = {
