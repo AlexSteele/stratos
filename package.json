@@ -16,10 +16,7 @@
     "editor"
   ],
   "author": "Alex Steele",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/AlexSteele/stratos/issues"
-  },
+  "license": "MIT",
   "homepage": "https://github.com/AlexSteele/stratos#readme",
   "dependencies": {
     "electron-prebuilt": "^1.2.3"
