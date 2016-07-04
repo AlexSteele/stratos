@@ -22,7 +22,6 @@ function Editor(rootElem) {
 };
 
 Editor.prototype.insertText = function(text) {
-    console.log('Editor: Inserting text.'); // TODO: remove
     if (this.activePane) {
         this.activePane.insertText(text);
     }
@@ -64,17 +63,31 @@ Editor.prototype.moveCursorDown = function() {
     }
 };
 
+Editor.prototype.moveCursorBeginningOfLine = function() {
+    if (this.activePane) {
+        this.activePane.moveCursorBeginningOfLine();
+    }
+};
+
+Editor.prototype.moveCursorEndOfLine = function() {
+    if (this.activePane) {
+        this.activePane.moveCursorEndOfLine();
+    }
+};
+
 Editor.prototype.handleKeyAction = function(action) {
 
     // TODO: Move into global object to avoid possible redeclarations on each call.
     const actionHandlers = {
-        'INSERT':            action => this.insertText(action.text),
-        'INSERT_NEW_LINE':   action => this.insertNewLine(),
-        'DELETE_BACK_CHAR':  action => this.deleteBackChar(),
-        'MOVE_CURSOR_LEFT':  action => this.moveCursorLeft(),
-        'MOVE_CURSOR_RIGHT': action => this.moveCursorRight(),
-        'MOVE_CURSOR_UP':    action => this.moveCursorUp(),
-        'MOVE_CURSOR_DOWN':  action => this.moveCursorDown()
+        'INSERT':                        action => this.insertText(action.text),
+        'INSERT_NEW_LINE':               () => this.insertNewLine(),
+        'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
+        'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
+        'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
+        'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
+        'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
+        'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
+        'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine()
     };
     
     const handler = actionHandlers[action.type];
@@ -82,7 +95,7 @@ Editor.prototype.handleKeyAction = function(action) {
     if (handler) {
         handler.call(this, action);
     } else {
-        console.log('Editor: No handler for action ' + action);
+        throw new Error('Editor: No handler for action ' + action);
     }
 };
 

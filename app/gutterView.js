@@ -18,9 +18,9 @@ function GutterView(rootElem, config) {
 
     const _config = config || {};
 
-    this.leftPad = 2;
+    this.leftPad = 0;
     this.charWidth = _config.charWidth || 5;
-    this.rightPad = 2;
+    this.rightPad = 8;
     
     this.domNode = document.createElement('div');
     this.domNode.className = 'gutter';

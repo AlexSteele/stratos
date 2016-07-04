@@ -102,4 +102,12 @@ EditorPane.prototype.moveCursorDown = function() {
     }
 };
 
+EditorPane.prototype.moveCursorBeginningOfLine = function() {
+    this.cursorView.setCol(1);
+};
+
+EditorPane.prototype.moveCursorEndOfLine = function() {
+    this.cursorView.setCol(this.bufferView.getLineWidthChars(this.cursorView.row) + 1);
+};
+
 module.exports.EditorPane = EditorPane;

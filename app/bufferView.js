@@ -22,8 +22,6 @@ function BufferView(rootElem, config) {
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
     this.domNode.style.left = (_config.leftOffset || defaultSettings.leftOffset) + 'px';
-    //this.domNode.style.width = this.getWidth() + 'px';
-    //this.domNode.style.height = this.getHeight() + 'px';
 
     // Start with empty line.
     this.appendLine('');
