@@ -11,7 +11,7 @@ function EditorPane(rootElem) {
     this.domNode.className = 'editor-pane';
     this.domNode.tabIndex = 1;
     
-    const sharedViewConfig = viewHelpers.getSharedViewConfig(rootElem);
+    const sharedViewConfig = viewHelpers.getSharedViewConfig(this.domNode);
 
     this.bufferView = new BufferView(this.domNode, sharedViewConfig);
     this.cursorView = new CursorView(this.domNode, sharedViewConfig);
@@ -59,7 +59,7 @@ EditorPane.prototype.insertNewLine = function() {
 };
 
 EditorPane.prototype.deleteBackChar = function() {
-    if (this.cursorView.row > 1) {
+    if (this.cursorView.col === 1) {
         const prevLine = this.bufferView.getLine(this.cursorView.row - 1);
         this.bufferView.setLine(this.cursorView.row - 1,
                                 prevLine + this.bufferView.getLine(this.cursorView.row));
