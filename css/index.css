@@ -41,7 +41,7 @@ html, body {
   overflow: hidden;
 }
 
-.gutter-row {
+.gutter-line {
   display: block;
   font-family: Consolas, monospace;
   font-size: 1em;
@@ -49,7 +49,7 @@ html, body {
 }
 
 /* TODO: DRY */
-.gutter-row-active {
+.gutter-line-active {
   display: block;
   font-family: Consolas, monospace;
   font-size: 1em;

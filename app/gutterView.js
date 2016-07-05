@@ -9,13 +9,13 @@ const defaultSettings = {
     leftOffset: 0
 };
 
-function GutterView(rootElem, config = defaultSettings) {
+function GutterView(parentElem, config = defaultSettings) {
 
     this.emitter = new EventEmitter(); 
 
-    this.activeRowElem = null;
-    this.rowElems = [null];
-    this.lastRowNumDigits = 1; // The number of digits in the last row's number.
+    this.activeLineElem = null;
+    this.lineElems = [null];
+    this.lastLineNumDigits = 1; // The number of digits in the last line's number.
 
     this.leftPad = 0;
     this.charWidth = config.charWidth || defaultSettings.charWidth;
@@ -23,73 +23,64 @@ function GutterView(rootElem, config = defaultSettings) {
     this.rightPad = 8;
     
     this.domNode = document.createElement('div');
+    parentElem.appendChild(this.domNode);
     this.domNode.className = 'gutter';
     this.domNode.style.top = (config.topOffset || defaultSettings.topOffset) + 'px';
     this.domNode.style.left = (config.leftOffset || defaultSettings.leftOffset) + 'px';
     this.domNode.style.width = this.getWidth() + 'px';
     this.domNode.style.height = '100%';
 
-    rootElem.appendChild(this.domNode);
-
-    // Start with one row.
-    this.appendRow();
-    this.setActiveRow(1);
+    // Start with one line.
+    this.appendLine();
+    this.setActiveLine(1);
 }
 
-GutterView.prototype.appendRow = function() {
-    const row = document.createElement('span');
-    row.className = 'gutter-row';
-    row.innerHTML = this.rowElems.length;
+GutterView.prototype.appendLine = function() {
+    const line = document.createElement('span');
+    line.className = 'gutter-line';
+    line.innerHTML = this.lineElems.length;
 
-    this.rowElems.push(row);
-    this.domNode.appendChild(row);
+    this.lineElems.push(line);
+    this.domNode.appendChild(line);
 
     this._checkUpdateWidth();
     this._checkUpdateHeight();
 };
 
-GutterView.prototype.removeRow = function() {
-    if (this.rowElems.length < 2) {
-        throw new Error('GutterView: No row to remove.');
+GutterView.prototype.removeLine = function() {
+    if (this.lineElems.length < 2) {
+        throw new Error('GutterView: No line to remove.');
     }
     
-    const removed = this.rowElems.splice(this.rowElems.length - 1, 1)[0];
+    const removed = this.lineElems.splice(this.lineElems.length - 1, 1)[0];
     this.domNode.removeChild(removed);
     
     this._checkUpdateWidth();
     this._checkUpdateHeight();
 };
 
-GutterView.prototype.setActiveRow = function(num) {
-    const row = this.rowElems[num];
-    if (!row) {
-        throw new Error('GutterView: No row with number ' + num); 
+GutterView.prototype.setActiveLine = function(num) {
+    const line = this.lineElems[num];
+    if (!line) {
+        throw new Error('GutterView: No line with number ' + num); 
     }
-    if (this.activeRowElem) {
-        this.activeRowElem.className = 'gutter-row'; 
+    if (this.activeLineElem) {
+        this.activeLineElem.className = 'gutter-line'; 
     }
-    row.className = 'gutter-row-active';
-    this.activeRowElem = row; 
+    line.className = 'gutter-line-active';
+    this.activeLineElem = line; 
 };
 
-GutterView.prototype.hide = function() {
-    this.domNode.style.visibility = 'hidden';   
-};
-
-GutterView.prototype.show = function() {
-    this.domNode.style.visibility = 'visible';
-};
-
-GutterView.prototype.getLastRowNum = function() {
-    return this.rowElems.length - 1;
+GutterView.prototype.getLastLineNum = function() {
+    return this.lineElems.length - 1;
 };
 
 GutterView.prototype.getWidth = function() {
-    return this.leftPad + (this.lastRowNumDigits * this.charWidth) + this.rightPad;
+    return this.leftPad + (this.lastLineNumDigits * this.charWidth) + this.rightPad;
 };
 
-GutterView.prototype.getHeight = function() {
-    return this.charHeight * (this.rowElems.length - 1);
+GutterView.prototype.getLinesHeight = function() {
+    return this.charHeight * (this.lineElems.length - 1);
 };
 
 GutterView.prototype.setScrollTop = function(num) {
@@ -106,34 +97,35 @@ GutterView.prototype._checkUpdateWidth = function() {
     //             1) efficiency gains are worthwhile and
     //             2) the number of lines in a file won't exceed 100000 :)
     
-    const lastRowNum = this.getLastRowNum();
+    const lastLineNum = this.getLastLineNum();
     
-    let actualLastRowNumDigits;
-    if (lastRowNum < 10) {
-        actualLastRowNumDigits = 1;
-    } else if (lastRowNum < 100) {
-        actualLastRowNumDigits = 2;
-    } else if (lastRowNum < 1000) {
-        actualLastRowNumDigits = 3;
-    } else if (lastRowNum < 10000) {
-        actualLastRowNumDigits = 4;
-    } else if (lastRowNum < 100000) {
-        actualLastRowNumDigits = 5;
+    let actualLastLineNumDigits;
+    if (lastLineNum < 10) {
+        actualLastLineNumDigits = 1;
+    } else if (lastLineNum < 100) {
+        actualLastLineNumDigits = 2;
+    } else if (lastLineNum < 1000) {
+        actualLastLineNumDigits = 3;
+    } else if (lastLineNum < 10000) {
+        actualLastLineNumDigits = 4;
+    } else if (lastLineNum < 100000) {
+        actualLastLineNumDigits = 5;
     } else {
         throw new Error("GutterView: Way too many lines! Can't set gutter width.");
     }
 
-    if (actualLastRowNumDigits != this.lastRowNumDigits) {
-        this.lastRowNumDigits = actualLastRowNumDigits;
+    if (actualLastLineNumDigits != this.lastLineNumDigits) {
+        this.lastLineNumDigits = actualLastLineNumDigits;
         const width = this.getWidth();
         this.domNode.style.width = width + 'px';
         this.emitter.emit('width-changed', width);
     }
 };
 
+// TODO: Fix this.
 GutterView.prototype._checkUpdateHeight = function() {
-    if (this.getHeight() > this.domNode.clientHeight) {
-        this.domNode.style.height = this.getHeight() + 'px';
+    if (this.getLinesHeight() >= +this.domNode.scrollHeight) {
+        this.domNode.style.height = this.getLinesHeight() + 'px';
     }
 };
 

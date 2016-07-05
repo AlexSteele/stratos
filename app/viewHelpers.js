@@ -1,7 +1,7 @@
 'use strict';
 
-function getSharedViewConfig(domNode) {
-    const [defaultCharWidth, defaultCharHeight] = measureCharWidthAndHeight(domNode);
+function getSharedViewConfig(elem) {
+    const [defaultCharWidth, defaultCharHeight] = measureCharWidthAndHeight(elem);
     return {
         charWidth: defaultCharWidth,
         charHeight: defaultCharHeight
@@ -9,7 +9,7 @@ function getSharedViewConfig(domNode) {
 };
 
 // Returns a tuple of the average default character width and height (in pixels).
-function measureCharWidthAndHeight(domNode) {
+function measureCharWidthAndHeight(elem) {
     const line = document.createElement('span');
     line.className = 'line';
     line.innerHTML = 'a';
@@ -18,11 +18,11 @@ function measureCharWidthAndHeight(domNode) {
     line.style.width = 'auto';
     line.style['white-space'] = 'nowrap';
     line.style.visibility = 'hidden';
-    domNode.appendChild(line);
+    elem.appendChild(line);
     const bounds = line.getBoundingClientRect();
     const width = bounds.width;
     const height = bounds.height;
-    domNode.removeChild(line);
+    elem.removeChild(line);
     return [width, height];
 };
 

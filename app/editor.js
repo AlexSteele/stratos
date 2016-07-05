@@ -3,11 +3,12 @@
 const {EditorPane} = require('./editorPane.js');
 const {createKeyListener, defaultKeyMap} = require('./keys.js'); 
 
-function Editor(rootElem) {
+function Editor(parentElem) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'stratos-editor';
-
+    parentElem.appendChild(this.domNode);
+    
     this.activePane = new EditorPane(this.domNode);
     this.editorPanes = [this.activePane];
     
@@ -17,8 +18,6 @@ function Editor(rootElem) {
         (err) => this.handleKeyError(err));
 
     this.activePane.setFocused();
-    
-    rootElem.appendChild(this.domNode);
 };
 
 Editor.prototype.insertText = function(text) {
@@ -49,7 +48,7 @@ Editor.prototype.killLine = function() {
     if (this.activePane) {
         this.activePane.killLine();
     }
-}
+};
 
 Editor.prototype.moveCursorLeft = function() {
     if (this.activePane) {
@@ -107,7 +106,7 @@ Editor.prototype.handleKeyAction = function(action) {
     const handler = actionHandlers[action.type];
 
     if (handler) {
-        handler.call(this, action);
+        handler(action);
     } else {
         throw new Error('Editor: No handler for action ' + action);
     }

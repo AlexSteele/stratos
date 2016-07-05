@@ -1,37 +1,38 @@
 'use strict';
 
-
 const defaultSettings = {
     charWidth: -1,
     charHeight: -1,
     startingCol: 1,
-    startingRow: 1,
+    startingLine: 1,
     goalCol: 1,
     leftOffset: 25,
-    scrollTop: 0
+    scrollTop: 0,
+    blinkFreqMs: 500
 };
 
-function CursorView(rootElem, config = defaultSettings) {
+function CursorView(parentElem, config = defaultSettings) {
 
     this.col = config.startingCol || defaultSettings.startingCol;
-    this.row = config.startingRow || defaultSettings.startingRow;
+    this.line = config.startingLine || defaultSettings.startingLine;
     this.goalCol = config.goalCol || defaultSettings.goalCol;
     this.charWidth = config.charWidth || defaultSettings.charWidth;
     this.charHeight = config.charHeight || defaultSettings.charHeight;
     this.leftOffset = config.leftOffset || defaultSettings.leftOffset;
     this.scrollTop = config.scrollTop || defaultSettings.scrollTop;
+    this.blinkFreqMs = config.blinkFreqMs || defaultSettings.blinkFreqMs;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';
     this.domNode.style.width = 0.5 + 'px';
     this.domNode.style.height = this.charHeight + 'px'; 
-    this.domNode.style.top = this._rowToPix(); 
+    this.domNode.style.top = this._lineToPix(); 
     this.domNode.style.left = this._colToPix();
     this.domNode.style.visibility = 'visible';
 
     this.setBlink(true); 
 
-    rootElem.appendChild(this.domNode);
+    parentElem.appendChild(this.domNode);
 }
 
 CursorView.prototype.moveLeft = function(delta) {
@@ -55,8 +56,8 @@ CursorView.prototype.moveRight = function(delta) {
 CursorView.prototype.moveDown = function(delta) {
     const amount = delta || 1;
     this.setBlink(false);
-    this.row += amount;
-    this.domNode.style.top = this._rowToPix();
+    this.line += amount;
+    this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);
 };
@@ -64,36 +65,42 @@ CursorView.prototype.moveDown = function(delta) {
 CursorView.prototype.moveUp = function(delta) {
     const amount = delta || 1;
     this.setBlink(false);
-    this.row -= amount;
-    this.domNode.style.top = this._rowToPix();
+    this.line -= amount;
+    this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
-CursorView.prototype.moveTo = function(col, row) {
+CursorView.prototype.moveTo = function(col, line) {
     this.col = col;
-    this.row = row;
+    this.line = line;
     this.goalCol = this.col;
     this.setBlink(false);
     this.domNode.style.left = this._colToPix();
-    this.domNode.style.top = this._rowToPix();
+    this.domNode.style.top = this._lineToPix();
     this.setBlink(true); 
 };
 
-// A fast lateral move. Does not affect the goal column.
+// A lateral move. Does not affect the goal column.
 CursorView.prototype.setCol = function(col) {
+    this.setBlink(false);
     this.col = col;
     this.domNode.style.left = this._colToPix();
+    this.setBlink(true);
 };
 
 CursorView.prototype.setBlink = function(on) {
     if (on) {
+        if (this.blinkIntervalId !== null) {
+            clearInterval(this.blinkIntervalId);
+            this.blinkIntervalId = null;
+        }
         this.blinkIntervalId = setInterval(() => {
             this.domNode.style.visibility =
                     this.domNode.style.visibility === 'visible' ?
                         'hidden' :
                         'visible';
-        }, 500);
+        }, this.blinkFreqMs);
     } else {
         clearInterval(this.blinkIntervalId);
         this.blinkIntervalId = null;
@@ -108,15 +115,15 @@ CursorView.prototype.setLeftOffset = function(width) {
 
 CursorView.prototype.setScrollTop = function(num) {
     this.scrollTop = num;
-    this.domNode.style.top = this._rowToPix();
+    this.domNode.style.top = this._lineToPix();
 };
 
 CursorView.prototype._colToPix = function() {
     return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
 };
 
-CursorView.prototype._rowToPix = function() {
-    return (-this.scrollTop + (this.row - 1) * this.charHeight) + 'px';
+CursorView.prototype._lineToPix = function() {
+    return (-this.scrollTop + (this.line - 1) * this.charHeight) + 'px';
 };
 
 module.exports.CursorView = CursorView;
