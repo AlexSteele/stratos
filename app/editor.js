@@ -39,6 +39,12 @@ Editor.prototype.deleteBackChar = function() {
     }
 };
 
+Editor.prototype.deleteForwardChar = function() {
+    if (this.activePane) {
+        this.activePane.deleteForwardChar();
+    }
+};
+
 Editor.prototype.killLine = function() {
     if (this.activePane) {
         this.activePane.killLine();
@@ -88,6 +94,7 @@ Editor.prototype.handleKeyAction = function(action) {
         'INSERT':                        action => this.insertText(action.text),
         'INSERT_NEW_LINE':               () => this.insertNewLine(),
         'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
+        'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
         'KILL_LINE':                     () => this.killLine(),
         'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),

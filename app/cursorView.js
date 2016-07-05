@@ -116,7 +116,8 @@ CursorView.prototype._colToPix = function() {
 };
 
 CursorView.prototype._rowToPix = function() {
-    return (this.scrollTop + (this.row - 1) * this.charHeight) + 'px';
+    return (-this.scrollTop + (this.row - 1) * this.charHeight) + 'px';
 };
 
-module.exports.CursorView = CursorView; 
+module.exports.CursorView = CursorView;
+

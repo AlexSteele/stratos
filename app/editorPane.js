@@ -65,6 +65,10 @@ EditorPane.prototype.insertNewLine = function() {
 
 EditorPane.prototype.deleteBackChar = function() {
     if (this.cursorView.col === 1) {
+        if (this.cursorView.row === 1) {
+            return;
+        }
+        
         const prevLine = this.bufferView.getLine(this.cursorView.row - 1);
         this.bufferView.setLine(this.cursorView.row - 1,
                                 prevLine + this.bufferView.getLine(this.cursorView.row));
@@ -78,6 +82,17 @@ EditorPane.prototype.deleteBackChar = function() {
                                 line.slice(0, this.cursorView.col - 2) +
                                 line.slice(this.cursorView.col - 1));
         this.cursorView.moveLeft();             
+    }
+};
+
+EditorPane.prototype.deleteForwardChar = function() {
+    if (this.cursorView.col === this.bufferView.getLineWidthChars(this.cursorView.row) + 1) {
+        
+    } else {
+        const line = this.bufferView.getLine(this.cursorView.row);
+        this.bufferView.setLine(this.cursorView.row,
+                                line.slice(0, this.cursorView.col - 1) +
+                                line.slice(this.cursorView.col));
     }
 };
 

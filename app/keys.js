@@ -5,6 +5,7 @@ const defaultKeyMap = (function() {
         'Enter':         {type: 'INSERT_NEW_LINE'},
         'Tab':           {type: 'INSERT', text: '    '}, // TODO: Change this to reflect preferences/mode etc.
         'Backspace':     {type: 'DELETE_BACK_CHAR'},
+        'Control-d':     {type: 'DELETE_FORWARD_CHAR'},
         'Control-k':     {type: 'KILL_LINE'},
         'ArrowLeft':     {type: 'MOVE_CURSOR_LEFT'},
         'Control-b':     {type: 'MOVE_CURSOR_LEFT'},
