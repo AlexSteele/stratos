@@ -17,14 +17,14 @@ html, body {
 .editor-pane {
   position: relative;
   height: 100%;
-  overflow: auto;
+  overflow-y: scroll;
 }
 
 .buffer {
   position: relative;
   height: 100%; 
-  overflow: auto;
   background-color: #333333;
+  overflow: hidden;
 }
 
 .line {
@@ -37,6 +37,7 @@ html, body {
 
 .gutter {
   position: absolute;
+  height: 100%;
   background-color: #525151;
   overflow: hidden;
 }

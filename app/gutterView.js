@@ -28,7 +28,6 @@ function GutterView(parentElem, config = defaultSettings) {
     this.domNode.style.top = (config.topOffset || defaultSettings.topOffset) + 'px';
     this.domNode.style.left = (config.leftOffset || defaultSettings.leftOffset) + 'px';
     this.domNode.style.width = this.getWidth() + 'px';
-    this.domNode.style.height = '100%';
 
     // Start with one line.
     this.appendLine();
@@ -79,12 +78,24 @@ GutterView.prototype.getWidth = function() {
     return this.leftPad + (this.lastLineNumDigits * this.charWidth) + this.rightPad;
 };
 
-GutterView.prototype.getLinesHeight = function() {
-    return this.charHeight * (this.lineElems.length - 1);
+GutterView.prototype.getHeightOfLines = function() {
+    return Math.round(this.getLastLineNum() * this.charHeight);
 };
 
 GutterView.prototype.setScrollTop = function(num) {
     this.domNode.scrollTop = num;
+};
+
+GutterView.prototype.getHeight = function() {
+    const height = parseInt(this.domNode.style.height) || parseInt(this.domNode.scrollHeight);
+    if (!height) {
+        throw new Error('GutterView: Unable to parse height.');
+    }
+    return height;
+};
+
+GutterView.prototype.setHeight = function(num) {
+    this.domNode.style.height = num;
 };
 
 GutterView.prototype.onWidthChanged = function(callback) {
@@ -124,8 +135,8 @@ GutterView.prototype._checkUpdateWidth = function() {
 
 // TODO: Fix this.
 GutterView.prototype._checkUpdateHeight = function() {
-    if (this.getLinesHeight() >= +this.domNode.scrollHeight) {
-        this.domNode.style.height = this.getLinesHeight() + 'px';
+    if (this.getHeightOfLines() >= this.getHeight()) {
+        this.domNode.style.height = this.getHeightOfLines() + 'px';
     }
 };
 
