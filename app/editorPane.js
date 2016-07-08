@@ -53,7 +53,7 @@ EditorPane.prototype._initDomEventListeners = function() {
     });
     
     this.bufferView.domNode.addEventListener('mousedown', (e) => {
-        const pos = this.bufferView.screenPosToBufferPos(e.clientX, e.clientY);
+        const pos = this.bufferView.clickPosToBufferPos(e.clientX, e.clientY);
         if (pos) {
             this.cursorView.moveTo(pos[0], pos[1]);
             this.gutterView.setActiveLine(this.cursorView.line);

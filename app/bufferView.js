@@ -168,15 +168,18 @@ BufferView.prototype.setLeftOffset = function(width) {
 };
 
 // Returns an [x, y] tuple or null if the position is not in bounds.
-BufferView.prototype.screenPosToBufferPos = function(x, y) {
+BufferView.prototype.clickPosToBufferPos = function(x, y) {
     const adjustedX = x - this.leftOffset;
     const buffX = Math.round(adjustedX / this.charWidth) + 1;
     const buffY = Math.round(y / this.charHeight) + this.getFirstVisibleLineNum();
 
     if (buffY >= this.getFirstVisibleLineNum() && buffY <= this.getLastVisibleLineNum() &&
-        buffX >= this.getFirstVisibleCol() && buffX <= this.getLastVisibleCol(buffY))
+        buffX >= this.getFirstVisibleCol())
     {
-        return [buffX, buffY];
+        const lastCol = this.getLastVisibleCol(buffY);
+        return buffX <= lastCol ?
+            [buffX, buffY] :
+            [lastCol, buffY];
     }
 
     return null; 
