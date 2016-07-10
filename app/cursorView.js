@@ -1,13 +1,12 @@
 'use strict';
 
 const defaultSettings = {
-    charWidth: -1,
-    charHeight: -1,
+    charWidth: 10,
+    charHeight: 20,
     startingCol: 1,
     startingLine: 1,
     goalCol: 1,
     leftOffset: 25,
-    scrollTop: 0,
     blinkFreqMs: 500
 };
 
@@ -19,7 +18,6 @@ function CursorView(parentElem, config = defaultSettings) {
     this.charWidth = config.charWidth || defaultSettings.charWidth;
     this.charHeight = config.charHeight || defaultSettings.charHeight;
     this.leftOffset = config.leftOffset || defaultSettings.leftOffset;
-    this.scrollTop = config.scrollTop || defaultSettings.scrollTop;
     this.blinkFreqMs = config.blinkFreqMs || defaultSettings.blinkFreqMs;
 
     this.domNode = document.createElement('div');
@@ -113,18 +111,12 @@ CursorView.prototype.setLeftOffset = function(width) {
     this.domNode.style.left = this._colToPix();
 };
 
-CursorView.prototype.setScrollTop = function(num) {
-    this.scrollTop = num;
-    this.domNode.style.top = this._lineToPix();
-};
-
 CursorView.prototype._colToPix = function() {
     return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
 };
 
 CursorView.prototype._lineToPix = function() {
-    return (-this.scrollTop + (this.line - 1) * this.charHeight) + 'px';
+    return ((this.line - 1) * this.charHeight) + 'px';
 };
 
 module.exports.CursorView = CursorView;
-

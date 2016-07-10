@@ -3,10 +3,9 @@
 const {EventEmitter} = require('events');
 
 const defaultSettings = {
-    charWidth: -1,
-    charHeight: -1,
-    topOffset: 0,
-    leftOffset: 0
+    charWidth: 10,
+    charHeight: 20,
+    pad: 8
 };
 
 function GutterView(parentElem, config = defaultSettings) {
@@ -17,16 +16,13 @@ function GutterView(parentElem, config = defaultSettings) {
     this.lineElems = [null];
     this.lastLineNumDigits = 1; // The number of digits in the last line's number.
 
-    this.leftPad = 0;
     this.charWidth = config.charWidth || defaultSettings.charWidth;
     this.charHeight = config.charHeight || defaultSettings.charHeight;
-    this.rightPad = 8;
+    this.pad = config.pad || defaultSettings.pad;
     
     this.domNode = document.createElement('div');
     parentElem.appendChild(this.domNode);
     this.domNode.className = 'gutter';
-    this.domNode.style.top = (config.topOffset || defaultSettings.topOffset) + 'px';
-    this.domNode.style.left = (config.leftOffset || defaultSettings.leftOffset) + 'px';
     this.domNode.style.width = this.getWidth() + 'px';
 
     // Start with one line.
@@ -75,7 +71,7 @@ GutterView.prototype.getLastLineNum = function() {
 };
 
 GutterView.prototype.getWidth = function() {
-    return this.leftPad + (this.lastLineNumDigits * this.charWidth) + this.rightPad;
+    return (this.lastLineNumDigits * this.charWidth) + this.pad;
 };
 
 GutterView.prototype.getHeightOfLines = function() {
@@ -95,7 +91,11 @@ GutterView.prototype.getHeight = function() {
 };
 
 GutterView.prototype.setHeight = function(num) {
-    this.domNode.style.height = num;
+    this.domNode.style.height = num + 'px';
+};
+
+GutterView.prototype.setLeftOffset = function(num) {
+    this.domNode.style.left = num + 'px';
 };
 
 GutterView.prototype.onWidthChanged = function(callback) {
@@ -133,10 +133,9 @@ GutterView.prototype._checkUpdateWidth = function() {
     }
 };
 
-// TODO: Fix this.
 GutterView.prototype._checkUpdateHeight = function() {
-    if (this.getHeightOfLines() >= this.getHeight()) {
-        this.domNode.style.height = this.getHeightOfLines() + 'px';
+    if (this.getHeightOfLines() != this.getHeight()) {
+        this.setHeight(this.getHeightOfLines());
     }
 };
 

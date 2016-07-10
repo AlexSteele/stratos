@@ -1,12 +1,8 @@
 'use strict';
 
-const {EventEmitter} = require('events');
-
 const defaultSettings = {
     charWidth: 10,
-    charHeight: 20,
-    maxColumns: 120,
-    leftOffset: 0
+    charHeight: 20
 };
 
 function BufferView(parentElem, config = defaultSettings) {
@@ -14,17 +10,16 @@ function BufferView(parentElem, config = defaultSettings) {
     this.lineElems = [null];
     this.charWidth = config.charWidth || defaultSettings.charWidth; // pixels
     this.charHeight = config.charHeight || defaultSettings.charHeight; //pixels
-    this.maxColumns = config.maxColumns || defaultSettings.maxColumns; // Max columns at current width.
-
-    this.clientHeight = 0;
-    this.scrollTop = 0; 
-    this.leftOffset = config.leftOffset || defaultSettings.leftOffset;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';
-    this.domNode.style.left = this.leftOffset + 'px';
 
     parentElem.appendChild(this.domNode);
+
+    this.clientHeight = this.domNode.clientHeight;
+    this.clientWidth = this.domNode.clientWidth;
+    this.scrollTop = this.domNode.scrollTop;
+    this.scrollLeft = this.domNode.scrollLeft;
 
     // Start with empty line.
     this.appendLine('');
@@ -34,33 +29,18 @@ BufferView.prototype.appendLine = function(text) {
     this.insertLine(this.lineElems.length, text);
 };
 
-BufferView.prototype.setLine = function(num, text) {
-    if (num < 1 || num >= this.lineElems.length) {
-        throw new Error('BufferView: No line with number ' + num);
-    }
-
-    if (text.length > this.maxColumns) {
-        this.maxColumns += 10;
-        this.domNode.style.width = this.getColumnsWidth() + 'px'; 
-    }
-    
-    const line = this.lineElems[num];
-    line.innerHTML = text; 
-};
-
 BufferView.prototype.insertLine = function(num, text) {
     if (num < 1 || num > this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
 
-    if (text.length >= this.maxColumns) {
-        this.maxColumns++;
-        this.domNode.style.width = this.getColumnsWidth() + 'px';
-    }
+    // if (text.length > this.getWidthCols()) {
+    //     this.setWidth(text.length * this.charWidth);
+    // }
 
-    if (this.getHeightOfLines() + this.charHeight > this.getHeight()) {
-        this.setHeight((this.getHeight() + this.charHeight) + 'px');
-    }
+    // if (this.getHeightOfLines() + this.charHeight > this.getHeight()) {
+    //     this.setHeight(this.getHeight() + this.charHeight);
+    // }
 
     const line = document.createElement('span');
     line.className = 'line';
@@ -75,10 +55,27 @@ BufferView.prototype.insertLine = function(num, text) {
     }
 };
 
+BufferView.prototype.setLine = function(num, text) {
+    if (num < 1 || num >= this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + num);
+    }
+
+    // if (text.length > this.getWidthCols()) {
+    //     this.setWidth(text.length * this.charWidth);
+    // }
+    
+    const line = this.lineElems[num];
+    line.innerHTML = text; 
+};
+
 BufferView.prototype.removeLine = function(num) {
     if (num < 1 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
+
+    // if (this.getHeightOfLines() < this.getHeight()) {
+    //     this.setHeight(this.getHeightOfLines());
+    // }
     
     const removed = this.lineElems.splice(num, 1)[0];
     this.domNode.removeChild(removed); 
@@ -92,68 +89,16 @@ BufferView.prototype.getLine = function(num) {
     return this.lineElems[num].innerHTML;
 };
 
-BufferView.prototype.getLastLineNum = function() {
-    return this.lineElems.length - 1;
-};
-
-BufferView.prototype.getColumnsWidthPix = function() {
-    return this.maxColumns * this.charWidth;
-};
-
-BufferView.prototype.getLinesHeightPix = function() {
-    return this.maxLines * this.charHeight;
-};
-
-BufferView.prototype.getHeightOfLines = function() {
-    return Math.round(this.getLastLineNum() * this.charHeight);
-};
-
-BufferView.prototype.getLineWidthChars = function(lineNum) {
-    if (lineNum < 1 || lineNum >= this.lineElems.length) {
-        throw new Error('BufferVi<ew: No line with number ' + lineNum);
-    }
-
-    return this.lineElems[lineNum].innerHTML.length;
-};
-
-// TODO: Implement correctly.
-BufferView.prototype.getFirstVisibleCol = function() {
-    return 1;
-};
-
-// TODO: Implement correctly.
-BufferView.prototype.getLastVisibleCol = function(row) {
-    if (row) {
-        return this.getLineWidthChars(row) + 1;
-    }
-    return 9999;
-};
-
-BufferView.prototype.getFirstVisibleLineNum = function() {
-    return Math.round(+this.scrollTop / this.charHeight) + 1;
-};
-
-BufferView.prototype.getLastVisibleLineNum = function() {
-    const lastOnScreen = Math.round(+this.clientHeight / this.charHeight) + this.getFirstVisibleLineNum() - 1;
-    const lastLineNum = this.getLastLineNum();
-    return Math.min(lastOnScreen, lastLineNum);
-};
-
-// TODO: This is kind of a hack to make calculating first visible line possible.
-BufferView.prototype.setScrollTop = function(num) {
-    this.scrollTop = num;
-};
-
-BufferView.prototype.setHeight = function(num) {
-    this.domNode.style.height = num;
-};
-
 BufferView.prototype.getHeight = function() {
-    const height = parseInt(this.domNode.style.height) || parseInt(this.domNode.scrollHeight);
+    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
     if (!height) {
         throw new Error('BufferView: Unable to parse height.');
     }
     return height;
+};
+
+BufferView.prototype.setHeight = function(num) {
+    this.domNode.style.height = num + 'px';
 };
 
 // This function is merely for record keeping.
@@ -162,21 +107,106 @@ BufferView.prototype.setClientHeight = function(num) {
     this.clientHeight = num;
 };
 
+BufferView.prototype.getHeightOfLines = function() {
+    return Math.round(this.getLastLineNum() * this.charHeight);
+};
+
+BufferView.prototype.getLastLineNum = function() {
+    return this.lineElems.length - 1;
+};
+
+BufferView.prototype.getVisibleHeightLines = function() {
+    return Math.round(this.clientHeight / this.charHeight);
+};
+
+BufferView.prototype.getFirstVisibleLineNum = function() {
+    return Math.round(this.scrollTop / this.charHeight) + 1;
+};
+
+BufferView.prototype.getLastVisibleLineNum = function() {
+    const lastOnScreen = this.getFirstVisibleLineNum() + this.getVisibleHeightLines() - 1;
+    const lastLineNum = this.getLastLineNum();
+    return Math.min(lastOnScreen, lastLineNum);
+};
+
+BufferView.prototype.getWidth = function() {
+    const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
+    if (!width) {
+        throw new Error('BufferView: Unable to parse width.');
+    }
+    return width;
+};
+
+BufferView.prototype.setWidth = function(num) {
+    this.domNode.style.width = num + 'px';
+};
+
+BufferView.prototype.setClientWidth = function(width) {
+    this.clientWidth = width;
+};
+
+BufferView.prototype.getWidthCols = function() {
+    return Math.round(this.getWidth() / this.charWidth);
+};
+
+BufferView.prototype.getLastColNum = function() {
+    return this.getWidthCols();
+};
+
+BufferView.prototype.getVisibleWidth = function() {
+    return this.clientWidth; 
+};
+
+BufferView.prototype.getVisibleWidthCols = function() {
+    return Math.round(this.getVisibleWidth() / this.charWidth);
+};
+
+BufferView.prototype.getFirstVisibleCol = function() {
+    return Math.round(this.scrollLeft / this.charWidth) + 1;
+};
+
+BufferView.prototype.getLastVisibleCol = function() {
+    return this.getFirstVisibleCol() + this.getVisibleWidthCols() - 1; 
+};
+
+BufferView.prototype.getLineWidthCols = function(lineNum) {
+    if (lineNum < 1 || lineNum >= this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + lineNum);
+    }
+
+    return this.lineElems[lineNum].innerHTML.length;
+};
+
+BufferView.prototype.setScrollTop = function(num) {
+    this.scrollTop = num;
+};
+
+BufferView.prototype.setScrollLeft = function(num) {
+    this.scrollLeft = num;
+};
+
+BufferView.prototype.getLeftOffset = function() {
+    const offset = parseInt(this.domNode.style.left);
+    if (!offset) {
+        throw new Error('BufferView: Unable to parse left offset.');
+    }
+    return offset;
+};
+
 BufferView.prototype.setLeftOffset = function(width) {
-    this.leftOffset = width;
     this.domNode.style.left = width + 'px';
 };
 
 // Returns an [x, y] tuple or null if the position is not in bounds.
-BufferView.prototype.clickPosToBufferPos = function(x, y) {
-    const adjustedX = x - this.leftOffset;
+BufferView.prototype.clickToBufferPos = function(x, y) {
+    const adjustedX = x - this.getLeftOffset();
     const buffX = Math.round(adjustedX / this.charWidth) + 1;
     const buffY = Math.round(y / this.charHeight) + this.getFirstVisibleLineNum();
 
     if (buffY >= this.getFirstVisibleLineNum() && buffY <= this.getLastVisibleLineNum() &&
         buffX >= this.getFirstVisibleCol())
     {
-        const lastCol = this.getLastVisibleCol(buffY);
+        const lastCol = this.getLineWidthCols(buffY) + 1;
         return buffX <= lastCol ?
             [buffX, buffY] :
             [lastCol, buffY];
