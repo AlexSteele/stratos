@@ -158,7 +158,7 @@ BufferView.prototype.getVisibleWidth = function() {
 };
 
 BufferView.prototype.getVisibleWidthCols = function() {
-    return Math.round(this.getVisibleWidth() / this.charWidth);
+    return Math.round((this.getVisibleWidth() - this.getLeftOffset()) / this.charWidth);
 };
 
 BufferView.prototype.getFirstVisibleCol = function() {
