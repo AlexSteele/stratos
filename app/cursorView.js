@@ -33,37 +33,33 @@ function CursorView(parentElem, config = defaultSettings) {
     parentElem.appendChild(this.domNode);
 }
 
-CursorView.prototype.moveLeft = function(delta) {
-    const amount = delta || 1;
+CursorView.prototype.moveLeft = function() {
     this.setBlink(false);
-    this.col -= amount;
+    this.col -= 1;
     this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true); 
 };
 
-CursorView.prototype.moveRight = function(delta) {
-    const amount = delta || 1;
+CursorView.prototype.moveRight = function() {
     this.setBlink(false);
-    this.col += amount;
+    this.col += 1;
     this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true);
 };
 
-CursorView.prototype.moveDown = function(delta) {
-    const amount = delta || 1;
+CursorView.prototype.moveDown = function() {
     this.setBlink(false);
-    this.line += amount;
+    this.line += 1;
     this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
-CursorView.prototype.moveUp = function(delta) {
-    const amount = delta || 1;
+CursorView.prototype.moveUp = function() {
     this.setBlink(false);
-    this.line -= amount;
+    this.line -= 1;
     this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);

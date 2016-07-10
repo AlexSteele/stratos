@@ -33,7 +33,7 @@ function EditorPane(parentElem, config = defaultSettings) {
     this.gutterView = new GutterView(this.domNode, sharedViewConfig);
 
     this._initComponents();
-    this._initDomEventListeners();
+    this._initEventListeners();
 }
 
 EditorPane.prototype._initComponents = function() {
@@ -43,14 +43,14 @@ EditorPane.prototype._initComponents = function() {
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
     this.bufferView.setClientHeight(this.domNode.clientHeight);
     this.bufferView.setClientWidth(this.domNode.clientWidth);
+};
+
+EditorPane.prototype._initEventListeners = function() {
 
     this.gutterView.onWidthChanged((width) => {
         this.cursorView.setLeftOffset(width);
         this.bufferView.setLeftOffset(width); 
     });
-};
-
-EditorPane.prototype._initDomEventListeners = function() {
 
     this.domNode.addEventListener('scroll', (e) => {
         this.bufferView.setScrollTop(this.domNode.scrollTop);
@@ -113,17 +113,15 @@ EditorPane.prototype.deleteBackChar = function() {
         this.cursorView.moveTo(prevLine.length + 1, this.cursorView.line - 1);
         this.gutterView.setActiveLine(this.cursorView.line);
         this.gutterView.removeLine();
-
-        this.checkScrollCursorIntoView();
     } else {
         const line = this.bufferView.getLine(this.cursorView.line);
         const beforeDelete = line.slice(0, this.cursorView.col - 2);
         const afterDelete = line.slice(this.cursorView.col - 1);
         this.bufferView.setLine(this.cursorView.line, beforeDelete + afterDelete);
         this.cursorView.moveLeft();
-
-        this.checkScrollCursorIntoView();
     }
+
+     this.checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.deleteForwardChar = function() {
@@ -150,8 +148,8 @@ EditorPane.prototype.killLine = function() {
              this.gutterView.removeLine();
         }
     } else {
-        this.bufferView.setLine(this.cursorView.line,
-            this.bufferView.getLine(this.cursorView.line).slice(0, this.cursorView.col - 1));    
+        const lineUpToPoint = this.bufferView.getLine(this.cursorView.line).slice(0, this.cursorView.col - 1);
+        this.bufferView.setLine(this.cursorView.line, lineUpToPoint);
     }
 };
 
