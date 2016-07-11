@@ -33,39 +33,39 @@ function CursorView(parentElem, config = defaultSettings) {
     parentElem.appendChild(this.domNode);
 }
 
-CursorView.prototype.moveLeft = function() {
+CursorView.prototype.moveLeft = function(amount = 1) {
     this.setBlink(false);
-    this.col -= 1;
+    this.col -= amount;
     this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true); 
 };
 
-CursorView.prototype.moveRight = function() {
+CursorView.prototype.moveRight = function(amount = 1) {
     this.setBlink(false);
-    this.col += 1;
+    this.col += amount;
     this.goalCol = this.col;
     this.domNode.style.left = this._colToPix();
     this.setBlink(true);
 };
 
-CursorView.prototype.moveDown = function() {
+CursorView.prototype.moveDown = function(amount = 1) {
     this.setBlink(false);
-    this.line += 1;
+    this.line += amount;
     this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
-CursorView.prototype.moveUp = function() {
+CursorView.prototype.moveUp = function(amount = 1) {
     this.setBlink(false);
-    this.line -= 1;
+    this.line -= amount;
     this.domNode.style.top = this._lineToPix();
     this.setCol(this.goalCol);
     this.setBlink(true);
 };
 
-CursorView.prototype.moveTo = function(col, line) {
+CursorView.prototype.moveTo = function(line, col) {
     this.col = col;
     this.line = line;
     this.goalCol = this.col;

@@ -4,6 +4,7 @@ html, body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  background-color: black;
 }
 
 .stratos-editor {
@@ -64,3 +65,35 @@ html, body {
   position: absolute;
   border-left: solid #ffffff; 
 }
+
+.command-modal-container {
+  position: fixed;
+  top: 0px;
+  left: 30%;
+  min-height: 50px;
+  height: 5%;
+  min-width: 400px;
+  width: 40%;
+  background-color: #525151;
+  border-radius: 15px;
+  z-index: 1;
+}
+
+.command-modal-input {
+  position: absolute;
+  left: 5%;
+  width: 90%;
+  font-size: 1.2em;
+  color: white;
+  border-radius: 10px;
+  border-style: solid;
+  border-width: 5px;
+  border-color: steelblue;
+  background-color: #353535;
+  transform: translateY(25%);
+}
+
+.slight-fade {
+  opacity: 0.75;
+}
+

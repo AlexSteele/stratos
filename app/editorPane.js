@@ -69,7 +69,7 @@ EditorPane.prototype._initEventListeners = function() {
     this.bufferView.domNode.addEventListener('mousedown', (e) => {
         const pos = this.bufferView.clickToBufferPos(e.clientX, e.clientY);
         if (pos) {
-            this.cursorView.moveTo(pos[0], pos[1]);
+            this.cursorView.moveTo(pos[1], pos[0]);
             this.gutterView.setActiveLine(this.cursorView.line);
         }
     });
@@ -93,7 +93,7 @@ EditorPane.prototype.insertNewLine = function() {
 
     this.bufferView.setLine(this.cursorView.line, toRemain);
     this.bufferView.insertLine(this.cursorView.line + 1, toGo);
-    this.cursorView.moveTo(1, this.cursorView.line + 1);
+    this.cursorView.moveTo(this.cursorView.line + 1, 1);
     this.gutterView.appendLine();
     this.gutterView.setActiveLine(this.cursorView.line);
 
@@ -110,7 +110,7 @@ EditorPane.prototype.deleteBackChar = function() {
         this.bufferView.setLine(this.cursorView.line - 1,
                                 prevLine + this.bufferView.getLine(this.cursorView.line));
         this.bufferView.removeLine(this.cursorView.line);
-        this.cursorView.moveTo(prevLine.length + 1, this.cursorView.line - 1);
+        this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length + 1);
         this.gutterView.setActiveLine(this.cursorView.line);
         this.gutterView.removeLine();
     } else {
@@ -157,7 +157,7 @@ EditorPane.prototype.moveCursorLeft = function() {
     if (this.cursorView.col === 1) {
         if (this.cursorView.line !== 1) {
             const endOfPrevLine = this.bufferView.getLineWidthCols(this.cursorView.line - 1) + 1;
-            this.cursorView.moveTo(endOfPrevLine, this.cursorView.line - 1);
+            this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
             this.gutterView.setActiveLine(this.cursorView.line);
 
             this.checkScrollCursorIntoView();
@@ -172,7 +172,7 @@ EditorPane.prototype.moveCursorLeft = function() {
 EditorPane.prototype.moveCursorRight = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line !== this.bufferView.getLastLineNum()) {
-            this.cursorView.moveTo(1, this.cursorView.line + 1);
+            this.cursorView.moveTo(this.cursorView.line + 1, 1);
             this.gutterView.setActiveLine(this.cursorView.line);
 
             this.checkScrollCursorIntoView();
@@ -222,6 +222,16 @@ EditorPane.prototype.moveCursorEndOfLine = function() {
     this.cursorView.goalCol = this.cursorView.col;
 
     this.checkScrollCursorIntoView();
+};
+
+EditorPane.prototype.moveCursorTo = function(line, col) {
+    if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
+        col >= 1 && col <= this.bufferView.getLineWidthCols(line)) {
+        this.cursorView.moveTo(line, col);
+        this.checkScrollCursorIntoView();
+        return true;
+    }
+    return false;
 };
 
 // Sets the given line as the first visible.

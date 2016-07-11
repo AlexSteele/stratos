@@ -18,7 +18,8 @@ const defaultKeyMap = (function() {
         'Control-a':     {type: 'MOVE_CURSOR_BEGINNING_OF_LINE'},
         'Control-e':     {type: 'MOVE_CURSOR_END_OF_LINE'},
         'Alt-Meta-Dead': {type: 'NATIVE!'},
-        'Meta-q':        {type: 'NATIVE!'}
+        'Meta-q':        {type: 'NATIVE!'},
+        'Meta-Shift-P':  {type: 'TOGGLE_COMMAND_MODAL'}
     };
     
     ['a', 'b', 'c', 'd',
@@ -49,7 +50,7 @@ const defaultKeyMap = (function() {
     return keys;
 }());
 
-function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
+function createKeyListener({elem, keyMap, onKeyAction, onKeyError}) {
     
     const activeModifiers = [];
     
@@ -92,8 +93,9 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
 
     function keyIsModifier(key) {
         return key === 'Control' ||
-            key === 'Alt' ||
-            key === 'Meta'; 
+            key === 'Meta' ||
+            key === 'Shift' ||
+            key === 'Alt';
     }
 
     const allChords = Object.keys(keyMap); 
@@ -102,6 +104,9 @@ function createKeyListener(elem, keyMap, onKeyAction, onKeyError) {
         const pattern = new RegExp(prefix);
         return allChords.find(e => pattern.test(e));
     }
+
+    // Drop active modifiers when focus lost.
+    elem.addEventListener('blur', () => activeModifiers.splice(0, activeModifiers.length));
     
 };
 

@@ -3,7 +3,8 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
-const {Editor} = require('./app/editor.js'); 
+const {Editor} = require('./app/editor.js');
+const {CommandModal} = require('./app/commandModal.js');
 
 // const orbProcess = childProcess.spawn('orb');
 // orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
