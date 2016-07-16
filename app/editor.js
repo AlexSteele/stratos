@@ -115,11 +115,8 @@ Editor.prototype.handleCommandModalAction = function(action) {
     }
 };
 
-Editor.prototype.handleCommandModalActionError = function() {
-    this.commandModal.toggle();
-    if (this.activePane) {
-        this.activePane.setFocused();
-    }
+Editor.prototype.handleCommandModalActionError = function(action) {
+    console.log('TextEditor: No command: ' + action);
 };
 
 Editor.prototype.handleAction = function(action) {

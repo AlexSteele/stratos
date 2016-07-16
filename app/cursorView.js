@@ -66,12 +66,12 @@ CursorView.prototype.moveUp = function(amount = 1) {
 };
 
 CursorView.prototype.moveTo = function(line, col) {
-    this.col = col;
     this.line = line;
+    this.col = col;
     this.goalCol = this.col;
     this.setBlink(false);
-    this.domNode.style.left = this._colToPix();
     this.domNode.style.top = this._lineToPix();
+    this.domNode.style.left = this._colToPix();
     this.setBlink(true); 
 };
 

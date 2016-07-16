@@ -3,7 +3,7 @@
 // TODO: Move these to a more... _official_ place.
 const handlers = {
     'ins':      (params) => ({type: 'INSERT', text: params.join(' ')}),
-    'goto':     (params) => params.length === 2 ? {type: 'MOVE_TO_POS', line: params[0], col: params[1]} : false,
+    'goto':     (params) => params.length === 2 ? {type: 'MOVE_TO_POS', line: +params[0], col: +params[1]} : false,
     'del':      () => ({type: 'DELETE_FORWARD_CHAR'}),
     'del-back': () => ({type: 'DELETE_BACK_CHAR'})
 };
@@ -12,6 +12,7 @@ function CommandModal({parentElem, actionHandlers = handlers, onSubmitAction, on
 
     this.actionHandlers = actionHandlers;
     this.onSubmitAction = onSubmitAction;
+    this.onSubmitActionError = onSubmitActionError;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'command-modal-container';
@@ -58,7 +59,7 @@ CommandModal.prototype._handleCommandSubmit = function() {
             return;
         }
     }
-    this.onSubmitActionError();
+    this.onSubmitActionError(this.inputNode.value);
 };
 
 // Assumes a parent element.

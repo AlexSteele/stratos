@@ -19,7 +19,7 @@ const defaultKeyMap = (function() {
         'Control-e':     {type: 'MOVE_CURSOR_END_OF_LINE'},
         'Alt-Meta-Dead': {type: 'NATIVE!'},
         'Meta-q':        {type: 'NATIVE!'},
-        'Meta-Shift-P':  {type: 'TOGGLE_COMMAND_MODAL'}
+        'Meta-Control-p':  {type: 'TOGGLE_COMMAND_MODAL'}
     };
     
     ['a', 'b', 'c', 'd',
@@ -94,7 +94,6 @@ function createKeyListener({elem, keyMap, onKeyAction, onKeyError}) {
     function keyIsModifier(key) {
         return key === 'Control' ||
             key === 'Meta' ||
-            key === 'Shift' ||
             key === 'Alt';
     }
 
