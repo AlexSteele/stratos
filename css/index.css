@@ -1,138 +1,138 @@
 
 html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
   background-color: black;
+  height: 100%;
+  margin: 0px;
+  overflow: hidden;
+  width: 100%;
 }
 
 .stratos-editor {
-  position: relative;
-  width: 100%;
+  background-color: #333333;
   height: 100%;
   margin: 0px;
-  padding: 0px;
   overflow: hidden;
-  background-color: #333333;
+  padding: 0px;
+  width: 100%;
+  position: relative;
 }
 
 .tab-list {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-height: 30px;
   background-color: #525151;
+  left: 0;
+  min-height: 30px;
+  top: 0;
+  width: 100%;
+  position: absolute;
 }
 
 .tab {
-  position: relative;
-  bottom: -5px;
-  width: 90px;
-  height: 25px;
-  color: #c1c1c1;
   background-color: #333333;
   border-radius: 20px 20px 0 0;
+  bottom: -5px;
+  color: #c1c1c1;
   cursor: pointer;
   display: inline-block;
+  height: 25px;
+  position: relative;
+  width: 90px;
 }
 
 .tab-selected {
-  z-index: 1;
   color: white;
+  z-index: 1;
 }
 
 .tab-name {
+  font-family: Monaco;
+  font-size: .75em;
+  overflow: hidden;
+  padding-left: 10px;
   position: relative;
   top: 6px;
   width: 100%;
-  padding-left: 10px;
-  font-family: Monaco;
-  overflow: hidden;
-  font-size: .75em;
   -webkit-user-select: none;
 }
 
 .editor-pane {
-  position: absolute;
   height: 100%;
-  width: 100%;
-  overflow-y: scroll;
   outline-style: none;
+  overflow-y: scroll;
+  position: absolute;
+  width: 100%;
 }
 
 .buffer {
-  position: relative;
-  min-width: 100%;
-  min-height: 100%;
   background-color: #333333;
+  min-height: 100%;
+  min-width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .line {
-  display: block;
+  color: #ffffff;
   font-family: Consolas, monospace;
   font-size: 1em;
-  color: #ffffff;
   white-space: pre;
+  display: block;
 }
 
 .gutter {
-  position: absolute;
-  top: 0px;
+  background-color: #525151;
   left: 0px;
   min-height: 100%;
-  background-color: #525151;
   overflow: hidden;
+  position: absolute;
+  top: 0px;
 }
 
 .gutter-line {
+  color: #d9d9d9;
   display: block;
   font-family: Consolas, monospace;
   font-size: 1em;
-  color: ##d9d9d9;
 }
 
 /* TODO: DRY */
 .gutter-line-active {
-  display: block;
-  font-family: Consolas, monospace;  
   color: #ffffff;
-  font-size: 1em;
+  display: block;
+  font-family: Consolas, monospace;
+  font-size: 1em;  
 }
 
 .cursor {
-  position: absolute;
-  border-left: solid #ffffff; 
+  border-left: solid #ffffff;
+  position: absolute; 
 }
 
 .command-modal-container {
-  position: fixed;
-  top: 0px;
-  left: 30%;
-  min-height: 50px;
-  height: 5%;
-  min-width: 400px;
-  width: 40%;
   background-color: #525151;
   border-radius: 15px;
+  height: 5%;
+  left: 30%;
+  min-height: 50px;
+  min-width: 400px;
+  top: 0px;
+  width: 40%;
   z-index: 1;
+  position: fixed;
 }
 
 .command-modal-input {
-  position: absolute;
-  left: 5%;
-  width: 90%;
-  color: white;
+  background-color: #353535;
+  border-color: steelblue;
   border-radius: 10px;
   border-style: solid;
   border-width: 5px;
-  border-color: steelblue;
-  background-color: #353535;
-  transform: translateY(25%);
+  color: white;
   font-size: 1.2em;
+  left: 5%;
   outline-style: none;
+  transform: translateY(25%);
+  width: 90%;
+  position: absolute;
 }
 
 .slight-fade {
