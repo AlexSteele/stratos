@@ -3,19 +3,19 @@
 const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
-const {viewHelpers} = require('./viewHelpers.js');
+const {getSharedViewSettings} = require('./viewHelpers.js');
 
-const defaultSettings = {
+const defaults = {
     horizontalCursorMargin: 10, // columns
     verticalCursorMargin: 10,   // lines
     windowElem: window
 };
 
-function EditorPane(parentElem, config = defaultSettings) {
+function EditorPane(parentElem, settings = defaults) {
 
-    this.horizontalCursorMargin = config.horizontalCursorMargin || defaultSettings.horizontalCursorMargin;
-    this.verticalCursorMargin = config.verticalCursorMargin || defaultSettings.verticalCursorMargin;
-    this.windowElem = config.windowElem || defaultSettings.windowElem;
+    this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
+    this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
+    this.windowElem = settings.windowElem || defaults.windowElem;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'editor-pane';
@@ -23,14 +23,14 @@ function EditorPane(parentElem, config = defaultSettings) {
     
     parentElem.appendChild(this.domNode);
 
-    const sharedViewConfig = viewHelpers.getSharedViewConfig(document.body);
+    const sharedViewSettings = getSharedViewSettings(document.body);
 
-    this.charWidth = sharedViewConfig.charWidth;
-    this.charHeight = sharedViewConfig.charHeight;
+    this.charWidth = sharedViewSettings.charWidth;
+    this.charHeight = sharedViewSettings.charHeight;
 
-    this.bufferView = new BufferView(this.domNode, sharedViewConfig);
-    this.cursorView = new CursorView(this.domNode, sharedViewConfig);
-    this.gutterView = new GutterView(this.domNode, sharedViewConfig);
+    this.gutterView = new GutterView(this.domNode, sharedViewSettings);
+    this.bufferView = new BufferView(this.domNode, sharedViewSettings);
+    this.cursorView = new CursorView(this.domNode, sharedViewSettings);
 
     this._initComponents();
     this._initEventListeners();
@@ -226,8 +226,9 @@ EditorPane.prototype.moveCursorEndOfLine = function() {
 
 EditorPane.prototype.moveCursorTo = function(line, col) {
     if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
-        col >= 1 && col <= this.bufferView.getLineWidthCols(line)) {
+        col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
         this.cursorView.moveTo(line, col);
+        this.gutterView.setActiveLine(this.cursorView.line);
         this.checkScrollCursorIntoView();
         return true;
     }
@@ -282,6 +283,18 @@ EditorPane.prototype.checkScrollCursorIntoView = function() {
 
 EditorPane.prototype.setFocused = function() {
     this.domNode.focus();
+};
+
+EditorPane.prototype.setCursorBlink = function(on) {
+    this.cursorView.setBlink(on);
+};
+
+EditorPane.prototype.setTopOffset = function(to) {
+    this.domNode.style.top = to + 'px';
+};
+
+EditorPane.prototype.setHeight = function(to) {
+    this.domNode.style.height = to + 'px';
 };
 
 EditorPane.prototype.getHeight = function() {

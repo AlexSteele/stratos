@@ -1,15 +1,15 @@
 'use strict';
 
-const defaultSettings = {
+const defaults = {
     charWidth: 10,
     charHeight: 20
 };
 
-function BufferView(parentElem, config = defaultSettings) {
+function BufferView(parentElem, settings = defaults) {
 
     this.lineElems = [null];
-    this.charWidth = config.charWidth || defaultSettings.charWidth; // pixels
-    this.charHeight = config.charHeight || defaultSettings.charHeight; //pixels
+    this.charWidth = settings.charWidth || defaults.charWidth; // pixels
+    this.charHeight = settings.charHeight || defaults.charHeight; //pixels
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'buffer';

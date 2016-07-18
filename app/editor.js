@@ -1,32 +1,47 @@
 'use strict';
 
 const {EditorPane} = require('./editorPane.js');
-const {createKeyListener, defaultKeyMap} = require('./keys.js');
+const {KeyListener, defaultKeyMap} = require('./keys.js');
 const {CommandModal} = require('./commandModal.js');
+const {TabListView} = require('./tabListView.js');
 
-function Editor(parentElem) {
+function Editor(parentElem, keyMap) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'stratos-editor';
     parentElem.appendChild(this.domNode);
     
+    this.tabListView = new TabListView(this.domNode, {
+        onTabClick: (name) => this.handleTabClick(name)
+    });
+
     this.activePane = new EditorPane(this.domNode);
     this.editorPanes = [this.activePane];
 
-    this.commandModal = new CommandModal({
-        parentElem: this.domNode,
+    this.commandModal = new CommandModal(this.domNode, {
         //actionHandlers: {},
         onSubmitAction: (action) => this.handleCommandModalAction(action),
         onSubmitActionError: () => this.handleCommandModalActionError()
     });
     
-    this.keyListener = createKeyListener({
-        elem: this.activePane.domNode,
-        keyMap: defaultKeyMap,
+    this.keyListener = new KeyListener(this.activePane.domNode, {
+        keyMap: keyMap,
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (err) => this.handleKeyError(err)
     });
 
+    this._initComponents();
+};
+
+Editor.prototype._initComponents = function() {
+    const tabsHeight = this.tabListView.getHeight();
+    const paneHeight = this.getHeight() - tabsHeight;
+    this.editorPanes.forEach(e => {
+        e.setHeight(paneHeight);
+        e.setTopOffset(tabsHeight);
+    });
+    this.tabListView.add('untitled');
+    this.tabListView.setSelected('untitled');
     this.activePane.setFocused();
 };
 
@@ -59,7 +74,7 @@ Editor.prototype.killLine = function() {
         this.activePane.killLine();
     }
 };
-
+ 
 Editor.prototype.moveCursorLeft = function() {
     if (this.activePane) {
         this.activePane.moveCursorLeft();
@@ -102,8 +117,18 @@ Editor.prototype.moveCursorTo = function(line, col) {
     }
 };
 
+Editor.prototype.handleTabClick = function(tabName) {
+    this.tabListView.setSelected(tabName);
+    
+    // TODO: set active pane
+};
+
 Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
+    if (this.activePane) {
+        const shouldCursorBlink = !this.commandModal.isToggled();
+        this.activePane.setCursorBlink(shouldCursorBlink);
+    }
 };
 
 Editor.prototype.handleCommandModalAction = function(action) {
@@ -112,6 +137,7 @@ Editor.prototype.handleCommandModalAction = function(action) {
     this.handleAction(action);
     if (this.activePane) {
         this.activePane.setFocused();
+        this.activePane.setCursorBlink(true);
     }
 };
 
@@ -150,5 +176,13 @@ Editor.prototype.handleAction = function(action) {
 Editor.prototype.handleKeyError = function(keys) {
     console.log('Editor: Key error: ' + keys); 
 };
+
+Editor.prototype.getHeight = function() {
+    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
+    if (!height) {
+        throw new Error('Editor: Unable to parse height.');
+    }
+    return height;
+}
 
 module.exports.Editor = Editor;

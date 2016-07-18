@@ -1,6 +1,6 @@
 'use strict';
 
-function getSharedViewConfig(elem) {
+function getSharedViewSettings(elem) {
     const [defaultCharWidth, defaultCharHeight] = measureCharWidthAndHeight(elem);
     return {
         charWidth: defaultCharWidth,
@@ -26,6 +26,6 @@ function measureCharWidthAndHeight(elem) {
     return [width, height];
 };
 
-module.exports.viewHelpers = {
-    getSharedViewConfig: getSharedViewConfig
+module.exports = {
+    getSharedViewSettings
 };

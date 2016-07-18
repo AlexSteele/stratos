@@ -4,7 +4,8 @@ const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
 const {Editor} = require('./app/editor.js');
-const {CommandModal} = require('./app/commandModal.js');
+const {defaultKeyMap} = require('./app/keys.js');
+const {TabListView} = require('./app/tabListView.js'); // TODO: remove this.
 
 // const orbProcess = childProcess.spawn('orb');
 // orbProcess.stdout.on('data', d => console.log('Data received from orb: ' + d));
@@ -13,4 +14,12 @@ const {CommandModal} = require('./app/commandModal.js');
 // orbProcess.on('error', (e) => console.log('Error: ' + e)); 
 // orbProcess.kill();
 
-const editor = new Editor(document.body);
+// TODO: REMOVE
+// const tabs = new TabListView({
+//     parentElem: document.body,
+//     onTabClick: (e) => console.log(e)
+// });
+
+// tabs.add('untitled');
+
+const editor = new Editor(document.body, defaultKeyMap);

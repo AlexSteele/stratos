@@ -9,16 +9,56 @@ html, body {
 
 .stratos-editor {
   position: relative;
+  width: 100%;
   height: 100%;
   margin: 0px;
   padding: 0px;
   overflow: hidden;
 }
 
+.tab-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 30px;
+  background-color: #525151;
+}
+
+.tab {
+  position: relative;
+  bottom: -5px;
+  width: 90px;
+  height: 25px;
+  color: #c1c1c1;
+  background-color: #333333;
+  border-radius: 20px 20px 0 0;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.tab-selected {
+  z-index: 1;
+  color: white;
+}
+
+.tab-name {
+  position: relative;
+  top: 6px;
+  width: 100%;
+  padding-left: 10px;
+  font-family: Monaco;
+  overflow: hidden;
+  font-size: .75em;
+  -webkit-user-select: none;
+}
+
 .editor-pane {
   position: relative;
   height: 100%;
+  width: 100%;
   overflow-y: scroll;
+  outline-style: none;
 }
 
 .buffer {
@@ -56,9 +96,9 @@ html, body {
 /* TODO: DRY */
 .gutter-line-active {
   display: block;
-  font-family: Consolas, monospace;
-  font-size: 1em;
+  font-family: Consolas, monospace;  
   color: #ffffff;
+  font-size: 1em;
 }
 
 .cursor {
@@ -83,7 +123,6 @@ html, body {
   position: absolute;
   left: 5%;
   width: 90%;
-  font-size: 1.2em;
   color: white;
   border-radius: 10px;
   border-style: solid;
@@ -91,6 +130,8 @@ html, body {
   border-color: steelblue;
   background-color: #353535;
   transform: translateY(25%);
+  font-size: 1.2em;
+  outline-style: none;
 }
 
 .slight-fade {

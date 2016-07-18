@@ -2,13 +2,13 @@
 
 const {EventEmitter} = require('events');
 
-const defaultSettings = {
+const defaults = {
     charWidth: 10,
     charHeight: 20,
     pad: 8
 };
 
-function GutterView(parentElem, config = defaultSettings) {
+function GutterView(parentElem, settings = defaults) {
 
     this.emitter = new EventEmitter(); 
 
@@ -16,9 +16,9 @@ function GutterView(parentElem, config = defaultSettings) {
     this.lineElems = [null];
     this.lastLineNumDigits = 1; // The number of digits in the last line's number.
 
-    this.charWidth = config.charWidth || defaultSettings.charWidth;
-    this.charHeight = config.charHeight || defaultSettings.charHeight;
-    this.pad = config.pad || defaultSettings.pad;
+    this.charWidth = settings.charWidth || defaults.charWidth;
+    this.charHeight = settings.charHeight || defaults.charHeight;
+    this.pad = settings.pad || defaults.pad;
     
     this.domNode = document.createElement('div');
     parentElem.appendChild(this.domNode);

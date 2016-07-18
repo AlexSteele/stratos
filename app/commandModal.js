@@ -1,18 +1,24 @@
 'use strict';
 
-// TODO: Move these to a more... _official_ place.
-const handlers = {
+// TODO: Move these to a more _official_ place.
+const actionHandlers = {
     'ins':      (params) => ({type: 'INSERT', text: params.join(' ')}),
     'goto':     (params) => params.length === 2 ? {type: 'MOVE_TO_POS', line: +params[0], col: +params[1]} : false,
     'del':      () => ({type: 'DELETE_FORWARD_CHAR'}),
     'del-back': () => ({type: 'DELETE_BACK_CHAR'})
 };
 
-function CommandModal({parentElem, actionHandlers = handlers, onSubmitAction, onSubmitActionError}) {
+const defaults = {
+    actionHandlers,
+    onSubmitAction: () => {throw new Error('CommandModal: No handler for onSubmitAction.');},
+    onSubmitActionError: () => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
+};
 
-    this.actionHandlers = actionHandlers;
-    this.onSubmitAction = onSubmitAction;
-    this.onSubmitActionError = onSubmitActionError;
+function CommandModal(parentElem, settings = defaults) {
+
+    this.actionHandlers = settings.actionHandlers || defaults.actionHandlers;
+    this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
+    this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'command-modal-container';
@@ -41,6 +47,10 @@ CommandModal.prototype.toggle = function() {
         this.domNode.style.visibility = 'visible';
         this.inputNode.select();
     }
+};
+
+CommandModal.prototype.isToggled = function() {
+    return this.domNode.style.visibility === 'visible';
 };
 
 CommandModal.prototype.clearInput = function() {

@@ -1,6 +1,6 @@
 'use strict';
 
-const defaultSettings = {
+const defaults = {
     charWidth: 10,
     charHeight: 20,
     startingCol: 1,
@@ -10,15 +10,15 @@ const defaultSettings = {
     blinkFreqMs: 500
 };
 
-function CursorView(parentElem, config = defaultSettings) {
+function CursorView(parentElem, settings = defaults) {
 
-    this.col = config.startingCol || defaultSettings.startingCol;
-    this.line = config.startingLine || defaultSettings.startingLine;
-    this.goalCol = config.goalCol || defaultSettings.goalCol;
-    this.charWidth = config.charWidth || defaultSettings.charWidth;
-    this.charHeight = config.charHeight || defaultSettings.charHeight;
-    this.leftOffset = config.leftOffset || defaultSettings.leftOffset;
-    this.blinkFreqMs = config.blinkFreqMs || defaultSettings.blinkFreqMs;
+    this.col = settings.startingCol || defaults.startingCol;
+    this.line = settings.startingLine || defaults.startingLine;
+    this.goalCol = settings.goalCol || defaults.goalCol;
+    this.charWidth = settings.charWidth || defaults.charWidth;
+    this.charHeight = settings.charHeight || defaults.charHeight;
+    this.leftOffset = settings.leftOffset || defaults.leftOffset;
+    this.blinkFreqMs = settings.blinkFreqMs || defaults.blinkFreqMs;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'cursor';
