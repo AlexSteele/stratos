@@ -4,7 +4,7 @@ const electron = require('electron');
 const {ipcRenderer} = electron;
 const childProcess = require('child_process');
 const {Editor} = require('./app/editor.js');
-const {defaultKeyMap} = require('./app/keys.js');
+const {defaultKeyMaps} = require('./app/keyMap.js');
 const {TabListView} = require('./app/tabListView.js'); // TODO: remove this.
 
 // const orbProcess = childProcess.spawn('orb');
@@ -22,5 +22,5 @@ const {TabListView} = require('./app/tabListView.js'); // TODO: remove this.
 
 // tabs.add('untitled');
 
-const editor = new Editor(document.body, defaultKeyMap);
+const editor = new Editor(document.body, defaultKeyMaps);
 editor.newTab();

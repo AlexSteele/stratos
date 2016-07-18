@@ -1,14 +1,13 @@
 'use strict';
 
 const {EditorPane} = require('./editorPane.js');
-const {KeyListener, defaultKeyMap} = require('./keys.js');
 const {CommandModal} = require('./commandModal.js');
 const {TabListView} = require('./tabListView.js');
 const {numDigitsIn} = require('./utils.js');
 
-function Editor(parentElem, keyMap) {
+function Editor(parentElem, keyMaps) {
 
-    this.keyMap = keyMap;
+    this.keyMaps = keyMaps;
     this.editorPanes = [];
     this.activePane = null;
 
@@ -22,6 +21,9 @@ function Editor(parentElem, keyMap) {
 
     this.commandModal = new CommandModal(this.domNode, {
         //actionHandlers: {},
+        keyMap: this.keyMaps['command-modal-default'],
+        onKeyAction: (action) => this.handleAction(action),
+        onKeyError: (error) => this.handleKeyError(error),
         onSubmitAction: (action) => this.handleCommandModalAction(action),
         onSubmitActionError: () => this.handleCommandModalActionError()
     });
@@ -108,7 +110,7 @@ Editor.prototype.newTab = function(name = 'untitled') {
     const pane = new EditorPane(this.domNode, {
         name: name,
         indexName: indexName,
-        keyMap: this.keyMap,
+        keyMap: this.keyMaps['editor-default'],
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error)
     });
@@ -131,7 +133,8 @@ Editor.prototype.newTab = function(name = 'untitled') {
 Editor.prototype.switchTab = function(_tabName = undefined) {
     if (this.activePane && _tabName === this.activePane.indexName) return;
 
-    const indexName = _tabName || this._getPrevActivePane();
+    const prevActive = this._getPrevActivePane() || {};
+    const indexName = _tabName || prevActive.indexName;
     const exists = this.tabListView.setSelected(indexName);
     if (!exists) {
         throw new Error('Editor: No tab with name ' + indexName);
@@ -162,7 +165,7 @@ Editor.prototype.closeTab = function(tabName = undefined) {
     const pane = this.editorPanes.splice(pos, 1)[0];
     
     if (pane === this.activePane) {
-        this.activePane = this._prevActivePane();
+        this.activePane = this._getPrevActivePane();
         if (this.activePane) {
             this.activePane.setActive();
             this.tabListView.setSelected(this.activePane.indexName);
@@ -239,7 +242,7 @@ Editor.prototype.getHeight = function() {
 };
 
 // TODO: implement
-Editor.prototype._prevActivePane = function() {
+Editor.prototype._getPrevActivePane = function() {
     return this.editorPanes[this.editorPanes.length - 1];
 };
 

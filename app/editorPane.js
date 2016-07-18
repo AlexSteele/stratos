@@ -3,7 +3,7 @@
 const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
-const {KeyListener} = require('./keys.js');
+const {KeyListener} = require('./keyListener.js');
 const {getSharedViewSettings} = require('./viewHelpers.js');
 
 const defaults = {

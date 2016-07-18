@@ -1,5 +1,7 @@
 'use strict';
 
+const {KeyListener} = require('./keyListener.js');
+
 // TODO: Move these to a more _official_ place.
 const actionHandlers = {
     'ins':       (params) => ({type: 'INSERT', text: params.join(' ')}),
@@ -7,12 +9,15 @@ const actionHandlers = {
     'del':       () => ({type: 'DELETE_FORWARD_CHAR'}),
     'del-back':  () => ({type: 'DELETE_BACK_CHAR'}),
     'new-tab':   (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
-    'switch-to': (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
+    'switch-tab': (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
     'close-tab': (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]}
 };
 
 const defaults = {
     actionHandlers,
+    keyMap: {},
+    onKeyAction: () => { throw new Error('CommandModal: No handler for onKeyAction.'); },
+    onKeyError: () => { throw new Error('CommandModal: No handler for onKeyError.'); },
     onSubmitAction: () => {throw new Error('CommandModal: No handler for onSubmitAction.');},
     onSubmitActionError: () => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
 };
@@ -20,6 +25,9 @@ const defaults = {
 function CommandModal(parentElem, settings = defaults) {
 
     this.actionHandlers = settings.actionHandlers || defaults.actionHandlers;
+    this.keyMap = settings.keyMap || defaults.keyMap;
+    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
+    this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
     this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;
 
@@ -36,6 +44,13 @@ function CommandModal(parentElem, settings = defaults) {
     });
     this.domNode.appendChild(this.inputNode);
     this.domNode.style.visibility = 'hidden';
+
+    this.keyListener = new KeyListener(this.domNode, {
+        keyMap: this.keyMap,
+        allowDefaultOnKeyError: true,
+        onKeyAction: this.onKeyAction,
+        onKeyError: this.onKeyError
+    });
     
     parentElem.appendChild(this.domNode);
 };
