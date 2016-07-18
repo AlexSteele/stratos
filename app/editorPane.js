@@ -3,9 +3,15 @@
 const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
+const {KeyListener} = require('./keys.js');
 const {getSharedViewSettings} = require('./viewHelpers.js');
 
 const defaults = {
+    name: '',
+    indexName: '', // A unique identifier. May be the same as the pane's name. 
+    keyMap: {},
+    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onUknownAction'); },
+    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
     horizontalCursorMargin: 10, // columns
     verticalCursorMargin: 10,   // lines
     windowElem: window
@@ -13,6 +19,11 @@ const defaults = {
 
 function EditorPane(parentElem, settings = defaults) {
 
+    this.name = settings.name || defaults.name;
+    this.indexName = settings.indexName || defaults.indexName;
+    this.keyMap = settings.keyMap || defaults.keyMap;
+    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
+    this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     this.windowElem = settings.windowElem || defaults.windowElem;
@@ -31,6 +42,13 @@ function EditorPane(parentElem, settings = defaults) {
     this.gutterView = new GutterView(this.domNode, sharedViewSettings);
     this.bufferView = new BufferView(this.domNode, sharedViewSettings);
     this.cursorView = new CursorView(this.domNode, sharedViewSettings);
+
+    this.keyListener = new KeyListener(this.domNode, {
+        keyMap: this.keyMap,
+        allowDefaultOnKeyError: false,
+        onKeyAction: this.onKeyAction,
+        onKeyError: this.onKeyError
+    });
 
     this._initComponents();
     this._initEventListeners();
@@ -281,8 +299,16 @@ EditorPane.prototype.checkScrollCursorIntoView = function() {
     }
 };
 
-EditorPane.prototype.setFocused = function() {
+EditorPane.prototype.setActive = function() {
     this.domNode.focus();
+    this.cursorView.setBlink(true);
+    this.domNode.style['z-index'] = 1;
+};
+
+EditorPane.prototype.setInactive = function() {
+    this.domNode.blur();
+    this.cursorView.setBlink(false);
+    this.domNode.style['z-index'] = 0;
 };
 
 EditorPane.prototype.setCursorBlink = function(on) {

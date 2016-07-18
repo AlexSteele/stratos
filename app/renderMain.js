@@ -23,3 +23,4 @@ const {TabListView} = require('./app/tabListView.js'); // TODO: remove this.
 // tabs.add('untitled');
 
 const editor = new Editor(document.body, defaultKeyMap);
+editor.newTab();

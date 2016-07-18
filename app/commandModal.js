@@ -2,10 +2,13 @@
 
 // TODO: Move these to a more _official_ place.
 const actionHandlers = {
-    'ins':      (params) => ({type: 'INSERT', text: params.join(' ')}),
-    'goto':     (params) => params.length === 2 ? {type: 'MOVE_TO_POS', line: +params[0], col: +params[1]} : false,
-    'del':      () => ({type: 'DELETE_FORWARD_CHAR'}),
-    'del-back': () => ({type: 'DELETE_BACK_CHAR'})
+    'ins':       (params) => ({type: 'INSERT', text: params.join(' ')}),
+    'goto':      (params) => params.length === 2 ? {type: 'MOVE_TO_POS', line: +params[0], col: +params[1]} : false,
+    'del':       () => ({type: 'DELETE_FORWARD_CHAR'}),
+    'del-back':  () => ({type: 'DELETE_BACK_CHAR'}),
+    'new-tab':   (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
+    'switch-to': (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
+    'close-tab': (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]}
 };
 
 const defaults = {

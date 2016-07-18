@@ -19,7 +19,9 @@ const defaultKeyMap = (function() {
         'Control-e':      {type: 'MOVE_CURSOR_END_OF_LINE'},
         'Alt-Meta-Dead':  {type: 'NATIVE!'},
         'Meta-q':         {type: 'NATIVE!'},
-        'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'}
+        'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
+        'Control-t':      {type: 'NEW_TAB'},
+        'Control-w':      {type: 'CLOSE_TAB'} // TODO: CHANGE THIS BINDING.
     };
     
     ['a', 'b', 'c', 'd',
@@ -52,15 +54,18 @@ const defaultKeyMap = (function() {
 
 const defaults = {
     keyMap: {},
+    allowDefaultOnKeyError: false,
     onKeyAction: () => {throw new Error('KeyListener: No handler for onKeyAction.');},
     onKeyError: () => {throw new Error('KeyListener: No handler for onKeyError.');}
 };
 
 function KeyListener(elem, settings = defaults) {
 
-    const keyMap = settings.keyMap || defaults.keyMap;
-    const onKeyAction = settings.onKeyAction || defaults.onKeyAction;
-    const onKeyError = settings.onKeyError || defaults.onKeyError;
+    this.keyMap = settings.keyMap || defaults.keyMap;
+    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
+    this.onKeyError = settings.onKeyError || defaults.onKeyError;
+    this.allowDefaultOnKeyError = settings.allowDefaultOnKeyError ||
+              defaults.allowDefaultOnKeyError;
     
     const activeModifiers = [];
     
@@ -74,18 +79,18 @@ function KeyListener(elem, settings = defaults) {
                   e.key :
                   activeModifiers.join('-') + '-' + e.key;
         
-        const action = keyMap[withModifiers];
+        const action = this.keyMap[withModifiers];
 
         if (action) {
             if (action.type === 'NATIVE!') {
                 return;
             }
-            onKeyAction(action);
-        } else {
-            onKeyError(withModifiers);
+            this.onKeyAction(action);
+            e.preventDefault();
+        } else if (!this.allowDefaultOnKeyError) {
+            this.onKeyError(withModifiers);
+            e.preventDefault();
         }
-
-        e.preventDefault();
     });
 
     elem.addEventListener('keypress', (e) => {
@@ -107,7 +112,7 @@ function KeyListener(elem, settings = defaults) {
             key === 'Alt';
     }
 
-    const allChords = Object.keys(keyMap); 
+    const allChords = Object.keys(this.keyMap); 
 
     function isValidActionPrefix(prefix) {
         const pattern = new RegExp(prefix);
@@ -116,6 +121,14 @@ function KeyListener(elem, settings = defaults) {
 
     // Drop active modifiers when focus lost.
     elem.addEventListener('blur', () => activeModifiers.splice(0, activeModifiers.length));
+};
+
+KeyListener.prototype.setKeyMap = function(to) {
+    this.keyMap = to;
+};
+
+KeyListener.prototype.setAllowDefaultOnKeyError = function(on) {
+    this.allowDefaultOnKeyError = on;
 };
 
 module.exports = {

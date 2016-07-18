@@ -4,8 +4,13 @@ const {EditorPane} = require('./editorPane.js');
 const {KeyListener, defaultKeyMap} = require('./keys.js');
 const {CommandModal} = require('./commandModal.js');
 const {TabListView} = require('./tabListView.js');
+const {numDigitsIn} = require('./utils.js');
 
 function Editor(parentElem, keyMap) {
+
+    this.keyMap = keyMap;
+    this.editorPanes = [];
+    this.activePane = null;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'stratos-editor';
@@ -15,34 +20,11 @@ function Editor(parentElem, keyMap) {
         onTabClick: (name) => this.handleTabClick(name)
     });
 
-    this.activePane = new EditorPane(this.domNode);
-    this.editorPanes = [this.activePane];
-
     this.commandModal = new CommandModal(this.domNode, {
         //actionHandlers: {},
         onSubmitAction: (action) => this.handleCommandModalAction(action),
         onSubmitActionError: () => this.handleCommandModalActionError()
     });
-    
-    this.keyListener = new KeyListener(this.activePane.domNode, {
-        keyMap: keyMap,
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (err) => this.handleKeyError(err)
-    });
-
-    this._initComponents();
-};
-
-Editor.prototype._initComponents = function() {
-    const tabsHeight = this.tabListView.getHeight();
-    const paneHeight = this.getHeight() - tabsHeight;
-    this.editorPanes.forEach(e => {
-        e.setHeight(paneHeight);
-        e.setTopOffset(tabsHeight);
-    });
-    this.tabListView.add('untitled');
-    this.tabListView.setSelected('untitled');
-    this.activePane.setFocused();
 };
 
 Editor.prototype.insertText = function(text) {
@@ -117,17 +99,85 @@ Editor.prototype.moveCursorTo = function(line, col) {
     }
 };
 
-Editor.prototype.handleTabClick = function(tabName) {
-    this.tabListView.setSelected(tabName);
+Editor.prototype.newTab = function(name = 'untitled') {
+    const indexName = this._getIndexName(name);
     
-    // TODO: set active pane
+    this.tabListView.add(indexName);
+    this.tabListView.setSelected(indexName);
+    
+    const pane = new EditorPane(this.domNode, {
+        name: name,
+        indexName: indexName,
+        keyMap: this.keyMap,
+        onKeyAction: (action) => this.handleAction(action),
+        onKeyError: (error) => this.handleKeyError(error)
+    });
+    this.editorPanes.push(pane);
+    
+    const tabsHeight = this.tabListView.getHeight();
+    const paneHeight = this.getHeight() - tabsHeight;
+    pane.setHeight(paneHeight);
+    pane.setTopOffset(tabsHeight);
+    
+    if (this.activePane) {
+        this.activePane.setInactive();
+    }
+    this.activePane = pane;
+    this.activePane.setActive();
+};
+
+
+// If _tabName is undefined, switches to the previously opened tab.
+Editor.prototype.switchTab = function(_tabName = undefined) {
+    if (this.activePane && _tabName === this.activePane.indexName) return;
+
+    const indexName = _tabName || this._getPrevActivePane();
+    const exists = this.tabListView.setSelected(indexName);
+    if (!exists) {
+        throw new Error('Editor: No tab with name ' + indexName);
+    }
+
+    const pane = this.editorPanes.find(e => e.indexName === indexName);
+    
+    if (this.activePane) {
+        this.activePane.setInactive();
+    }
+    this.activePane = pane;
+    this.activePane.setActive();
+};
+
+// If tabName is undefined, closes the active tab.
+Editor.prototype.closeTab = function(tabName = undefined) {
+    if (!tabName && !this.activePane) {
+        throw new Error('Editor: No tabs to close.');
+    }
+
+    const indexName = tabName || this.activePane.indexName;
+    const exists = this.tabListView.remove(indexName);
+    if (!exists) {
+        throw new Error('Editor: No tab with name ' + indexName);
+    }
+
+    const pos = this.editorPanes.findIndex(e => e.indexName === indexName);
+    const pane = this.editorPanes.splice(pos, 1)[0];
+    
+    if (pane === this.activePane) {
+        this.activePane = this._prevActivePane();
+        if (this.activePane) {
+            this.activePane.setActive();
+            this.tabListView.setSelected(this.activePane.indexName);
+        }
+    }
+
+    this.domNode.removeChild(pane.domNode);
 };
 
 Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
-    if (this.activePane) {
-        const shouldCursorBlink = !this.commandModal.isToggled();
-        this.activePane.setCursorBlink(shouldCursorBlink);
+    if (this.commandModal.isToggled()) {
+        this.activePane.setInactive();
+    } else {
+        this.activePane.setActive();
     }
 };
 
@@ -136,7 +186,7 @@ Editor.prototype.handleCommandModalAction = function(action) {
     this.commandModal.clearInput();
     this.handleAction(action);
     if (this.activePane) {
-        this.activePane.setFocused();
+        this.activePane.setActive();
         this.activePane.setCursorBlink(true);
     }
 };
@@ -161,7 +211,10 @@ Editor.prototype.handleAction = function(action) {
         'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
         'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
         'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
-        'TOGGLE_COMMAND_MODAL':          () => this.toggleCommandModal()
+        'TOGGLE_COMMAND_MODAL':          () => this.toggleCommandModal(),
+        'NEW_TAB':                       action => this.newTab(action.name),
+        'SWITCH_TAB':                    action => this.switchTab(action.name),
+        'CLOSE_TAB':                     action => this.closeTab(action.name)
     };
     
     const handler = actionHandlers[action.type];
@@ -183,6 +236,32 @@ Editor.prototype.getHeight = function() {
         throw new Error('Editor: Unable to parse height.');
     }
     return height;
-}
+};
+
+// TODO: implement
+Editor.prototype._prevActivePane = function() {
+    return this.editorPanes[this.editorPanes.length - 1];
+};
+
+// If an editor pane exists with the same name as that given, returns a unique
+// version of the name. Otherwise, returns the given name.
+Editor.prototype._getIndexName = function(name) {    
+    const suffixNum = this.editorPanes.reduce((prev, curr) => {
+        if (prev === 0 && curr.indexName === name) {
+            return prev + 1;
+        }
+        if (prev > 0) {
+            // untitled-1 -> untitled
+            const sansSuffix = curr.indexName.slice(0, curr.indexName.length - numDigitsIn(prev) - 1);
+            if (sansSuffix === name) {
+                return prev + 1;   
+            }
+        }
+
+        return prev;
+    }, 0);
+
+    return suffixNum === 0 ? name : name + '-' + suffixNum;
+};
 
 module.exports.Editor = Editor;

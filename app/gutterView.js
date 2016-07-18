@@ -1,6 +1,7 @@
 'use strict';
 
 const {EventEmitter} = require('events');
+const {numDigitsIn} = require('./utils.js');
 
 const defaults = {
     charWidth: 10,
@@ -104,26 +105,7 @@ GutterView.prototype.onWidthChanged = function(callback) {
 
 GutterView.prototype._checkUpdateWidth = function() {
 
-    // TODO: Brute forcing this under assumption that
-    //             1) efficiency gains are worthwhile and
-    //             2) the number of lines in a file won't exceed 100000 :)
-    
-    const lastLineNum = this.getLastLineNum();
-    
-    let actualLastLineNumDigits;
-    if (lastLineNum < 10) {
-        actualLastLineNumDigits = 1;
-    } else if (lastLineNum < 100) {
-        actualLastLineNumDigits = 2;
-    } else if (lastLineNum < 1000) {
-        actualLastLineNumDigits = 3;
-    } else if (lastLineNum < 10000) {
-        actualLastLineNumDigits = 4;
-    } else if (lastLineNum < 100000) {
-        actualLastLineNumDigits = 5;
-    } else {
-        throw new Error("GutterView: Way too many lines! Can't set gutter width.");
-    }
+    const actualLastLineNumDigits = numDigitsIn(this.getLastLineNum());
 
     if (actualLastLineNumDigits != this.lastLineNumDigits) {
         this.lastLineNumDigits = actualLastLineNumDigits;
