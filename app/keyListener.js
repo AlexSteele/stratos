@@ -3,8 +3,8 @@
 const defaults = {
     keyMap: {},
     allowDefaultOnKeyError: false,
-    onKeyAction: () => { throw new Error('KeyListener: No handler for onKeyAction.'); },
-    onKeyError: () => { throw new Error('KeyListener: No handler for onKeyError.'); }
+    onKeyAction: (action) => { throw new Error('KeyListener: No handler for onKeyAction.'); },
+    onKeyError: (error) => { throw new Error('KeyListener: No handler for onKeyError.'); }
 };
 
 function KeyListener(elem, settings = defaults) {
@@ -68,14 +68,6 @@ function KeyListener(elem, settings = defaults) {
 
     // Drop active modifiers when focus lost.
     elem.addEventListener('blur', () => activeModifiers.splice(0, activeModifiers.length));
-};
-
-KeyListener.prototype.setKeyMap = function(to) {
-    this.keyMap = to;
-};
-
-KeyListener.prototype.setAllowDefaultOnKeyError = function(on) {
-    this.allowDefaultOnKeyError = on;
 };
 
 module.exports = {

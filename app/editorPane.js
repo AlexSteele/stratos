@@ -4,47 +4,49 @@ const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
 const {KeyListener} = require('./keyListener.js');
-const {getSharedViewSettings} = require('./utils.js');
+const {getSharedEditorSettings} = require('./utils.js');
 
 const defaults = {
     name: '',
-    indexName: '', // A unique identifier. May be the same as the pane's name. 
+    uniqueId: '', // A unique identifier. May be the same as the pane's name. 
     keyMap: {},
-    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onUknownAction'); },
+    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
     onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
     horizontalCursorMargin: 10, // columns
-    verticalCursorMargin: 10,   // lines
-    windowElem: window
+    verticalCursorMargin: 10    // lines
 };
 
 function EditorPane(parentElem, settings = defaults) {
 
+    this.domNode = document.createElement('div');
+    this.domNode.className = 'editor-pane';
+    this.domNode.tabIndex = 1;
+    parentElem.appendChild(this.domNode);
+
+    this.visibleHeight = this.domNode.clientHeight;
+    this.visibleWidth = this.domNode.clientWidth;
+
     this.name = settings.name || defaults.name;
-    this.indexName = settings.indexName || defaults.indexName;
+    this.uniqueId = settings.uniqueId || defaults.uniqueId;
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
-    this.windowElem = settings.windowElem || defaults.windowElem;
 
-    this.domNode = document.createElement('div');
-    this.domNode.className = 'editor-pane';
-    this.domNode.tabIndex = 1;
-    
-    parentElem.appendChild(this.domNode);
+    const sharedEditorSettings = getSharedEditorSettings(document.body);
 
-    const sharedViewSettings = getSharedViewSettings(document.body);
+    this.charWidth = sharedEditorSettings.charWidth;
+    this.charHeight = sharedEditorSettings.charHeight;    
 
-    this.charWidth = sharedViewSettings.charWidth;
-    this.charHeight = sharedViewSettings.charHeight;
+    this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
+    this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (pos) => this._onBufferMouseClick(pos)}, sharedEditorSettings));
+    this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
 
-    this.visibleHeight = this.domNode.clientHeight;
-    this.visibleWidth = this.domNode.clientWidth;
-
-    this.gutterView = new GutterView(this.domNode, sharedViewSettings);
-    this.bufferView = new BufferView(this.domNode, sharedViewSettings);
-    this.cursorView = new CursorView(this.domNode, sharedViewSettings);
+    // TODO: FIX UNDERLAY NODE.
+    // this.underlayNode = document.createElement('div');
+    // this.underlayNode.className = 'editor-pane-underlay';
+    // this.domNode.appendChild(this.underlayNode);
 
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
@@ -58,35 +60,30 @@ function EditorPane(parentElem, settings = defaults) {
 }
 
 EditorPane.prototype._initComponents = function() {
-
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
-
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
     this.bufferView.setVisibleHeight(this.visibleHeight);
-    this.bufferView.setVisibleWidth(this.visibleWidth);
+    this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
 };
 
 EditorPane.prototype._initEventListeners = function() {
-
-    this.gutterView.onWidthChanged((width) => {
-        this.cursorView.setLeftOffset(width);
-        this.bufferView.setLeftOffset(width); 
-    });
 
     this.domNode.addEventListener('scroll', (e) => {
         this.bufferView.setScrollTop(this.domNode.scrollTop);
         this.bufferView.setScrollLeft(this.domNode.scrollLeft);
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
     });
+};
 
-    this.bufferView.domNode.addEventListener('mousedown', (e) => {
-        const pos = this.bufferView.clickToBufferPos(e.clientX, e.clientY);
-        if (pos) {
-            this.cursorView.moveTo(pos[1], pos[0]);
-            this.gutterView.setActiveLine(this.cursorView.line);
-        }
-    });
+EditorPane.prototype._onBufferMouseClick = function(pos) {
+    const [col, line] = pos;
+    this.cursorView.moveTo(line, col);
+    this.gutterView.setActiveLine(line);
+};
 
+EditorPane.prototype._onGutterWidthChanged = function(width) {
+    this.cursorView.setLeftOffset(width);
+    this.bufferView.setLeftOffset(width);
 };
 
 EditorPane.prototype.insertText = function(text) {
@@ -96,7 +93,7 @@ EditorPane.prototype.insertText = function(text) {
     this.bufferView.setLine(this.cursorView.line, beforeInsert + text + afterInsert);
     this.cursorView.moveRight(text.length);
 
-    this.checkScrollCursorIntoView();
+    this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.insertNewLine = function() {
@@ -110,7 +107,7 @@ EditorPane.prototype.insertNewLine = function() {
     this.gutterView.appendLine();
     this.gutterView.setActiveLine(this.cursorView.line);
 
-    this.checkScrollCursorIntoView();
+    this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.deleteBackChar = function() {
@@ -134,7 +131,7 @@ EditorPane.prototype.deleteBackChar = function() {
         this.cursorView.moveLeft();
     }
 
-     this.checkScrollCursorIntoView();
+     this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.deleteForwardChar = function() {
@@ -173,12 +170,12 @@ EditorPane.prototype.moveCursorLeft = function() {
             this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
             this.gutterView.setActiveLine(this.cursorView.line);
 
-            this.checkScrollCursorIntoView();
+            this._checkScrollCursorIntoView();
         }
     } else {
         this.cursorView.moveLeft();
 
-        this.checkScrollCursorIntoView();
+        this._checkScrollCursorIntoView();
     }
 };
 
@@ -188,12 +185,12 @@ EditorPane.prototype.moveCursorRight = function() {
             this.cursorView.moveTo(this.cursorView.line + 1, 1);
             this.gutterView.setActiveLine(this.cursorView.line);
 
-            this.checkScrollCursorIntoView();
+            this._checkScrollCursorIntoView();
         }
     } else {
         this.cursorView.moveRight();
         
-        this.checkScrollCursorIntoView();
+        this._checkScrollCursorIntoView();
     }
 };
 
@@ -206,7 +203,7 @@ EditorPane.prototype.moveCursorUp = function() {
             this.cursorView.setCol(lineWidth + 1);
         }
 
-        this.checkScrollCursorIntoView();
+        this._checkScrollCursorIntoView();
     }    
 };
 
@@ -219,7 +216,7 @@ EditorPane.prototype.moveCursorDown = function() {
             this.cursorView.setCol(lineWidth + 1);
         }
 
-        this.checkScrollCursorIntoView();
+        this._checkScrollCursorIntoView();
     }
 };
 
@@ -227,14 +224,14 @@ EditorPane.prototype.moveCursorBeginningOfLine = function() {
     this.cursorView.setCol(1);
     this.cursorView.goalCol = this.cursorView.col;
 
-    this.checkScrollCursorIntoView();
+    this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.moveCursorEndOfLine = function() {
     this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
     this.cursorView.goalCol = this.cursorView.col;
 
-    this.checkScrollCursorIntoView();
+    this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.moveCursorTo = function(line, col) {
@@ -242,7 +239,7 @@ EditorPane.prototype.moveCursorTo = function(line, col) {
         col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
-        this.checkScrollCursorIntoView();
+        this._checkScrollCursorIntoView();
         return true;
     }
     return false;
@@ -274,26 +271,6 @@ EditorPane.prototype.scrollToCol = function(col) {
     }
 };
 
-EditorPane.prototype.checkScrollCursorIntoView = function() {
-    if (this.cursorView.col < this.bufferView.getFirstVisibleCol()) {
-        const firstVisible = Math.max(1, this.cursorView.col - 10);
-        this.scrollToCol(firstVisible);    
-    } else if (this.cursorView.col > this.bufferView.getLastVisibleCol()) {
-        const lastVisible = Math.min(this.cursorView.col + 10, this.bufferView.getLastColNum());
-        const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
-        this.scrollToCol(firstVisible);
-    }
-
-    if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum()) {
-        const firstVisible = Math.max(1, this.cursorView.line - 10);
-        this.scrollToLine(firstVisible); 
-    } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum()) {
-        const lastVisible = Math.min(this.cursorView.line + 10, this.bufferView.getLastLineNum());
-        const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
-        this.scrollToLine(firstVisible);
-    }
-};
-
 EditorPane.prototype.setActive = function() {
     this.domNode.focus();
     this.cursorView.setBlink(true);
@@ -308,6 +285,10 @@ EditorPane.prototype.setInactive = function() {
 
 EditorPane.prototype.setCursorBlink = function(on) {
     this.cursorView.setBlink(on);
+};
+
+EditorPane.prototype.setLeftOffset = function(to) {
+    this.domNode.style.left = to + 'px';
 };
 
 EditorPane.prototype.setTopOffset = function(to) {
@@ -326,7 +307,7 @@ EditorPane.prototype.setVisibleHeight = function(to) {
 
 EditorPane.prototype.setVisibleWidth = function(to) {
     this.visibleWidth = to;
-    this.bufferView.setVisibleWidth(this.visibleWidth);
+    this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
 };
 
 EditorPane.prototype.getHeight = function() {
@@ -343,6 +324,26 @@ EditorPane.prototype.getWidth = function() {
         throw new Error('EditorPane: Unable to parse width.');
     }
     return width;
+};
+
+EditorPane.prototype._checkScrollCursorIntoView = function() {
+    if (this.cursorView.col < this.bufferView.getFirstVisibleCol()) {
+        const firstVisible = Math.max(1, this.cursorView.col - 10);
+        this.scrollToCol(firstVisible);    
+    } else if (this.cursorView.col > this.bufferView.getLastVisibleCol()) {
+        const lastVisible = Math.min(this.cursorView.col + 10, this.bufferView.getLastColNum());
+        const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
+        this.scrollToCol(firstVisible);
+    }
+
+    if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum()) {
+        const firstVisible = Math.max(1, this.cursorView.line - 10);
+        this.scrollToLine(firstVisible); 
+    } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum()) {
+        const lastVisible = Math.min(this.cursorView.line + 10, this.bufferView.getLastLineNum());
+        const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
+        this.scrollToLine(firstVisible);
+    }
 };
 
 module.exports.EditorPane = EditorPane;

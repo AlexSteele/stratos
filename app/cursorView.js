@@ -27,10 +27,9 @@ function CursorView(parentElem, settings = defaults) {
     this.domNode.style.top = this._lineToPix(); 
     this.domNode.style.left = this._colToPix();
     this.domNode.style.visibility = 'visible';
-
-    this.setBlink(true); 
-
     parentElem.appendChild(this.domNode);
+    
+    this.setBlink(true);
 }
 
 CursorView.prototype.moveLeft = function(amount = 1) {

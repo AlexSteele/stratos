@@ -1,6 +1,6 @@
 'use strict';
 
-function getSharedViewSettings(elem) {
+function getSharedEditorSettings(elem) {
     const [defaultCharWidth, defaultCharHeight] = measureCharWidthAndHeight(elem);
     return {
         charWidth: defaultCharWidth,
@@ -42,6 +42,6 @@ function numDigitsIn(num) {
 };
 
 module.exports = {
-    getSharedViewSettings,
+    getSharedEditorSettings,
     numDigitsIn
 };

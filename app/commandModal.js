@@ -16,43 +16,42 @@ const actionHandlers = {
 const defaults = {
     actionHandlers,
     keyMap: {},
-    onKeyAction: () => { throw new Error('CommandModal: No handler for onKeyAction.'); },
-    onKeyError: () => { throw new Error('CommandModal: No handler for onKeyError.'); },
-    onSubmitAction: () => {throw new Error('CommandModal: No handler for onSubmitAction.');},
-    onSubmitActionError: () => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
+    onKeyAction: (action) => { throw new Error('CommandModal: No handler for onKeyAction.'); },
+    onKeyError: (error) => { throw new Error('CommandModal: No handler for onKeyError.'); },
+    onSubmitAction: (action) => {throw new Error('CommandModal: No handler for onSubmitAction.');},
+    onSubmitActionError: (error) => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
 };
 
 function CommandModal(parentElem, settings = defaults) {
 
-    this.actionHandlers = settings.actionHandlers || defaults.actionHandlers;
-    this.keyMap = settings.keyMap || defaults.keyMap;
-    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
-    this.onKeyError = settings.onKeyError || defaults.onKeyError;
-    this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
-    this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;
-
     this.domNode = document.createElement('div');
     this.domNode.className = 'command-modal-container';
+    this.domNode.style.visibility = 'hidden';
+    parentElem.appendChild(this.domNode);
 
     this.inputNode = document.createElement('input');
     this.inputNode.className = 'command-modal-input';
-    this.inputNode.type = 'text';
+    this.inputNode.type = 'text';    
     this.inputNode.addEventListener('keydown', (e) => {
         if (e.keyCode === 13) {
             this._handleCommandSubmit();
         }
     });
     this.domNode.appendChild(this.inputNode);
-    this.domNode.style.visibility = 'hidden';
+
+    this.actionHandlers = settings.actionHandlers || defaults.actionHandlers;
+    this.keyMap = settings.keyMap || defaults.keyMap;
+    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
+    this.onKeyError = settings.onKeyError || defaults.onKeyError;
+    this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
+    this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;    
 
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
         allowDefaultOnKeyError: true,
         onKeyAction: this.onKeyAction,
         onKeyError: this.onKeyError
-    });
-    
-    parentElem.appendChild(this.domNode);
+    });  
 };
 
 CommandModal.prototype.toggle = function() {

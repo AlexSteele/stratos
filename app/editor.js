@@ -16,7 +16,7 @@ function Editor(parentElem, keyMaps) {
     parentElem.appendChild(this.domNode);
     
     this.tabListView = new TabListView(this.domNode, {
-        onTabClick: (name) => this.handleTabClick(name)
+        onTabClick: (name) => this.switchTab(name)
     });
 
     this.commandModal = new CommandModal(this.domNode, {
@@ -118,14 +118,14 @@ Editor.prototype.moveCursorTo = function(line, col) {
 };
 
 Editor.prototype.newTab = function(name = 'untitled') {
-    const indexName = this._getIndexName(name);
+    const uniqueId = this._getUniqueTabName(name);
     
-    this.tabListView.add(indexName);
-    this.tabListView.setSelected(indexName);
+    this.tabListView.add(uniqueId);
+    this.tabListView.setSelected(uniqueId);
     
     const pane = new EditorPane(this.domNode, {
         name: name,
-        indexName: indexName,
+        uniqueId: uniqueId,
         keyMap: this.keyMaps['editor-default'],
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error)
@@ -134,8 +134,8 @@ Editor.prototype.newTab = function(name = 'untitled') {
     
     const tabsHeight = this.tabListView.getHeight();
     const paneHeight = this.getHeight() - tabsHeight;
-    pane.setHeight(paneHeight);
     pane.setTopOffset(tabsHeight);
+    pane.setHeight(paneHeight);
     
     if (this.activePane) {
         this.activePane.setInactive();
@@ -144,19 +144,18 @@ Editor.prototype.newTab = function(name = 'untitled') {
     this.activePane.setActive();
 };
 
-
 // If _tabName is undefined, switches to the previously opened tab.
 Editor.prototype.switchTab = function(_tabName = undefined) {
-    if (this.activePane && _tabName === this.activePane.indexName) return;
+    if (this.activePane && _tabName === this.activePane.uniqueId) return;
 
     const prevActive = this._getPrevActivePane() || {};
-    const indexName = _tabName || prevActive.indexName;
-    const exists = this.tabListView.setSelected(indexName);
+    const uniqueId = _tabName || prevActive.uniqueId;
+    const exists = this.tabListView.setSelected(uniqueId);
     if (!exists) {
-        throw new Error('Editor: No tab with name ' + indexName);
+        throw new Error('Editor: No tab with name ' + uniqueId);
     }
 
-    const pane = this.editorPanes.find(e => e.indexName === indexName);
+    const pane = this.editorPanes.find(e => e.uniqueId === uniqueId);
     
     if (this.activePane) {
         this.activePane.setInactive();
@@ -171,20 +170,20 @@ Editor.prototype.closeTab = function(tabName = undefined) {
         throw new Error('Editor: No tabs to close.');
     }
 
-    const indexName = tabName || this.activePane.indexName;
-    const exists = this.tabListView.remove(indexName);
+    const uniqueId = tabName || this.activePane.uniqueId;
+    const exists = this.tabListView.remove(uniqueId);
     if (!exists) {
-        throw new Error('Editor: No tab with name ' + indexName);
+        throw new Error('Editor: No tab with name ' + uniqueId);
     }
 
-    const pos = this.editorPanes.findIndex(e => e.indexName === indexName);
+    const pos = this.editorPanes.findIndex(e => e.uniqueId === uniqueId);
     const pane = this.editorPanes.splice(pos, 1)[0];
     
     if (pane === this.activePane) {
         this.activePane = this._getPrevActivePane();
         if (this.activePane) {
             this.activePane.setActive();
-            this.tabListView.setSelected(this.activePane.indexName);
+            this.tabListView.setSelected(this.activePane.uniqueId);
         }
     }
 
@@ -257,21 +256,20 @@ Editor.prototype.getHeight = function() {
     return height;
 };
 
-// TODO: implement
 Editor.prototype._getPrevActivePane = function() {
     return this.editorPanes[this.editorPanes.length - 1];
 };
 
 // If an editor pane exists with the same name as that given, returns a unique
 // version of the name. Otherwise, returns the given name.
-Editor.prototype._getIndexName = function(name) {    
+Editor.prototype._getUniqueTabName = function(name) {    
     const suffixNum = this.editorPanes.reduce((prev, curr) => {
-        if (prev === 0 && curr.indexName === name) {
+        if (prev === 0 && curr.uniqueId === name) {
             return prev + 1;
         }
         if (prev > 0) {
             // untitled-1 -> untitled
-            const sansSuffix = curr.indexName.slice(0, curr.indexName.length - numDigitsIn(prev) - 1);
+            const sansSuffix = curr.uniqueId.slice(0, curr.uniqueId.length - numDigitsIn(prev) - 1);
             if (sansSuffix === name) {
                 return prev + 1;   
             }

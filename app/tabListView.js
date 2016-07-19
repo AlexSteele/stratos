@@ -2,7 +2,7 @@
 
 const defaults = {
     tabsLeftOffset: 30,
-    onTabClick: (tabName) => {throw new Error('TabListView: No handler for onTabClick');}
+    onTabClick: (tabName) => { throw new Error('TabListView: No handler for onTabClick'); }
 };
 
 function TabListView(parentElem, settings = defaults) {
@@ -77,7 +77,10 @@ function TabView(parentElem, settings = _defaults) {
     this.tabNameNode.innerHTML = settings.name || _defaults.name;
     this.domNode.appendChild(this.tabNameNode);
 
-    this.domNode.addEventListener('mousedown', () => this.onClick(this.getName()));
+    this.domNode.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        this.onClick(this.getName());
+    });
 
     parentElem.appendChild(this.domNode);
 }

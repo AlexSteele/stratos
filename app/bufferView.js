@@ -2,28 +2,45 @@
 
 const defaults = {
     charWidth: 10,
-    charHeight: 20
+    charHeight: 20,
+    onClick: (pos) => { throw new Error('BufferView: No handler for onClick.'); }
 };
 
 function BufferView(parentElem, settings = defaults) {
 
+    this.domNode = document.createElement('div');
+    this.domNode.className = 'buffer';
+    parentElem.appendChild(this.domNode);
+
     this.lineElems = [null];
     this.charWidth = settings.charWidth || defaults.charWidth; // pixels
     this.charHeight = settings.charHeight || defaults.charHeight; //pixels
-
-    this.domNode = document.createElement('div');
-    this.domNode.className = 'buffer';
-
-    parentElem.appendChild(this.domNode);
+    this.onClick = settings.onClick || defaults.onClick;
 
     this.visibleHeight = this.domNode.clientHeight;
     this.visibleWidth = this.domNode.clientWidth;
     this.scrollTop = this.domNode.scrollTop;
     this.scrollLeft = this.domNode.scrollLeft;
 
+    this._initEventListeners();
+
     // Start with empty line.
     this.appendLine('');
 }
+
+BufferView.prototype._initEventListeners = function() {
+    this.domNode.addEventListener('mousedown', (e) => {
+        console.log('clix ' + e.clientX + ' cliY ' + e.clientY);
+        console.log('screen ' + e.screenX + ' ' + e.screenY);
+        console.log('page ' + e.pageX + ' ' + e.pageY);
+        const pos = this._clickToBufferPos(e.clientX, e.clientY);
+        console.log('pos: ' + pos);
+        if (pos) {
+            this.onClick(pos);
+        }
+        e.preventDefault();
+    });
+};
 
 BufferView.prototype.appendLine = function(text) {
     this.insertLine(this.lineElems.length, text);
@@ -73,14 +90,6 @@ BufferView.prototype.getLine = function(num) {
     return this.lineElems[num].innerHTML;
 };
 
-BufferView.prototype.getHeight = function() {
-    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
-    if (!height) {
-        throw new Error('BufferView: Unable to parse height.');
-    }
-    return height;
-};
-
 BufferView.prototype.setHeight = function(num) {
     this.domNode.style.height = num + 'px';
 };
@@ -89,6 +98,34 @@ BufferView.prototype.setHeight = function(num) {
 // It has no side-effects on the DOM.
 BufferView.prototype.setVisibleHeight = function(num) {
     this.visibleHeight = num;
+};
+
+BufferView.prototype.setLeftOffset = function(width) {
+    this.domNode.style.left = width + 'px';
+};
+
+BufferView.prototype.setWidth = function(num) {
+    this.domNode.style.width = num + 'px';
+};
+
+BufferView.prototype.setVisibleWidth = function(width) {
+    this.visibleWidth = width;
+};
+
+BufferView.prototype.setScrollTop = function(num) {
+    this.scrollTop = num;
+};
+
+BufferView.prototype.setScrollLeft = function(num) {
+    this.scrollLeft = num;
+};
+
+BufferView.prototype.getHeight = function() {
+    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
+    if (!height) {
+        throw new Error('BufferView: Unable to parse height.');
+    }
+    return height;
 };
 
 BufferView.prototype.getHeightOfLines = function() {
@@ -121,14 +158,6 @@ BufferView.prototype.getWidth = function() {
     return width;
 };
 
-BufferView.prototype.setWidth = function(num) {
-    this.domNode.style.width = num + 'px';
-};
-
-BufferView.prototype.setVisibleWidth = function(width) {
-    this.visibleWidth = width;
-};
-
 BufferView.prototype.getWidthCols = function() {
     return Math.round(this.getWidth() / this.charWidth);
 };
@@ -142,7 +171,7 @@ BufferView.prototype.getVisibleWidth = function() {
 };
 
 BufferView.prototype.getVisibleWidthCols = function() {
-    return Math.round((this.getVisibleWidth() - this.getLeftOffset()) / this.charWidth);
+    return Math.round(this.getVisibleWidth() / this.charWidth);
 };
 
 BufferView.prototype.getFirstVisibleCol = function() {
@@ -161,42 +190,27 @@ BufferView.prototype.getLineWidthCols = function(lineNum) {
     return this.lineElems[lineNum].innerHTML.length;
 };
 
-BufferView.prototype.setScrollTop = function(num) {
-    this.scrollTop = num;
-};
+// Returns an [column, line] tuple, or null if the given coordinates'
+// y position is greater than the last line of this buffer.
+// If the given coordinates' corresponding column is greater than the
+// width of their corresponding line, returns the width of the line + 1.
+BufferView.prototype._clickToBufferPos = function(x, y) {
+    const bounds = this.domNode.getBoundingClientRect();
 
-BufferView.prototype.setScrollLeft = function(num) {
-    this.scrollLeft = num;
-};
+    const adjustedY = y - bounds.top;
+    const line = Math.round(adjustedY / this.charHeight) + this.getFirstVisibleLineNum();
+    const lastLine = this.getLastLineNum();
 
-BufferView.prototype.getLeftOffset = function() {
-    const offset = parseInt(this.domNode.style.left);
-    if (!offset) {
-        throw new Error('BufferView: Unable to parse left offset.');
-    }
-    return offset;
-};
-
-BufferView.prototype.setLeftOffset = function(width) {
-    this.domNode.style.left = width + 'px';
-};
-
-// Returns an [x, y] tuple or null if the position is not in bounds.
-BufferView.prototype.clickToBufferPos = function(x, y) {
-    const adjustedX = x - this.getLeftOffset();
-    const buffX = Math.round(adjustedX / this.charWidth) + 1;
-    const buffY = Math.round(y / this.charHeight) + this.getFirstVisibleLineNum();
-
-    if (buffY >= this.getFirstVisibleLineNum() && buffY <= this.getLastVisibleLineNum() &&
-        buffX >= this.getFirstVisibleCol())
-    {
-        const lastCol = this.getLineWidthCols(buffY) + 1;
-        return buffX <= lastCol ?
-            [buffX, buffY] :
-            [lastCol, buffY];
+    if (line <= lastLine) {
+        const adjustedX = x - bounds.left;
+        const col = Math.round(adjustedX / this.charWidth) + this.getFirstVisibleCol();
+        const lastCol = this.getLineWidthCols(line) + 1;
+        const clickCol = Math.min(col, lastCol);
+        
+        return [clickCol, line];
     }
 
-    return null; 
+    return null;
 };
 
 module.exports.BufferView = BufferView; 

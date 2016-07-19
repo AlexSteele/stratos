@@ -1,17 +1,20 @@
 'use strict';
 
-const {EventEmitter} = require('events');
 const {numDigitsIn} = require('./utils.js');
 
 const defaults = {
     charWidth: 10,
     charHeight: 20,
-    pad: 8
+    pad: 8,
+    onWidthChanged: (width) => { throw new Error('GutterView: No handler for onWidthChanged'); }
 };
 
 function GutterView(parentElem, settings = defaults) {
 
-    this.emitter = new EventEmitter(); 
+    this.domNode = document.createElement('div');
+    this.domNode.className = 'gutter';
+    this.domNode.style.width = this._calculateWidth() + 'px';
+    parentElem.appendChild(this.domNode);
 
     this.activeLineElem = null;
     this.lineElems = [null];
@@ -20,12 +23,8 @@ function GutterView(parentElem, settings = defaults) {
     this.charWidth = settings.charWidth || defaults.charWidth;
     this.charHeight = settings.charHeight || defaults.charHeight;
     this.pad = settings.pad || defaults.pad;
+    this.onWidthChanged = settings.onWidthChanged || defaults.onWidthChanged;
     
-    this.domNode = document.createElement('div');
-    parentElem.appendChild(this.domNode);
-    this.domNode.className = 'gutter';
-    this.domNode.style.width = this.getWidth() + 'px';
-
     // Start with one line.
     this.appendLine();
     this.setActiveLine(1);
@@ -71,16 +70,20 @@ GutterView.prototype.getLastLineNum = function() {
     return this.lineElems.length - 1;
 };
 
-GutterView.prototype.getWidth = function() {
-    return (this.lastLineNumDigits * this.charWidth) + this.pad;
-};
-
 GutterView.prototype.getHeightOfLines = function() {
     return Math.round(this.getLastLineNum() * this.charHeight);
 };
 
 GutterView.prototype.setScrollTop = function(num) {
     this.domNode.scrollTop = num;
+};
+
+GutterView.prototype.getWidth = function() {
+    const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
+    if (!width) {
+        throw new Error('GutterView: Unable to parse width.');
+    }
+    return width;
 };
 
 GutterView.prototype.getHeight = function() {
@@ -99,8 +102,8 @@ GutterView.prototype.setLeftOffset = function(num) {
     this.domNode.style.left = num + 'px';
 };
 
-GutterView.prototype.onWidthChanged = function(callback) {
-    this.emitter.on('width-changed', callback); 
+GutterView.prototype._calculateWidth = function() {
+    return (this.lastLineNumDigits * this.charWidth) + this.pad;
 };
 
 GutterView.prototype._checkUpdateWidth = function() {
@@ -109,9 +112,9 @@ GutterView.prototype._checkUpdateWidth = function() {
 
     if (actualLastLineNumDigits != this.lastLineNumDigits) {
         this.lastLineNumDigits = actualLastLineNumDigits;
-        const width = this.getWidth();
+        const width = this._calculateWidth();
         this.domNode.style.width = width + 'px';
-        this.emitter.emit('width-changed', width);
+        this.onWidthChanged(width);
     }
 };
 

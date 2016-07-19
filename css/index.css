@@ -62,6 +62,13 @@ html, body {
   width: 100%;
 }
 
+/* .editor-pane-underlay { */
+/*   height: 100%; */
+/*   width: 100%; */
+/*   background-color: black; */
+/*   z-index: -100; */
+/* } */
+
 .buffer {
   background-color: #333333;
   min-height: 100%;
