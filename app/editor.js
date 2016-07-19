@@ -118,76 +118,59 @@ Editor.prototype.moveCursorTo = function(line, col) {
 };
 
 Editor.prototype.newTab = function(name = 'untitled') {
-    const uniqueId = this._getUniqueTabName(name);
-    
-    this.tabListView.add(uniqueId);
-    this.tabListView.setSelected(uniqueId);
-    
-    const pane = new EditorPane(this.domNode, {
-        name: name,
-        uniqueId: uniqueId,
-        keyMap: this.keyMaps['editor-default'],
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (error) => this.handleKeyError(error)
-    });
-    this.editorPanes.push(pane);
-    
+    const tabName = this._getUniqueTabName(name);
     const tabsHeight = this.tabListView.getHeight();
     const paneHeight = this.getHeight() - tabsHeight;
-    pane.setTopOffset(tabsHeight);
-    pane.setHeight(paneHeight);
+    const pane = new EditorPane(this.domNode, {
+        name: name,
+        tabName: tabName,
+        keyMap: this.keyMaps['editor-default'],
+        onKeyAction: (action) => this.handleAction(action),
+        onKeyError: (error) => this.handleKeyError(error),
+        height: paneHeight,
+        topOffset: tabsHeight
+    });
     
-    if (this.activePane) {
-        this.activePane.setInactive();
-    }
-    this.activePane = pane;
-    this.activePane.setActive();
+    this.editorPanes.push(pane);
+    this.tabListView.add(tabName);
+    this.switchTab(tabName);
 };
 
 // If _tabName is undefined, switches to the previously opened tab.
-Editor.prototype.switchTab = function(_tabName = undefined) {
-    if (this.activePane && _tabName === this.activePane.uniqueId) return;
+Editor.prototype.switchTab = function(tabName = undefined) {
+    if (this.activePane && tabName === this.activePane.tabName) return;
+    
+    const toSwitchTo = tabName ?
+              this.editorPanes.find(e => e.tabName === tabName) :
+              this._getPrevActivePane();
 
-    const prevActive = this._getPrevActivePane() || {};
-    const uniqueId = _tabName || prevActive.uniqueId;
-    const exists = this.tabListView.setSelected(uniqueId);
-    if (!exists) {
-        throw new Error('Editor: No tab with name ' + uniqueId);
-    }
-
-    const pane = this.editorPanes.find(e => e.uniqueId === uniqueId);
+    if (!toSwitchTo) return;
     
     if (this.activePane) {
         this.activePane.setInactive();
     }
-    this.activePane = pane;
+    
+    this.activePane = toSwitchTo;
     this.activePane.setActive();
+
+    this.tabListView.setSelected(this.activePane.tabName);
 };
 
 // If tabName is undefined, closes the active tab.
-Editor.prototype.closeTab = function(tabName = undefined) {
-    if (!tabName && !this.activePane) {
-        throw new Error('Editor: No tabs to close.');
-    }
+Editor.prototype.closeTab = function(_tabName = undefined) {
+    if (!_tabName && !this.activePane) return;
 
-    const uniqueId = tabName || this.activePane.uniqueId;
-    const exists = this.tabListView.remove(uniqueId);
-    if (!exists) {
-        throw new Error('Editor: No tab with name ' + uniqueId);
-    }
+    const tabName = _tabName || this.activePane.tabName;
+    const paneIndex = this.editorPanes.findIndex(e => e.tabName === tabName);
+    const pane = this.editorPanes.splice(paneIndex, 1)[0];
 
-    const pos = this.editorPanes.findIndex(e => e.uniqueId === uniqueId);
-    const pane = this.editorPanes.splice(pos, 1)[0];
+    this.tabListView.remove(pane.tabName);
+    this.domNode.removeChild(pane.domNode);
     
     if (pane === this.activePane) {
-        this.activePane = this._getPrevActivePane();
-        if (this.activePane) {
-            this.activePane.setActive();
-            this.tabListView.setSelected(this.activePane.uniqueId);
-        }
+        this.activePane = null;
+        this.switchTab();
     }
-
-    this.domNode.removeChild(pane.domNode);
 };
 
 Editor.prototype.toggleCommandModal = function() {
@@ -264,12 +247,12 @@ Editor.prototype._getPrevActivePane = function() {
 // version of the name. Otherwise, returns the given name.
 Editor.prototype._getUniqueTabName = function(name) {    
     const suffixNum = this.editorPanes.reduce((prev, curr) => {
-        if (prev === 0 && curr.uniqueId === name) {
+        if (prev === 0 && curr.tabName === name) {
             return prev + 1;
         }
         if (prev > 0) {
             // untitled-1 -> untitled
-            const sansSuffix = curr.uniqueId.slice(0, curr.uniqueId.length - numDigitsIn(prev) - 1);
+            const sansSuffix = curr.tabName.slice(0, curr.tabName.length - numDigitsIn(prev) - 1);
             if (sansSuffix === name) {
                 return prev + 1;   
             }

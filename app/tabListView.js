@@ -29,7 +29,7 @@ TabListView.prototype.add = function(tabName) {
 
 TabListView.prototype.remove = function(tabName) {
     const index = this.tabViews.findIndex(e => e.getName() === tabName);
-    if (index === -1) return false;
+    if (index === -1) throw new Error('TabListView: No tab with name ' + tabName);
     const tab = this.tabViews.splice(index, 1)[0];
     this.domNode.removeChild(tab.domNode);
     return true;
@@ -38,7 +38,7 @@ TabListView.prototype.remove = function(tabName) {
 TabListView.prototype.setSelected = function(tabName) {
     const toSelect = this.tabViews.find(e => e.getName() === tabName);
 
-    if (!toSelect) return false;
+    if (!toSelect) throw new Error('TabListView: No tab with name ' + tabName);
 
     if (this.selectedTab) {
         this.selectedTab.setSelected(false);

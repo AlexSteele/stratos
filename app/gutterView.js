@@ -5,7 +5,7 @@ const {numDigitsIn} = require('./utils.js');
 const defaults = {
     charWidth: 10,
     charHeight: 20,
-    pad: 8,
+    pad: 10,
     onWidthChanged: (width) => { throw new Error('GutterView: No handler for onWidthChanged'); }
 };
 
@@ -13,7 +13,6 @@ function GutterView(parentElem, settings = defaults) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'gutter';
-    this.domNode.style.width = this._calculateWidth() + 'px';
     parentElem.appendChild(this.domNode);
 
     this.activeLineElem = null;
@@ -24,6 +23,8 @@ function GutterView(parentElem, settings = defaults) {
     this.charHeight = settings.charHeight || defaults.charHeight;
     this.pad = settings.pad || defaults.pad;
     this.onWidthChanged = settings.onWidthChanged || defaults.onWidthChanged;
+
+    this.domNode.style.width = this._calculateWidth() + 'px';
     
     // Start with one line.
     this.appendLine();

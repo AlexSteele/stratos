@@ -8,18 +8,24 @@ const {getSharedEditorSettings} = require('./utils.js');
 
 const defaults = {
     name: '',
-    uniqueId: '', // A unique identifier. May be the same as the pane's name. 
+    tabName: '', // A unique identifier. May be the same as the pane's name. 
     keyMap: {},
     onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
     onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
     horizontalCursorMargin: 10, // columns
-    verticalCursorMargin: 10    // lines
+    verticalCursorMargin: 10,    // lines
+    height: '100%',
+    width: '100%',
+    topOffset: '0px'
 };
 
 function EditorPane(parentElem, settings = defaults) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'editor-pane';
+    this.domNode.style.height = settings.height || defaults.height;
+    this.domNode.style.width = settings.width || defaults.width;
+    this.domNode.style.top = settings.topOffset || defaults.topOffset;
     this.domNode.tabIndex = 1;
     parentElem.appendChild(this.domNode);
 
@@ -27,7 +33,7 @@ function EditorPane(parentElem, settings = defaults) {
     this.visibleWidth = this.domNode.clientWidth;
 
     this.name = settings.name || defaults.name;
-    this.uniqueId = settings.uniqueId || defaults.uniqueId;
+    this.tabName = settings.tabName || defaults.tabName;
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
@@ -44,9 +50,9 @@ function EditorPane(parentElem, settings = defaults) {
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
 
     // TODO: FIX UNDERLAY NODE.
-    // this.underlayNode = document.createElement('div');
-    // this.underlayNode.className = 'editor-pane-underlay';
-    // this.domNode.appendChild(this.underlayNode);
+    this.underlayNode = document.createElement('div');
+    this.underlayNode.className = 'editor-pane-underlay';
+    this.domNode.appendChild(this.underlayNode);
 
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
@@ -271,16 +277,18 @@ EditorPane.prototype.scrollToCol = function(col) {
     }
 };
 
-EditorPane.prototype.setActive = function() {
+EditorPane.prototype.setActive = function(on) {
     this.domNode.focus();
     this.cursorView.setBlink(true);
-    this.domNode.style['z-index'] = 1;
+    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) + 2;
+    this.underlayNode.style['z-index'] = (+this.underlayNode.style['z-index']) + 2;
 };
 
 EditorPane.prototype.setInactive = function() {
     this.domNode.blur();
     this.cursorView.setBlink(false);
-    this.domNode.style['z-index'] = 0;
+    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) - 2;
+    this.underlayNode.style['z-index'] = (+this.underlayNode.style['z-index']) - 2;
 };
 
 EditorPane.prototype.setCursorBlink = function(on) {
