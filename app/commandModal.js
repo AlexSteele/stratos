@@ -2,7 +2,8 @@
 
 const {KeyListener} = require('./keyListener.js');
 
-const actionHandlers = {
+// Map input text to either an editor action or false, if the input is invalid.
+const inputHandlers = {
     'ins':        (params) => ({type: 'INSERT', text: params.join(' ')}),
     'del':        () => ({type: 'DELETE_FORWARD_CHAR'}),    
     'del-back':   () => ({type: 'DELETE_BACK_CHAR'}),
@@ -13,7 +14,7 @@ const actionHandlers = {
 };
 
 const defaults = {
-    actionHandlers,
+    inputHandlers,
     keyMap: {},
     onKeyAction: (action) => { throw new Error('CommandModal: No handler for onKeyAction.'); },
     onKeyError: (error) => { throw new Error('CommandModal: No handler for onKeyError.'); },
@@ -33,13 +34,12 @@ function CommandModal(parentElem, settings = defaults) {
     this.inputNode.type = 'text';    
     this.domNode.appendChild(this.inputNode);
 
-    this.actionHandlers = settings.actionHandlers || defaults.actionHandlers;
+    this.inputHandlers = settings.inputHandlers || defaults.inputHandlers;
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
-    this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;    
-
+    this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
         allowDefaultOnKeyError: true,
@@ -59,13 +59,9 @@ CommandModal.prototype._initEventListeners = function() {
 };
 
 CommandModal.prototype.toggle = function() {
-    const siblings = siblingElems(this.domNode);
-    if (this.domNode.style.visibility === 'visible') {
-        siblings.forEach(e => e.classList.remove('slight-fade'));
-        this.domNode.style.visibility = 'hidden';
-    } else {
-        siblings.forEach(e => e.classList.add('slight-fade'));
-        this.domNode.style.visibility = 'visible';
+    const wasToggled = this.isToggled();
+    this.domNode.style.visibility = wasToggled ? 'hidden' : 'visible';
+    if (!wasToggled) {
         this.inputNode.select();
     }
 };
@@ -81,7 +77,7 @@ CommandModal.prototype.clearInput = function() {
 CommandModal.prototype._handleCommandSubmit = function() {
     const input = this.inputNode.value.split(' ');
     const cmdName = input[0];
-    const handler = this.actionHandlers[cmdName];
+    const handler = this.inputHandlers[cmdName];
     if (handler) {
         const params = input.slice(1);
         const action = handler(params);
@@ -92,17 +88,5 @@ CommandModal.prototype._handleCommandSubmit = function() {
     }
     this.onSubmitActionError(this.inputNode.value);
 };
-
-// Assumes a parent element.
-function siblingElems(elem) {
-    const siblings = [];
-    const children = elem.parentElement.children;
-    for (let each of children) {
-        if (each !== elem) {
-            siblings.push(each);
-        }
-    }
-    return siblings;
-}
 
 module.exports.CommandModal = CommandModal;

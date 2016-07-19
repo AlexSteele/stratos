@@ -50,6 +50,14 @@ TabListView.prototype.setSelected = function(tabName) {
     return true;
 };
 
+TabListView.prototype.setActive = function() {
+    this.domNode.classList.remove('tab-list-inactive');
+};
+
+TabListView.prototype.setInactive = function() {
+    this.domNode.classList.add('tab-list-inactive');
+};
+
 TabListView.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
     if (!height) {

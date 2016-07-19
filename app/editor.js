@@ -10,6 +10,7 @@ function Editor(parentElem, keyMaps) {
     this.keyMaps = keyMaps;
     this.editorPanes = [];
     this.activePane = null;
+    this.prevActivePane = null;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'stratos-editor';
@@ -20,7 +21,6 @@ function Editor(parentElem, keyMaps) {
     });
 
     this.commandModal = new CommandModal(this.domNode, {
-        //actionHandlers: {},
         keyMap: this.keyMaps['command-modal-default'],
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error),
@@ -142,15 +142,17 @@ Editor.prototype.switchTab = function(tabName = undefined) {
     
     const toSwitchTo = tabName ?
               this.editorPanes.find(e => e.tabName === tabName) :
-              this._getPrevActivePane();
+              this.prevActivePane;
 
     if (!toSwitchTo) return;
     
     if (this.activePane) {
-        this.activePane.setInactive();
+        this.activePane.hide();
     }
-    
+
+    this.prevActivePane = this.activePane;
     this.activePane = toSwitchTo;
+    this.activePane.unHide();
     this.activePane.setActive();
 
     this.tabListView.setSelected(this.activePane.tabName);
@@ -170,6 +172,8 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     if (pane === this.activePane) {
         this.activePane = null;
         this.switchTab();
+    } else if (pane === this.prevActivePane) {
+        this.prevActivePane = null;
     }
 };
 
@@ -177,18 +181,20 @@ Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
     if (this.commandModal.isToggled()) {
         this.activePane.setInactive();
+        this.tabListView.setInactive();
     } else {
         this.activePane.setActive();
+        this.tabListView.setActive();
     }
 };
 
 Editor.prototype.handleCommandModalAction = function(action) {
-    this.commandModal.toggle();
     this.commandModal.clearInput();
+    this.commandModal.toggle();
     this.handleAction(action);
     if (this.activePane) {
         this.activePane.setActive();
-        this.activePane.setCursorBlink(true);
+        this.tabListView.setActive();
     }
 };
 

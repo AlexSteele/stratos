@@ -101,6 +101,15 @@ CursorView.prototype.setBlink = function(on) {
     }
 };
 
+CursorView.prototype.hide = function() {
+    this.setBlink(false);
+    this.domNode.style.visibility = 'hidden';
+};
+
+CursorView.prototype.unHide = function() {
+    this.domNode.style.visibility = 'visible';
+};
+
 CursorView.prototype.setLeftOffset = function(width) {
     this.leftOffset = width;
     this.domNode.style.left = this._colToPix();

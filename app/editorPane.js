@@ -49,11 +49,6 @@ function EditorPane(parentElem, settings = defaults) {
     this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (pos) => this._onBufferMouseClick(pos)}, sharedEditorSettings));
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
 
-    // TODO: FIX UNDERLAY NODE.
-    this.underlayNode = document.createElement('div');
-    this.underlayNode.className = 'editor-pane-underlay';
-    this.domNode.appendChild(this.underlayNode);
-
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
         allowDefaultOnKeyError: false,
@@ -278,17 +273,27 @@ EditorPane.prototype.scrollToCol = function(col) {
 };
 
 EditorPane.prototype.setActive = function(on) {
-    this.domNode.focus();
     this.cursorView.setBlink(true);
-    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) + 2;
-    this.underlayNode.style['z-index'] = (+this.underlayNode.style['z-index']) + 2;
+    this.domNode.focus();
+    this.domNode.classList.remove('editor-pane-inactive');
 };
 
 EditorPane.prototype.setInactive = function() {
-    this.domNode.blur();
     this.cursorView.setBlink(false);
-    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) - 2;
-    this.underlayNode.style['z-index'] = (+this.underlayNode.style['z-index']) - 2;
+    this.domNode.blur();
+    this.domNode.classList.add('editor-pane-inactive');
+};
+
+EditorPane.prototype.hide = function() {
+    this.cursorView.hide();
+    this.domNode.style.visibility = 'hidden';
+    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) - 1;
+};
+
+EditorPane.prototype.unHide = function() {
+    this.cursorView.unHide();
+    this.domNode.style.visibility = 'visible';
+    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) + 1;
 };
 
 EditorPane.prototype.setCursorBlink = function(on) {
