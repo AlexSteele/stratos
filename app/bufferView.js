@@ -16,8 +16,8 @@ function BufferView(parentElem, settings = defaults) {
 
     parentElem.appendChild(this.domNode);
 
-    this.clientHeight = this.domNode.clientHeight;
-    this.clientWidth = this.domNode.clientWidth;
+    this.visibleHeight = this.domNode.clientHeight;
+    this.visibleWidth = this.domNode.clientWidth;
     this.scrollTop = this.domNode.scrollTop;
     this.scrollLeft = this.domNode.scrollLeft;
 
@@ -33,14 +33,6 @@ BufferView.prototype.insertLine = function(num, text) {
     if (num < 1 || num > this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
-
-    // if (text.length > this.getWidthCols()) {
-    //     this.setWidth(text.length * this.charWidth);
-    // }
-
-    // if (this.getHeightOfLines() + this.charHeight > this.getHeight()) {
-    //     this.setHeight(this.getHeight() + this.charHeight);
-    // }
 
     const line = document.createElement('span');
     line.className = 'line';
@@ -59,10 +51,6 @@ BufferView.prototype.setLine = function(num, text) {
     if (num < 1 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num);
     }
-
-    // if (text.length > this.getWidthCols()) {
-    //     this.setWidth(text.length * this.charWidth);
-    // }
     
     const line = this.lineElems[num];
     line.innerHTML = text; 
@@ -73,10 +61,6 @@ BufferView.prototype.removeLine = function(num) {
         throw new Error('BufferView: No line with number ' + num); 
     }
 
-    // if (this.getHeightOfLines() < this.getHeight()) {
-    //     this.setHeight(this.getHeightOfLines());
-    // }
-    
     const removed = this.lineElems.splice(num, 1)[0];
     this.domNode.removeChild(removed); 
 };
@@ -103,8 +87,8 @@ BufferView.prototype.setHeight = function(num) {
 
 // This function is merely for record keeping.
 // It has no side-effects on the DOM.
-BufferView.prototype.setClientHeight = function(num) {
-    this.clientHeight = num;
+BufferView.prototype.setVisibleHeight = function(num) {
+    this.visibleHeight = num;
 };
 
 BufferView.prototype.getHeightOfLines = function() {
@@ -116,7 +100,7 @@ BufferView.prototype.getLastLineNum = function() {
 };
 
 BufferView.prototype.getVisibleHeightLines = function() {
-    return Math.round(this.clientHeight / this.charHeight);
+    return Math.round(this.visibleHeight / this.charHeight);
 };
 
 BufferView.prototype.getFirstVisibleLineNum = function() {
@@ -141,8 +125,8 @@ BufferView.prototype.setWidth = function(num) {
     this.domNode.style.width = num + 'px';
 };
 
-BufferView.prototype.setClientWidth = function(width) {
-    this.clientWidth = width;
+BufferView.prototype.setVisibleWidth = function(width) {
+    this.visibleWidth = width;
 };
 
 BufferView.prototype.getWidthCols = function() {
@@ -154,7 +138,7 @@ BufferView.prototype.getLastColNum = function() {
 };
 
 BufferView.prototype.getVisibleWidth = function() {
-    return this.clientWidth; 
+    return this.visibleWidth; 
 };
 
 BufferView.prototype.getVisibleWidthCols = function() {

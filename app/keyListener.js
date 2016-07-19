@@ -12,8 +12,7 @@ function KeyListener(elem, settings = defaults) {
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
-    this.allowDefaultOnKeyError = settings.allowDefaultOnKeyError ||
-              defaults.allowDefaultOnKeyError;
+    this.allowDefaultOnKeyError = (typeof settings.allowDefaultOnKeyError === 'undefined') ? defaults.allowDefaultOnKeyError : settings.allowDefaultOnKeyError;
     
     const activeModifiers = [];
     

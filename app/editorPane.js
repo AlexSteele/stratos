@@ -39,6 +39,9 @@ function EditorPane(parentElem, settings = defaults) {
     this.charWidth = sharedViewSettings.charWidth;
     this.charHeight = sharedViewSettings.charHeight;
 
+    this.visibleHeight = this.domNode.clientHeight;
+    this.visibleWidth = this.domNode.clientWidth;
+
     this.gutterView = new GutterView(this.domNode, sharedViewSettings);
     this.bufferView = new BufferView(this.domNode, sharedViewSettings);
     this.cursorView = new CursorView(this.domNode, sharedViewSettings);
@@ -59,8 +62,8 @@ EditorPane.prototype._initComponents = function() {
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
 
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
-    this.bufferView.setClientHeight(this.domNode.clientHeight);
-    this.bufferView.setClientWidth(this.domNode.clientWidth);
+    this.bufferView.setVisibleHeight(this.visibleHeight);
+    this.bufferView.setVisibleWidth(this.visibleWidth);
 };
 
 EditorPane.prototype._initEventListeners = function() {
@@ -76,14 +79,6 @@ EditorPane.prototype._initEventListeners = function() {
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
     });
 
-    this.windowElem.addEventListener('resize', (e) => {
-        
-        // TODO: Use requestAnimationFrame().
-        this.bufferView.setClientHeight(this.domNode.clientHeight);
-        this.bufferView.setClientWidth(this.domNode.clientWidth);
-        this.gutterView.setLeftOffset(this.domNode.scrollLeft);
-    });
-    
     this.bufferView.domNode.addEventListener('mousedown', (e) => {
         const pos = this.bufferView.clickToBufferPos(e.clientX, e.clientY);
         if (pos) {
@@ -321,6 +316,17 @@ EditorPane.prototype.setTopOffset = function(to) {
 
 EditorPane.prototype.setHeight = function(to) {
     this.domNode.style.height = to + 'px';
+};
+
+EditorPane.prototype.setVisibleHeight = function(to) {
+    this.visibleHeight = to;
+    this.bufferView.setVisibleHeight(this.visibleHeight);
+    this.gutterView.setLeftOffset(this.domNode.scrollLeft);
+};
+
+EditorPane.prototype.setVisibleWidth = function(to) {
+    this.visibleWidth = to;
+    this.bufferView.setVisibleWidth(this.visibleWidth);
 };
 
 EditorPane.prototype.getHeight = function() {

@@ -27,6 +27,22 @@ function Editor(parentElem, keyMaps) {
         onSubmitAction: (action) => this.handleCommandModalAction(action),
         onSubmitActionError: () => this.handleCommandModalActionError()
     });
+
+    this._initEventListeners();
+};
+
+Editor.prototype._initEventListeners = function() {
+    window.addEventListener('resize', (e) => {
+        const visibleHeight = document.body.clientHeight;
+        const panesVisibleHeight = visibleHeight - this.tabListView.getHeight();
+        this.editorPanes.forEach(e => {
+            e.setHeight(panesVisibleHeight);
+            e.setVisibleHeight(panesVisibleHeight);
+        });
+
+        const visibleWidth = document.body.clientWidth;
+        this.editorPanes.forEach(e => e.setVisibleWidth(visibleWidth));
+    });
 };
 
 Editor.prototype.insertText = function(text) {
