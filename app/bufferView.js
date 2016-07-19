@@ -30,11 +30,7 @@ function BufferView(parentElem, settings = defaults) {
 
 BufferView.prototype._initEventListeners = function() {
     this.domNode.addEventListener('mousedown', (e) => {
-        console.log('clix ' + e.clientX + ' cliY ' + e.clientY);
-        console.log('screen ' + e.screenX + ' ' + e.screenY);
-        console.log('page ' + e.pageX + ' ' + e.pageY);
         const pos = this._clickToBufferPos(e.clientX, e.clientY);
-        console.log('pos: ' + pos);
         if (pos) {
             this.onClick(pos);
         }
@@ -198,19 +194,17 @@ BufferView.prototype._clickToBufferPos = function(x, y) {
     const bounds = this.domNode.getBoundingClientRect();
 
     const adjustedY = y - bounds.top;
-    const line = Math.round(adjustedY / this.charHeight) + this.getFirstVisibleLineNum();
+    const line = Math.floor(adjustedY / this.charHeight) + this.getFirstVisibleLineNum();
     const lastLine = this.getLastLineNum();
 
-    if (line <= lastLine) {
-        const adjustedX = x - bounds.left;
-        const col = Math.round(adjustedX / this.charWidth) + this.getFirstVisibleCol();
-        const lastCol = this.getLineWidthCols(line) + 1;
-        const clickCol = Math.min(col, lastCol);
-        
-        return [clickCol, line];
-    }
+    if (line > lastLine) return null;
 
-    return null;
+    const adjustedX = x - bounds.left;
+    const col = Math.round(adjustedX / this.charWidth) + this.getFirstVisibleCol();
+    const lastCol = this.getLineWidthCols(line) + 1;
+    const clickCol = Math.min(col, lastCol);
+    
+    return [clickCol, line];
 };
 
 module.exports.BufferView = BufferView; 
