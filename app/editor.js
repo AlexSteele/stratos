@@ -173,7 +173,7 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
         this.activePane = null;
         this.switchTab();
     } else if (pane === this.prevActivePane) {
-        this.prevActivePane = null;
+        this.prevActivePane = this.editorPanes.find(e => e !== this.activePane) || null;
     }
 };
 
