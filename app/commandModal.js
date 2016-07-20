@@ -11,6 +11,7 @@ const inputHandlers = {
     'new-tab':    (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
     'switch-tab': (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
     'close-tab':  (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]},
+    'close-all':  () => ({type: 'CLOSE_ALL'}),
     'show-ctxt':  () => ({type: 'SHOW_CONTEXT'}),
     'hide-ctxt':  () => ({type: 'HIDE_CONTEXT'})
 };

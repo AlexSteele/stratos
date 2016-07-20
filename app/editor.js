@@ -227,6 +227,18 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     }
 };
 
+Editor.prototype.closeAllTabs = function() {
+    this.editorPanes.forEach(e => {
+        this.tabListView.remove(e.tabName);
+        this.domNode.removeChild(e.domNode);
+    });
+    this.editorPanes = [];
+    this.activePane = null;
+    this.prevActivePane = null;
+    this.contextBar.hide();
+    this.noPanesKeyListener.attach();
+};
+
 Editor.prototype.showContextBar = function() {
     this.contextBar.show();
     this._checkResizePanes();
@@ -285,6 +297,7 @@ Editor.prototype.handleAction = function(action) {
         'NEW_TAB':                       action => this.newTab(action.name),
         'SWITCH_TAB':                    action => this.switchTab(action.name),
         'CLOSE_TAB':                     action => this.closeTab(action.name),
+        'CLOSE_ALL':                     () => this.closeAllTabs(),
         'SHOW_CONTEXT':                  () => this.contextBar.show(),
         'HIDE_CONTEXT':                  () => this.contextBar.hide()
     };
