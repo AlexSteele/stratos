@@ -33,7 +33,7 @@ html, body {
 .tab {
   background-color: #333333;
   border-radius: 20px 20px 0 0;
-  bottom: -5px;
+  bottom: -5px;                 /*TODO: Hack.*/
   color: #c1c1c1;
   cursor: pointer;
   display: inline-block;
@@ -139,4 +139,35 @@ html, body {
   position: absolute;
 }
 
+.context-bar {
+  background-color: #525151;
+  bottom: 0;
+  height: 1em;
+  left: 0;
+  position: fixed;
+  width: 100%;
+  z-index: 3;
+}
 
+.context-bar-inactive {
+  opacity: 0.75;
+}
+
+.context-bar-widget {
+  color: #ffffff;
+  display: inline-block;
+  font-size: .8em;
+  font-family: Consolas, monospace;
+  left: 5%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.context-bar-tab-name {
+  width: 10%;
+}
+
+.context-bar-position {
+  margin-left: 20px;
+  width: 25%;
+}

@@ -284,16 +284,16 @@ EditorPane.prototype.setInactive = function() {
     this.domNode.classList.add('editor-pane-inactive');
 };
 
+EditorPane.prototype.show = function() {
+    this.cursorView.show();
+    this.domNode.style.visibility = 'visible';
+    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) + 1;
+};
+
 EditorPane.prototype.hide = function() {
     this.cursorView.hide();
     this.domNode.style.visibility = 'hidden';
     this.domNode.style['z-index'] = (+this.domNode.style['z-index']) - 1;
-};
-
-EditorPane.prototype.unHide = function() {
-    this.cursorView.unHide();
-    this.domNode.style.visibility = 'visible';
-    this.domNode.style['z-index'] = (+this.domNode.style['z-index']) + 1;
 };
 
 EditorPane.prototype.setCursorBlink = function(on) {
@@ -321,6 +321,10 @@ EditorPane.prototype.setVisibleHeight = function(to) {
 EditorPane.prototype.setVisibleWidth = function(to) {
     this.visibleWidth = to;
     this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
+};
+
+EditorPane.prototype.getCursorPosition = function() {
+    return [this.cursorView.line, this.cursorView.col];
 };
 
 EditorPane.prototype.getHeight = function() {

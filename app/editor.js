@@ -1,7 +1,8 @@
 'use strict';
 
-const {EditorPane} = require('./editorPane.js');
 const {CommandModal} = require('./commandModal.js');
+const {ContextBar} = require('./contextBar.js');
+const {EditorPane} = require('./editorPane.js');
 const {TabListView} = require('./tabListView.js');
 const {numDigitsIn} = require('./utils.js');
 
@@ -28,99 +29,117 @@ function Editor(parentElem, keyMaps) {
         onSubmitActionError: () => this.handleCommandModalActionError()
     });
 
+    this.contextBar = new ContextBar(this.domNode);
+
     this._initEventListeners();
 };
 
 Editor.prototype._initEventListeners = function() {
     window.addEventListener('resize', (e) => {
-        const visibleHeight = document.body.clientHeight;
-        const panesVisibleHeight = visibleHeight - this.tabListView.getHeight();
-        this.editorPanes.forEach(e => {
-            e.setHeight(panesVisibleHeight);
-            e.setVisibleHeight(panesVisibleHeight);
-        });
-
-        const visibleWidth = document.body.clientWidth;
-        this.editorPanes.forEach(e => e.setVisibleWidth(visibleWidth));
+        this._checkResizePanes();
     });
 };
 
 Editor.prototype.insertText = function(text) {
     if (this.activePane) {
         this.activePane.insertText(text);
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.insertNewLine = function() {
     if (this.activePane) {
         this.activePane.insertNewLine();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.deleteBackChar = function() {
     if (this.activePane) {
-        this.activePane.deleteBackChar(); 
+        this.activePane.deleteBackChar();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.deleteForwardChar = function() {
     if (this.activePane) {
         this.activePane.deleteForwardChar();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.killLine = function() {
     if (this.activePane) {
         this.activePane.killLine();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
- 
+
 Editor.prototype.moveCursorLeft = function() {
     if (this.activePane) {
         this.activePane.moveCursorLeft();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorRight = function() {
     if (this.activePane) {
         this.activePane.moveCursorRight();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorUp = function() {
     if (this.activePane) {
         this.activePane.moveCursorUp();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorDown = function() {
     if (this.activePane) {
         this.activePane.moveCursorDown();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorBeginningOfLine = function() {
     if (this.activePane) {
         this.activePane.moveCursorBeginningOfLine();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorEndOfLine = function() {
     if (this.activePane) {
         this.activePane.moveCursorEndOfLine();
+        const [line, col] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.moveCursorTo = function(line, col) {
     if (this.activePane) {
         this.activePane.moveCursorTo(line, col);
+        const [cursorLine, cursorCol] = this.activePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);
     }
 };
 
 Editor.prototype.newTab = function(name = 'untitled') {
     const tabName = this._getUniqueTabName(name);
     const tabsHeight = this.tabListView.getHeight();
-    const paneHeight = this.getHeight() - tabsHeight;
+    const paneHeight = this.getHeight() - tabsHeight - this.contextBar.getVisibleHeight();
     const pane = new EditorPane(this.domNode, {
         name: name,
         tabName: tabName,
@@ -152,10 +171,13 @@ Editor.prototype.switchTab = function(tabName = undefined) {
 
     this.prevActivePane = this.activePane;
     this.activePane = toSwitchTo;
-    this.activePane.unHide();
+    this.activePane.show();
     this.activePane.setActive();
 
     this.tabListView.setSelected(this.activePane.tabName);
+    this.contextBar.setTabNameView(this.activePane.tabName);
+    const [line, col] = this.activePane.getCursorPosition();
+    this.contextBar.setCursorPositionView(line, col);
 };
 
 // If tabName is undefined, closes the active tab.
@@ -172,9 +194,22 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     if (pane === this.activePane) {
         this.activePane = null;
         this.switchTab();
-    } else if (pane === this.prevActivePane) {
+    }
+
+    // We lose the prevActivePane when either the activePane or prevActivePane is closed.
+    if (!this.prevActivePane) {
         this.prevActivePane = this.editorPanes.find(e => e !== this.activePane) || null;
     }
+};
+
+Editor.prototype.showContextBar = function() {
+    this.contextBar.show();
+    this._checkResizePanes();
+};
+
+Editor.prototype.hideContextBar = function() {
+    this.contextBar.hide();
+    this._checkResizePanes();
 };
 
 Editor.prototype.toggleCommandModal = function() {
@@ -182,9 +217,11 @@ Editor.prototype.toggleCommandModal = function() {
     if (this.commandModal.isToggled()) {
         this.activePane.setInactive();
         this.tabListView.setInactive();
+        this.contextBar.setInactive();
     } else {
         this.activePane.setActive();
         this.tabListView.setActive();
+        this.contextBar.setActive();
     }
 };
 
@@ -195,6 +232,7 @@ Editor.prototype.handleCommandModalAction = function(action) {
     if (this.activePane) {
         this.activePane.setActive();
         this.tabListView.setActive();
+        this.contextBar.setActive();
     }
 };
 
@@ -221,7 +259,9 @@ Editor.prototype.handleAction = function(action) {
         'TOGGLE_COMMAND_MODAL':          () => this.toggleCommandModal(),
         'NEW_TAB':                       action => this.newTab(action.name),
         'SWITCH_TAB':                    action => this.switchTab(action.name),
-        'CLOSE_TAB':                     action => this.closeTab(action.name)
+        'CLOSE_TAB':                     action => this.closeTab(action.name),
+        'SHOW_CONTEXT':                  () => this.contextBar.show(),
+        'HIDE_CONTEXT':                  () => this.contextBar.hide()
     };
     
     const handler = actionHandlers[action.type];
@@ -243,6 +283,18 @@ Editor.prototype.getHeight = function() {
         throw new Error('Editor: Unable to parse height.');
     }
     return height;
+};
+
+Editor.prototype._checkResizePanes = function() {
+    const visibleHeight = document.body.clientHeight;
+    const panesVisibleHeight = visibleHeight - this.tabListView.getHeight();
+    this.editorPanes.forEach(e => {
+        e.setHeight(panesVisibleHeight);
+        e.setVisibleHeight(panesVisibleHeight);
+    });
+    
+    const visibleWidth = document.body.clientWidth;
+    this.editorPanes.forEach(e => e.setVisibleWidth(visibleWidth));
 };
 
 // If an editor pane exists with the same name as that given, returns a unique

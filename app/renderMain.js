@@ -12,8 +12,6 @@ const {defaultKeyMaps} = require('./app/keyMap.js');
 // orbProcess.on('close', code => console.log('Orb closed with code ' + code));
 // orbProcess.on('error', (e) => console.log('Error: ' + e)); 
 // orbProcess.kill();
-// const {EditorPane} = require('./app/editorPane.js');
-// const pane = new EditorPane(document.body);
-// TODO: remove ^
+
 const editor = new Editor(document.body, defaultKeyMaps);
 editor.newTab();
