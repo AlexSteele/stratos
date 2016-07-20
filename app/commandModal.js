@@ -2,7 +2,7 @@
 
 const {KeyListener} = require('./keyListener.js');
 
-// Map input text to either an editor action or false, if the input is invalid.
+// Map input text to either 1) an editor action or 2) to false (if the input is invalid).
 const inputHandlers = {
     'ins':        (params) => ({type: 'INSERT', text: params.join(' ')}),
     'del':        () => ({type: 'DELETE_FORWARD_CHAR'}),    
@@ -40,6 +40,7 @@ function CommandModal(parentElem, settings = defaults) {
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.onSubmitAction = settings.onSubmitAction || defaults.onSubmitAction;
     this.onSubmitActionError = settings.onSubmitActionError || defaults.onSubmitActionError;
+    
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
         allowDefaultOnKeyError: true,

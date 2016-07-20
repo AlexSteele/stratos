@@ -26,7 +26,7 @@ function measureCharWidthAndHeight(elem) {
     return [width, height];
 };
 
-// num must be positive and contains no more than 8 digits.
+// num must be positive and contain no more than 8 digits.
 function numDigitsIn(num) {
     const abs = Math.abs(num);
     if (abs < 10) return 1;

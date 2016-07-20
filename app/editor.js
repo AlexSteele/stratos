@@ -245,10 +245,6 @@ Editor.prototype.getHeight = function() {
     return height;
 };
 
-Editor.prototype._getPrevActivePane = function() {
-    return this.editorPanes[this.editorPanes.length - 1];
-};
-
 // If an editor pane exists with the same name as that given, returns a unique
 // version of the name. Otherwise, returns the given name.
 Editor.prototype._getUniqueTabName = function(name) {    

@@ -99,14 +99,11 @@ html, body {
   display: block;
   font-family: Consolas, monospace;
   font-size: 1em;
+  text-align: center;
 }
 
-/* TODO: DRY */
 .gutter-line-active {
   color: #ffffff;
-  display: block;
-  font-family: Consolas, monospace;
-  font-size: 1em;  
 }
 
 .cursor {

@@ -61,9 +61,9 @@ GutterView.prototype.setActiveLine = function(num) {
         throw new Error('GutterView: No line with number ' + num); 
     }
     if (this.activeLineElem) {
-        this.activeLineElem.className = 'gutter-line'; 
+        this.activeLineElem.classList.remove('gutter-line-active');
     }
-    line.className = 'gutter-line-active';
+    line.classList.add('gutter-line-active');
     this.activeLineElem = line; 
 };
 
