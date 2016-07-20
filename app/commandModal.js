@@ -4,16 +4,20 @@ const {KeyListener} = require('./keyListener.js');
 
 // Map input text to either 1) an editor action or 2) to false (if the input is invalid).
 const inputHandlers = {
-    'ins':        (params) => ({type: 'INSERT', text: params.join(' ')}),
-    'del':        () => ({type: 'DELETE_FORWARD_CHAR'}),    
-    'del-back':   () => ({type: 'DELETE_BACK_CHAR'}),
-    'goto':       (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
-    'new-tab':    (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
-    'switch-tab': (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
-    'close-tab':  (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]},
-    'close-all':  () => ({type: 'CLOSE_ALL'}),
-    'show-ctxt':  () => ({type: 'SHOW_CONTEXT'}),
-    'hide-ctxt':  () => ({type: 'HIDE_CONTEXT'})
+    'ins':         (params) => ({type: 'INSERT', text: params.join(' ')}),
+    'del':         () => ({type: 'DELETE_FORWARD_CHAR'}),    
+    'del-back':    () => ({type: 'DELETE_BACK_CHAR'}),
+    'goto':        (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
+    'new-tab':     (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
+    'switch-tab':  (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
+    'close-tab':   (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]},
+    'close-all':   () => ({type: 'CLOSE_ALL'}),
+    'show-tabs':   () => ({type: 'SHOW_TABS'}),
+    'hide-tabs':   () => ({type: 'HIDE_TABS'}),
+    'show-gutter': () => ({type: 'SHOW_GUTTER'}),
+    'hide-gutter': () => ({type: 'HIDE_GUTTER'}),
+    'show-ctxt':   () => ({type: 'SHOW_CONTEXT'}),
+    'hide-ctxt':   () => ({type: 'HIDE_CONTEXT'})
 };
 
 const defaults = {

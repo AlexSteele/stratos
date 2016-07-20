@@ -115,6 +115,10 @@ CursorView.prototype.setLeftOffset = function(width) {
     this.domNode.style.left = this._colToPix();
 };
 
+CursorView.prototype.getLeftOffset = function() {
+    return this.leftOffset;
+};
+
 CursorView.prototype._colToPix = function() {
     return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
 };

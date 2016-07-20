@@ -22,7 +22,7 @@ const defaultEditorMap = (function() {
         'Meta-q':         {type: 'NATIVE!'},
         'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
         'Control-t':      {type: 'NEW_TAB'},
-        'Control-w':      {type: 'CLOSE_TAB'} // TODO: CHANGE THIS BINDING.
+        'Control-w':      {type: 'CLOSE_TAB'}
     };
     
     ['a', 'b', 'c', 'd',

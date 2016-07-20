@@ -10,7 +10,7 @@ const {numDigitsIn} = require('./utils.js');
 function Editor(parentElem, keyMaps) {
 
     this.keyMaps = keyMaps;
-    this.editorPanes = [];
+    this.panes = [];
     this.activePane = null;
     this.prevActivePane = null;
 
@@ -55,9 +55,9 @@ Editor.prototype._initEventListeners = function() {
     });
 };
 
-Editor.prototype.insertText = function(text) {
+Editor.prototype.insert = function(text) {
     if (this.activePane) {
-        this.activePane.insertText(text);
+        this.activePane.insert(text);
         const [line, col] = this.activePane.getCursorPosition();
         this.contextBar.setCursorPositionView(line, col);
     }
@@ -153,7 +153,7 @@ Editor.prototype.moveCursorTo = function(line, col) {
 
 Editor.prototype.newTab = function(name = 'untitled') {
     const tabName = this._getUniqueTabName(name);
-    const tabsHeight = this.tabListView.getHeight();
+    const tabsHeight = this.tabListView.getVisibleHeight();
     const paneHeight = this.getHeight() - tabsHeight - this.contextBar.getVisibleHeight();
     const pane = new EditorPane(this.domNode, {
         name: name,
@@ -161,17 +161,18 @@ Editor.prototype.newTab = function(name = 'untitled') {
         keyMap: this.keyMaps['editor-default'],
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error),
-        height: paneHeight,
+        visibleHeight: paneHeight,
         topOffset: tabsHeight
     });
     
-    this.editorPanes.push(pane);
+    this.panes.push(pane);
     this.tabListView.add(tabName);
     this.switchTab(tabName);
 
-    if (this.editorPanes.length === 1) {
+    if (this.panes.length === 1) {
         this.showContextBar();
         this.noPanesKeyListener.unattach();
+        console.log('unattached'); // TODO: remove
     }
 };
 
@@ -180,7 +181,7 @@ Editor.prototype.switchTab = function(tabName = undefined) {
     if (this.activePane && tabName === this.activePane.tabName) return;
     
     const toSwitchTo = tabName ?
-              this.editorPanes.find(e => e.tabName === tabName) :
+              this.panes.find(e => e.tabName === tabName) :
               this.prevActivePane;
 
     if (!toSwitchTo) return;
@@ -205,8 +206,8 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     if (!_tabName && !this.activePane) return;
 
     const tabName = _tabName || this.activePane.tabName;
-    const paneIndex = this.editorPanes.findIndex(e => e.tabName === tabName);
-    const pane = this.editorPanes.splice(paneIndex, 1)[0];
+    const paneIndex = this.panes.findIndex(e => e.tabName === tabName);
+    const pane = this.panes.splice(paneIndex, 1)[0];
 
     this.tabListView.remove(pane.tabName);
     this.domNode.removeChild(pane.domNode);
@@ -214,43 +215,82 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     if (pane === this.activePane) {
         this.activePane = null;
         this.switchTab();
+    } else if (pane === this.prevActivePane) {
+        this.prevActivePane = null;
     }
 
     // We lose the prevActivePane when either the activePane or prevActivePane is closed.
     if (!this.prevActivePane) {
-        this.prevActivePane = this.editorPanes.find(e => e !== this.activePane) || null;
+        this.prevActivePane = this.panes.find(e => e !== this.activePane) || null;
     }
 
-    if (this.editorPanes.length === 0) {
+    if (this.panes.length === 0) {
         this.contextBar.hide();
         this.noPanesKeyListener.attach();
+        console.log('attached'); // TODO: remove
     }
 };
 
 Editor.prototype.closeAllTabs = function() {
-    this.editorPanes.forEach(e => {
+    this.panes.forEach(e => {
         this.tabListView.remove(e.tabName);
         this.domNode.removeChild(e.domNode);
     });
-    this.editorPanes = [];
+    this.panes = [];
     this.activePane = null;
     this.prevActivePane = null;
     this.contextBar.hide();
     this.noPanesKeyListener.attach();
 };
 
+Editor.prototype.showTabList = function() {
+    if (!this.tabListView.isVisible()) {
+        this.tabListView.show();
+        this.panes.forEach(e => e.setTopOffset(this.tabListView.getVisibleHeight()));
+        this._checkResizePanes();
+    }
+};
+
+Editor.prototype.hideTabList = function() {
+    if (this.tabListView.isVisible()) {
+        this.tabListView.hide();
+        this.panes.forEach(e => e.setTopOffset(0));
+        this._checkResizePanes();
+    }
+};
+
+Editor.prototype.showGutter = function() {
+    if (this.activePane) {
+        this.activePane.showGutter();    
+    }    
+};
+
+Editor.prototype.hideGutter = function() {
+    if (this.activePane) {
+        this.activePane.hideGutter();        
+    }
+};
+
 Editor.prototype.showContextBar = function() {
-    this.contextBar.show();
-    this._checkResizePanes();
+    if (!this.contextBar.isVisible()) {
+        this.contextBar.show();
+        this._checkResizePanes();    
+    }    
 };
 
 Editor.prototype.hideContextBar = function() {
-    this.contextBar.hide();
-    this._checkResizePanes();
+    if (this.contextBar.isVisible()) {
+        this.contextBar.hide();
+        this._checkResizePanes();    
+    }    
 };
 
 Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
+    console.log('toggled');
+    
+    if (this.panes.length === 0) return;
+    
     if (this.commandModal.isToggled()) {
         this.activePane.setInactive();
         this.tabListView.setInactive();
@@ -281,7 +321,7 @@ Editor.prototype.handleAction = function(action) {
 
     // TODO: Move into global object to avoid possible redeclarations on each call.
     const actionHandlers = {
-        'INSERT':                        action => this.insertText(action.text),
+        'INSERT':                        action => this.insert(action.text),
         'INSERT_NEW_LINE':               () => this.insertNewLine(),
         'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
         'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
@@ -298,8 +338,12 @@ Editor.prototype.handleAction = function(action) {
         'SWITCH_TAB':                    action => this.switchTab(action.name),
         'CLOSE_TAB':                     action => this.closeTab(action.name),
         'CLOSE_ALL':                     () => this.closeAllTabs(),
-        'SHOW_CONTEXT':                  () => this.contextBar.show(),
-        'HIDE_CONTEXT':                  () => this.contextBar.hide()
+        'SHOW_TABS':                     () => this.showTabList(),
+        'HIDE_TABS':                     () => this.hideTabList(),
+        'SHOW_GUTTER':                   () => this.showGutter(),
+        'HIDE_GUTTER':                   () => this.hideGutter(),
+        'SHOW_CONTEXT':                  () => this.showContextBar(),
+        'HIDE_CONTEXT':                  () => this.hideContextBar()
     };
     
     const handler = actionHandlers[action.type];
@@ -317,28 +361,39 @@ Editor.prototype.handleKeyError = function(keys) {
 
 Editor.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
-    if (!height) {
+    if (height == null) {
         throw new Error('Editor: Unable to parse height.');
     }
     return height;
 };
 
+Editor.prototype.getVisibleHeight = function() {
+    return this.domNode.clientHeight; // this.domNode.parentElement.clientHeight;
+};
+
+Editor.prototype.getVisibleWidth = function() {
+    return this.domNode.clientWidth;
+};
+
+// Assumes that all panes have the same dimensions.
 Editor.prototype._checkResizePanes = function() {
-    const editorVisibleHeight = this.domNode.parentElement.clientHeight;
-    const panesVisibleHeight = editorVisibleHeight - this.tabListView.getHeight() - this.contextBar.getVisibleHeight();
-    this.editorPanes.forEach(e => {
-        e.setHeight(panesVisibleHeight);
-        e.setVisibleHeight(panesVisibleHeight);
-    });
+    if (!this.activePane) return;
     
-    const panesVisibleWidth = this.domNode.parentElement.clientWidth;
-    this.editorPanes.forEach(e => e.setVisibleWidth(panesVisibleWidth));
+    const panesVisibleHeight = this.getVisibleHeight() - this.tabListView.getVisibleHeight() - this.contextBar.getVisibleHeight();
+    const panesVisibleWidth = this.getVisibleWidth();
+    
+    if (this.activePane.getVisibleHeight() !== panesVisibleHeight) {
+        this.panes.forEach(e => e.setVisibleHeight(panesVisibleHeight));
+    }
+    if (this.activePane.getVisibleWidth() !== panesVisibleWidth) {
+        this.panes.forEach(e => e.setVisibleWidth(panesVisibleWidth));
+    }
 };
 
 // If an editor pane exists with the same name as that given, returns a unique
-// version of the name. Otherwise, returns the given name.
+// version of the name of the form `name-{Unique Number}`. Otherwise, returns the given name.
 Editor.prototype._getUniqueTabName = function(name) {    
-    const suffixNum = this.editorPanes.reduce((prev, curr) => {
+    const suffixNum = this.panes.reduce((prev, curr) => {
         if (prev === 0 && curr.tabName === name) {
             return prev + 1;
         }

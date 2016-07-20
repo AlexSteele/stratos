@@ -31,16 +31,27 @@ ContextBar.prototype.setInactive = function() {
 };
 
 ContextBar.prototype.show = function() {
-    this.domNode.style.visibility = 'visible';
+    if (!this.isVisible()) {
+        this.domNode.classList.remove('hidden');
+    }
 };
 
 ContextBar.prototype.hide = function() {
-    this.domNode.style.visibility = 'hidden';
+    if (this.isVisible()) {
+        this.domNode.classList.add('hidden');
+    }
+};
+
+ContextBar.prototype.isVisible = function() {
+    return !this.domNode.classList.contains('hidden');
+};
+
+ContextBar.prototype.getHeight = function() {
+    return this.domNode.clientHeight;
 };
 
 ContextBar.prototype.getVisibleHeight = function() {
-    const isHidden = this.domNode.visibility === 'hidden';
-    return isHidden ? 0 : this.domNode.clientHeight;
+    return this.isVisible() ? this.domNode.clientHeight : 0;
 };
 
 module.exports.ContextBar = ContextBar;

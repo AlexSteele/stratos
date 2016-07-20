@@ -118,7 +118,7 @@ BufferView.prototype.setScrollLeft = function(num) {
 
 BufferView.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
-    if (!height) {
+    if (height == null) {
         throw new Error('BufferView: Unable to parse height.');
     }
     return height;
@@ -146,9 +146,17 @@ BufferView.prototype.getLastVisibleLineNum = function() {
     return Math.min(lastOnScreen, lastLineNum);
 };
 
+BufferView.prototype.getLeftOffset = function() {
+    const offset = parseInt(this.domNode.style.left);
+    if (offset == null) {
+        throw new Error('BufferView: Unable to parse leftOffset.');
+    }
+    return offset;
+};
+
 BufferView.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
-    if (!width) {
+    if (width == null) {
         throw new Error('BufferView: Unable to parse width.');
     }
     return width;

@@ -65,6 +65,11 @@ html, body {
   z-index: 0;
 }
 
+.editor-pane-hidden {
+  display: none;
+  z-index: -1;
+}
+
 .editor-pane-inactive {
   opacity: 0.75;
 }
@@ -170,4 +175,8 @@ html, body {
 .context-bar-position {
   margin-left: 20px;
   width: 25%;
+}
+
+.hidden {
+  display: none;
 }

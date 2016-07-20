@@ -50,6 +50,22 @@ TabListView.prototype.setSelected = function(tabName) {
     return true;
 };
 
+TabListView.prototype.show = function() {
+    if (!this.isVisible()) {
+        this.domNode.classList.remove('hidden');
+    }    
+};
+
+TabListView.prototype.hide = function() {
+    if (this.isVisible()) {
+        this.domNode.classList.add('hidden');
+    }
+};
+
+TabListView.prototype.isVisible = function() {
+    return !this.domNode.classList.contains('hidden');  
+};
+
 TabListView.prototype.setActive = function() {
     this.domNode.classList.remove('tab-list-inactive');
 };
@@ -60,10 +76,14 @@ TabListView.prototype.setInactive = function() {
 
 TabListView.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
-    if (!height) {
+    if (height == null) {
         throw new Error('TabListView: Unable to parse height.');
     }
     return height;
+};
+
+TabListView.prototype.getVisibleHeight = function() {
+    return this.isVisible() ? this.getHeight() : 0;
 };
 
 // --TabView-----------------
@@ -116,7 +136,7 @@ TabView.prototype.getName = function() {
 
 TabView.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
-    if (!width) {
+    if (width == null) {
         throw new Error('TabView: Unable to parse width.');
     }
     return width;

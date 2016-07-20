@@ -67,6 +67,22 @@ GutterView.prototype.setActiveLine = function(num) {
     this.activeLineElem = line; 
 };
 
+GutterView.prototype.show = function() {
+    if (!this.isVisible()) {
+        this.domNode.classList.remove('hidden');
+    }
+};
+
+GutterView.prototype.hide = function() {
+    if (this.isVisible()) {
+        this.domNode.classList.add('hidden');
+    }
+};
+
+GutterView.prototype.isVisible = function() {
+    return !this.domNode.classList.contains('hidden');
+};
+
 GutterView.prototype.getLastLineNum = function() {
     return this.lineElems.length - 1;
 };
@@ -81,7 +97,7 @@ GutterView.prototype.setScrollTop = function(num) {
 
 GutterView.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
-    if (!width) {
+    if (width == null) {
         throw new Error('GutterView: Unable to parse width.');
     }
     return width;
@@ -89,7 +105,7 @@ GutterView.prototype.getWidth = function() {
 
 GutterView.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || parseInt(this.domNode.scrollHeight);
-    if (!height) {
+    if (height == null) {
         throw new Error('GutterView: Unable to parse height.');
     }
     return height;
