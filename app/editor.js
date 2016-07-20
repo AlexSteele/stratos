@@ -3,6 +3,7 @@
 const {CommandModal} = require('./commandModal.js');
 const {ContextBar} = require('./contextBar.js');
 const {EditorPane} = require('./editorPane.js');
+const {KeyListener} = require('./keyListener.js');
 const {TabListView} = require('./tabListView.js');
 const {numDigitsIn} = require('./utils.js');
 
@@ -31,7 +32,21 @@ function Editor(parentElem, keyMaps) {
 
     this.contextBar = new ContextBar(this.domNode);
 
+    // Only active when no panes are open. This is to allow, for instance,
+    // an 'open tab' keybinding even when no EditorPanes are active.
+    this.noPanesKeyListener = new KeyListener(document.body, {
+        keyMap: this.keyMaps['no-panes-default'],
+        allowDefaultOnKeyError: true,
+        onKeyAction: (action) => this.handleAction(action),
+        onKeyError: (error) => this.handleKeyError(error)
+    });
+
+    this._initComponents();
     this._initEventListeners();
+};
+
+Editor.prototype._initComponents = function() {
+    this.contextBar.hide();
 };
 
 Editor.prototype._initEventListeners = function() {
@@ -153,6 +168,11 @@ Editor.prototype.newTab = function(name = 'untitled') {
     this.editorPanes.push(pane);
     this.tabListView.add(tabName);
     this.switchTab(tabName);
+
+    if (this.editorPanes.length === 1) {
+        this.showContextBar();
+        this.noPanesKeyListener.unattach();
+    }
 };
 
 // If _tabName is undefined, switches to the previously opened tab.
@@ -199,6 +219,11 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     // We lose the prevActivePane when either the activePane or prevActivePane is closed.
     if (!this.prevActivePane) {
         this.prevActivePane = this.editorPanes.find(e => e !== this.activePane) || null;
+    }
+
+    if (this.editorPanes.length === 0) {
+        this.contextBar.hide();
+        this.noPanesKeyListener.attach();
     }
 };
 
@@ -286,15 +311,15 @@ Editor.prototype.getHeight = function() {
 };
 
 Editor.prototype._checkResizePanes = function() {
-    const visibleHeight = document.body.clientHeight;
-    const panesVisibleHeight = visibleHeight - this.tabListView.getHeight();
+    const editorVisibleHeight = this.domNode.parentElement.clientHeight;
+    const panesVisibleHeight = editorVisibleHeight - this.tabListView.getHeight() - this.contextBar.getVisibleHeight();
     this.editorPanes.forEach(e => {
         e.setHeight(panesVisibleHeight);
         e.setVisibleHeight(panesVisibleHeight);
     });
     
-    const visibleWidth = document.body.clientWidth;
-    this.editorPanes.forEach(e => e.setVisibleWidth(visibleWidth));
+    const panesVisibleWidth = this.domNode.parentElement.clientWidth;
+    this.editorPanes.forEach(e => e.setVisibleWidth(panesVisibleWidth));
 };
 
 // If an editor pane exists with the same name as that given, returns a unique

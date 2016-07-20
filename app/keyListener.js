@@ -9,22 +9,26 @@ const defaults = {
 
 function KeyListener(elem, settings = defaults) {
 
+    this.elem = elem;
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
-    this.allowDefaultOnKeyError = (typeof settings.allowDefaultOnKeyError === 'undefined') ? defaults.allowDefaultOnKeyError : settings.allowDefaultOnKeyError;
+    this.allowDefaultOnKeyError = (typeof settings.allowDefaultOnKeyError === 'undefined') ?
+        defaults.allowDefaultOnKeyError : settings.allowDefaultOnKeyError;
+    this.areListenersAttached = false;
     
     const activeModifiers = [];
-    
-    elem.addEventListener('keydown', (e) => {
-        if (keyIsModifier(e.key)) {
+
+    this._onKeyDown = (e) => {
+        const key = e.key;
+        if (keyIsModifier(key)) {
             activeModifiers.push(e.key);
             return;
         }
 
         const withModifiers = activeModifiers.length === 0 ?
-                  e.key :
-                  activeModifiers.join('-') + '-' + e.key;
+                  key :
+                  activeModifiers.join('-') + '-' + key;
         
         const action = this.keyMap[withModifiers];
 
@@ -38,20 +42,16 @@ function KeyListener(elem, settings = defaults) {
             this.onKeyError(withModifiers);
             e.preventDefault();
         }
-    });
+    };
 
-    elem.addEventListener('keypress', (e) => {
-       // e.preventDefault();
-    });
-
-    elem.addEventListener('keyup', (e) => {
+    this._onKeyUp = (e) => {
         e.preventDefault();
 
         const index = activeModifiers.indexOf(e.key);
         if (index !== -1) {
             activeModifiers.splice(index, 1);
         }
-    });
+    };
 
     function keyIsModifier(key) {
         return key === 'Control' ||
@@ -59,15 +59,29 @@ function KeyListener(elem, settings = defaults) {
             key === 'Alt';
     }
 
-    const allChords = Object.keys(this.keyMap); 
-
-    function isValidActionPrefix(prefix) {
-        const pattern = new RegExp(prefix);
-        return allChords.find(e => pattern.test(e));
-    }
-
     // Drop active modifiers when focus lost.
-    elem.addEventListener('blur', () => activeModifiers.splice(0, activeModifiers.length));
+    this._onBlur = () => activeModifiers.splice(0, activeModifiers.length);
+
+    this.attach();
+};
+
+KeyListener.prototype.attach = function() {
+    if (!this.areListenersAttached) {
+        this.areListenersAttached = true;
+        this.elem.addEventListener('keydown', this._onKeyDown);
+        this.elem.addEventListener('keyup', this._onKeyUp);
+        this.elem.addEventListener('blur', this._onBlur);
+    }
+};    
+
+// Removes attached DOM event listeners.
+KeyListener.prototype.unattach = function() {
+    if (this.areListenersAttached) {
+        this.areListenersAttached = false;
+        this.elem.removeEventListener('keydown', this._onKeyDown);
+        this.elem.removeEventListener('keyup', this._onKeyUp);
+        this.elem.removeEventListener('blur', this._onBlur);
+    }    
 };
 
 module.exports = {

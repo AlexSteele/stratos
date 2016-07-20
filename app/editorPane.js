@@ -12,8 +12,8 @@ const defaults = {
     keyMap: {},
     onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
     onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
-    horizontalCursorMargin: 10, // columns
-    verticalCursorMargin: 10,    // lines
+    horizontalCursorMargin: 1,  // columns
+    verticalCursorMargin: 1,    // lines
     height: '100%',
     width: '100%',
     topOffset: '0px'
@@ -344,19 +344,19 @@ EditorPane.prototype.getWidth = function() {
 };
 
 EditorPane.prototype._checkScrollCursorIntoView = function() {
-    if (this.cursorView.col < this.bufferView.getFirstVisibleCol()) {
+    if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
         const firstVisible = Math.max(1, this.cursorView.col - 10);
         this.scrollToCol(firstVisible);    
-    } else if (this.cursorView.col > this.bufferView.getLastVisibleCol()) {
+    } else if (this.cursorView.col > this.bufferView.getLastVisibleCol() - this.horizontalCursorMargin) {
         const lastVisible = Math.min(this.cursorView.col + 10, this.bufferView.getLastColNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
         this.scrollToCol(firstVisible);
     }
 
-    if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum()) {
+    if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum() + this.verticalCursorMargin) {
         const firstVisible = Math.max(1, this.cursorView.line - 10);
         this.scrollToLine(firstVisible); 
-    } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum()) {
+    } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum() - this.verticalCursorMargin) {
         const lastVisible = Math.min(this.cursorView.line + 10, this.bufferView.getLastLineNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
         this.scrollToLine(firstVisible);

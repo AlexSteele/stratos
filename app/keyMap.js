@@ -1,5 +1,6 @@
 'use strict';
 
+// Active when an editorPane is active.
 const defaultEditorMap = (function() {
     const keys = {
         'Enter':          {type: 'INSERT_NEW_LINE'},
@@ -52,16 +53,21 @@ const defaultEditorMap = (function() {
     return keys;
 }());
 
-const defaultCommandModalKeyMap = (function() {
-    const keys = {
-        'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'}
-    };
-    return keys;
-}());
+// Active when the command modal is active.
+const defaultCommandModalMap = {
+    'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'}
+};
+
+// Active when no editor panes are open.
+const defaultNoPanesMap = {
+    'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
+    'Control-t':      {type: 'NEW_TAB'}
+};
 
 const defaultKeyMaps = {
     'editor-default': defaultEditorMap,
-    'command-modal-default': defaultCommandModalKeyMap
+    'command-modal-default': defaultCommandModalMap,
+    'no-panes-default': defaultNoPanesMap
 };
 
 module.exports = {

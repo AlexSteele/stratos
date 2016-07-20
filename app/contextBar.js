@@ -31,11 +31,11 @@ ContextBar.prototype.setInactive = function() {
 };
 
 ContextBar.prototype.show = function() {
-    this.domNode.visibility = 'visible';
+    this.domNode.style.visibility = 'visible';
 };
 
 ContextBar.prototype.hide = function() {
-    this.domNode.visibility = 'hidden';
+    this.domNode.style.visibility = 'hidden';
 };
 
 ContextBar.prototype.getVisibleHeight = function() {
