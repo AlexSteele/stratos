@@ -7,19 +7,22 @@ const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
 const {KeyListener} = require('./keyListener.js');
-const {getSharedEditorSettings} = require('./utils.js');
 
 const defaults = {
     name: '',
     tabName: '', // A unique identifier. May be the same as the pane's name. 
     keyMap: {},
-    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
-    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
     horizontalCursorMargin: 1,  // columns
     verticalCursorMargin: 1,    // lines
     height: '100%',
     width: '100%',
-    topOffset: '0px'
+    topOffset: '0px',
+    sharedEditorComponentSettings: {
+        charWidth: 0,
+        charheight: 0
+    },
+    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
+    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); }
 };
 
 function EditorPane(parentElem, settings = defaults) {
@@ -35,6 +38,8 @@ function EditorPane(parentElem, settings = defaults) {
     this.height = this.domNode.clientHeight;
     this.width = this.domNode.clientWidth;
 
+    this.model = new BufferModel();
+
     this.name = settings.name || defaults.name;
     this.tabName = settings.tabName || defaults.tabName;
     this.keyMap = settings.keyMap || defaults.keyMap;
@@ -42,10 +47,7 @@ function EditorPane(parentElem, settings = defaults) {
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
-
-    this.model = new BufferModel();
-    
-    const sharedEditorSettings = getSharedEditorSettings(document.body);
+    const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
 
     this.charWidth = sharedEditorSettings.charWidth;
     this.charHeight = sharedEditorSettings.charHeight;    

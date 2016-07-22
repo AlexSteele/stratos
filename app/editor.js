@@ -4,7 +4,7 @@ const {CommandModal} = require('./commandModal.js');
 const {ContextBar} = require('./contextBar.js');
 const {EditorPane} = require('./editorPane.js');
 const {KeyListener} = require('./keyListener.js');
-const {numDigitsIn} = require('./utils.js');
+const {numDigitsIn, getSharedEditorComponentSettings} = require('./utils.js');
 const {TabBar} = require('./tabBar.js');
 
 function Editor(parentElem, keyMaps) {
@@ -40,6 +40,9 @@ function Editor(parentElem, keyMaps) {
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error)
     });
+
+    // These are used when instantiating editorPane instances.
+    this.sharedEditorComponentSettings = getSharedEditorComponentSettings(document.body);
 
     this._initComponents();
     this._initEventListeners();
@@ -159,10 +162,11 @@ Editor.prototype.newTab = function(name = 'untitled') {
         name: name,
         tabName: tabName,
         keyMap: this.keyMaps['editor-default'],
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (error) => this.handleKeyError(error),
         height: paneHeight,
-        topOffset: tabsHeight
+        topOffset: tabsHeight,
+        sharedEditorComponentSettings: this.sharedEditorComponentSettings,
+        onKeyAction: (action) => this.handleAction(action),
+        onKeyError: (error) => this.handleKeyError(error)
     });
     
     this.panes.push(pane);

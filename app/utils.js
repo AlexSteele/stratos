@@ -1,6 +1,6 @@
 'use strict';
 
-function getSharedEditorSettings(elem) {
+function getSharedEditorComponentSettings(elem) {
     const [charWidth, charHeight] = measureCharWidthAndHeight(elem);
     return {
         charWidth,
@@ -37,6 +37,6 @@ function numDigitsIn(num) {
 };
 
 module.exports = {
-    getSharedEditorSettings,
+    getSharedEditorComponentSettings,
     numDigitsIn
 };
