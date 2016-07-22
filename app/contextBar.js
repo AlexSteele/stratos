@@ -31,15 +31,11 @@ ContextBar.prototype.setInactive = function() {
 };
 
 ContextBar.prototype.show = function() {
-    if (!this.isVisible()) {
-        this.domNode.classList.remove('hidden');
-    }
+    this.domNode.classList.remove('hidden');
 };
 
 ContextBar.prototype.hide = function() {
-    if (this.isVisible()) {
-        this.domNode.classList.add('hidden');
-    }
+    this.domNode.classList.add('hidden');
 };
 
 ContextBar.prototype.isVisible = function() {

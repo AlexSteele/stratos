@@ -40,7 +40,6 @@ GutterView.prototype.appendLine = function() {
     this.domNode.appendChild(line);
 
     this._checkUpdateWidth();
-    this._checkUpdateHeight();
 };
 
 GutterView.prototype.removeLine = function() {
@@ -52,7 +51,6 @@ GutterView.prototype.removeLine = function() {
     this.domNode.removeChild(removed);
     
     this._checkUpdateWidth();
-    this._checkUpdateHeight();
 };
 
 GutterView.prototype.setActiveLine = function(num) {
@@ -68,15 +66,11 @@ GutterView.prototype.setActiveLine = function(num) {
 };
 
 GutterView.prototype.show = function() {
-    if (!this.isVisible()) {
-        this.domNode.classList.remove('hidden');
-    }
+    this.domNode.classList.remove('hidden');
 };
 
 GutterView.prototype.hide = function() {
-    if (this.isVisible()) {
-        this.domNode.classList.add('hidden');
-    }
+    this.domNode.classList.add('hidden');
 };
 
 GutterView.prototype.isVisible = function() {
@@ -111,10 +105,6 @@ GutterView.prototype.getHeight = function() {
     return height;
 };
 
-GutterView.prototype.setHeight = function(num) {
-    this.domNode.style.height = num + 'px';
-};
-
 GutterView.prototype.setLeftOffset = function(num) {
     this.domNode.style.left = num + 'px';
 };
@@ -132,12 +122,6 @@ GutterView.prototype._checkUpdateWidth = function() {
         const width = this._calculateWidth();
         this.domNode.style.width = width + 'px';
         this.onWidthChanged(width);
-    }
-};
-
-GutterView.prototype._checkUpdateHeight = function() {
-    if (this.getHeightOfLines() != this.getHeight()) {
-        this.setHeight(this.getHeightOfLines());
     }
 };
 

@@ -4,8 +4,8 @@ const {CommandModal} = require('./commandModal.js');
 const {ContextBar} = require('./contextBar.js');
 const {EditorPane} = require('./editorPane.js');
 const {KeyListener} = require('./keyListener.js');
-const {TabListView} = require('./tabListView.js');
 const {numDigitsIn} = require('./utils.js');
+const {TabBar} = require('./tabBar.js');
 
 function Editor(parentElem, keyMaps) {
 
@@ -18,7 +18,7 @@ function Editor(parentElem, keyMaps) {
     this.domNode.className = 'stratos-editor';
     parentElem.appendChild(this.domNode);
     
-    this.tabListView = new TabListView(this.domNode, {
+    this.tabBar = new TabBar(this.domNode, {
         onTabClick: (name) => this.switchTab(name)
     });
 
@@ -153,8 +153,8 @@ Editor.prototype.moveCursorTo = function(line, col) {
 
 Editor.prototype.newTab = function(name = 'untitled') {
     const tabName = this._getUniqueTabName(name);
-    const tabsHeight = this.tabListView.getVisibleHeight();
-    const paneHeight = this.getHeight() - tabsHeight - this.contextBar.getVisibleHeight();
+    const tabsHeight = this.tabBar.getVisibleHeight();
+    const paneHeight = this.getVisibleHeight() - tabsHeight - this.contextBar.getVisibleHeight();
     const pane = new EditorPane(this.domNode, {
         name: name,
         tabName: tabName,
@@ -166,13 +166,12 @@ Editor.prototype.newTab = function(name = 'untitled') {
     });
     
     this.panes.push(pane);
-    this.tabListView.add(tabName);
+    this.tabBar.add(tabName);
     this.switchTab(tabName);
 
     if (this.panes.length === 1) {
         this.showContextBar();
         this.noPanesKeyListener.unattach();
-        console.log('unattached'); // TODO: remove
     }
 };
 
@@ -195,7 +194,7 @@ Editor.prototype.switchTab = function(tabName = undefined) {
     this.activePane.show();
     this.activePane.setActive();
 
-    this.tabListView.setSelected(this.activePane.tabName);
+    this.tabBar.setSelected(this.activePane.tabName);
     this.contextBar.setTabNameView(this.activePane.tabName);
     const [line, col] = this.activePane.getCursorPosition();
     this.contextBar.setCursorPositionView(line, col);
@@ -209,7 +208,7 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     const paneIndex = this.panes.findIndex(e => e.tabName === tabName);
     const pane = this.panes.splice(paneIndex, 1)[0];
 
-    this.tabListView.remove(pane.tabName);
+    this.tabBar.remove(pane.tabName);
     this.domNode.removeChild(pane.domNode);
     
     if (pane === this.activePane) {
@@ -227,13 +226,12 @@ Editor.prototype.closeTab = function(_tabName = undefined) {
     if (this.panes.length === 0) {
         this.contextBar.hide();
         this.noPanesKeyListener.attach();
-        console.log('attached'); // TODO: remove
     }
 };
 
 Editor.prototype.closeAllTabs = function() {
     this.panes.forEach(e => {
-        this.tabListView.remove(e.tabName);
+        this.tabBar.remove(e.tabName);
         this.domNode.removeChild(e.domNode);
     });
     this.panes = [];
@@ -243,17 +241,17 @@ Editor.prototype.closeAllTabs = function() {
     this.noPanesKeyListener.attach();
 };
 
-Editor.prototype.showTabList = function() {
-    if (!this.tabListView.isVisible()) {
-        this.tabListView.show();
-        this.panes.forEach(e => e.setTopOffset(this.tabListView.getVisibleHeight()));
+Editor.prototype.showTabBar = function() {
+    if (!this.tabBar.isVisible()) {
+        this.tabBar.show();
+        this.panes.forEach(e => e.setTopOffset(this.tabBar.getVisibleHeight()));
         this._checkResizePanes();
     }
 };
 
-Editor.prototype.hideTabList = function() {
-    if (this.tabListView.isVisible()) {
-        this.tabListView.hide();
+Editor.prototype.hideTabBar = function() {
+    if (this.tabBar.isVisible()) {
+        this.tabBar.hide();
         this.panes.forEach(e => e.setTopOffset(0));
         this._checkResizePanes();
     }
@@ -287,17 +285,16 @@ Editor.prototype.hideContextBar = function() {
 
 Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
-    console.log('toggled');
     
     if (this.panes.length === 0) return;
     
     if (this.commandModal.isToggled()) {
         this.activePane.setInactive();
-        this.tabListView.setInactive();
+        this.tabBar.setInactive();
         this.contextBar.setInactive();
     } else {
         this.activePane.setActive();
-        this.tabListView.setActive();
+        this.tabBar.setActive();
         this.contextBar.setActive();
     }
 };
@@ -308,13 +305,17 @@ Editor.prototype.handleCommandModalAction = function(action) {
     this.handleAction(action);
     if (this.activePane) {
         this.activePane.setActive();
-        this.tabListView.setActive();
+        this.tabBar.setActive();
         this.contextBar.setActive();
     }
 };
 
 Editor.prototype.handleCommandModalActionError = function(action) {
     console.log('TextEditor: No command: ' + action);
+};
+
+Editor.prototype.handleKeyError = function(keys) {
+    console.log('Editor: Key error: ' + keys); 
 };
 
 Editor.prototype.handleAction = function(action) {
@@ -338,8 +339,8 @@ Editor.prototype.handleAction = function(action) {
         'SWITCH_TAB':                    action => this.switchTab(action.name),
         'CLOSE_TAB':                     action => this.closeTab(action.name),
         'CLOSE_ALL':                     () => this.closeAllTabs(),
-        'SHOW_TABS':                     () => this.showTabList(),
-        'HIDE_TABS':                     () => this.hideTabList(),
+        'SHOW_TABS':                     () => this.showTabBar(),
+        'HIDE_TABS':                     () => this.hideTabBar(),
         'SHOW_GUTTER':                   () => this.showGutter(),
         'HIDE_GUTTER':                   () => this.hideGutter(),
         'SHOW_CONTEXT':                  () => this.showContextBar(),
@@ -355,18 +356,6 @@ Editor.prototype.handleAction = function(action) {
     }
 };
 
-Editor.prototype.handleKeyError = function(keys) {
-    console.log('Editor: Key error: ' + keys); 
-};
-
-Editor.prototype.getHeight = function() {
-    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
-    if (height == null) {
-        throw new Error('Editor: Unable to parse height.');
-    }
-    return height;
-};
-
 Editor.prototype.getVisibleHeight = function() {
     return this.domNode.clientHeight; // this.domNode.parentElement.clientHeight;
 };
@@ -379,7 +368,7 @@ Editor.prototype.getVisibleWidth = function() {
 Editor.prototype._checkResizePanes = function() {
     if (!this.activePane) return;
     
-    const panesVisibleHeight = this.getVisibleHeight() - this.tabListView.getVisibleHeight() - this.contextBar.getVisibleHeight();
+    const panesVisibleHeight = this.getVisibleHeight() - this.tabBar.getVisibleHeight() - this.contextBar.getVisibleHeight();
     const panesVisibleWidth = this.getVisibleWidth();
     
     if (this.activePane.getVisibleHeight() !== panesVisibleHeight) {

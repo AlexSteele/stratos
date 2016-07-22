@@ -86,34 +86,34 @@ BufferView.prototype.getLine = function(num) {
     return this.lineElems[num].innerHTML;
 };
 
-BufferView.prototype.setHeight = function(num) {
-    this.domNode.style.height = num + 'px';
+BufferView.prototype.setHeight = function(to) {
+    this.domNode.style.height = to + 'px';
 };
 
 // This function is merely for record keeping.
 // It has no side-effects on the DOM.
-BufferView.prototype.setVisibleHeight = function(num) {
-    this.visibleHeight = num;
+BufferView.prototype.setVisibleHeight = function(to) {
+    this.visibleHeight = to;
 };
 
-BufferView.prototype.setLeftOffset = function(width) {
-    this.domNode.style.left = width + 'px';
+BufferView.prototype.setLeftOffset = function(to) {
+    this.domNode.style.left = to + 'px';
 };
 
-BufferView.prototype.setWidth = function(num) {
-    this.domNode.style.width = num + 'px';
+BufferView.prototype.setWidth = function(to) {
+    this.domNode.style.width = to + 'px';
 };
 
-BufferView.prototype.setVisibleWidth = function(width) {
-    this.visibleWidth = width;
+BufferView.prototype.setVisibleWidth = function(to) {
+    this.visibleWidth = to;
 };
 
-BufferView.prototype.setScrollTop = function(num) {
-    this.scrollTop = num;
+BufferView.prototype.setScrollTop = function(to) {
+    this.scrollTop = to;
 };
 
-BufferView.prototype.setScrollLeft = function(num) {
-    this.scrollLeft = num;
+BufferView.prototype.setScrollLeft = function(to) {
+    this.scrollLeft = to;
 };
 
 BufferView.prototype.getHeight = function() {
@@ -171,7 +171,7 @@ BufferView.prototype.getLastColNum = function() {
 };
 
 BufferView.prototype.getVisibleWidth = function() {
-    return this.visibleWidth; 
+    return this.visibleWidth;
 };
 
 BufferView.prototype.getVisibleWidthCols = function() {

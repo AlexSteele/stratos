@@ -20,7 +20,6 @@ function KeyListener(elem, settings = defaults) {
     const activeModifiers = [];
 
     this._onKeyDown = (e) => {
-        console.log(e);         // TODO: remove
         const key = e.key;
         if (keyIsModifier(key)) {
             activeModifiers.push(e.key);

@@ -2,10 +2,10 @@
 
 const defaults = {
     tabsLeftOffset: 30,
-    onTabClick: (tabName) => { throw new Error('TabListView: No handler for onTabClick'); }
+    onTabClick: (tabName) => { throw new Error('TabBar: No handler for onTabClick'); }
 };
 
-function TabListView(parentElem, settings = defaults) {
+function TabBar(parentElem, settings = defaults) {
     this.tabsLeftOffset = settings.tabsLeftOffset || defaults.tabsLeftOffset;
     this.onTabClick = settings.onTabClick || defaults.onTabClick;
 
@@ -18,7 +18,7 @@ function TabListView(parentElem, settings = defaults) {
     parentElem.appendChild(this.domNode);
 }
 
-TabListView.prototype.add = function(tabName) {
+TabBar.prototype.add = function(tabName) {
     const tab = new TabView(this.domNode, {
         name: tabName,
         onClick: this.onTabClick
@@ -27,18 +27,18 @@ TabListView.prototype.add = function(tabName) {
     tab.setLeftOffset(this.tabsLeftOffset);
 };
 
-TabListView.prototype.remove = function(tabName) {
+TabBar.prototype.remove = function(tabName) {
     const index = this.tabViews.findIndex(e => e.getName() === tabName);
-    if (index === -1) throw new Error('TabListView: No tab with name ' + tabName);
+    if (index === -1) throw new Error('TabBar: No tab with name ' + tabName);
     const tab = this.tabViews.splice(index, 1)[0];
     this.domNode.removeChild(tab.domNode);
     return true;
 };
 
-TabListView.prototype.setSelected = function(tabName) {
+TabBar.prototype.setSelected = function(tabName) {
     const toSelect = this.tabViews.find(e => e.getName() === tabName);
 
-    if (!toSelect) throw new Error('TabListView: No tab with name ' + tabName);
+    if (!toSelect) throw new Error('TabBar: No tab with name ' + tabName);
 
     if (this.selectedTab) {
         this.selectedTab.setSelected(false);
@@ -50,39 +50,35 @@ TabListView.prototype.setSelected = function(tabName) {
     return true;
 };
 
-TabListView.prototype.show = function() {
-    if (!this.isVisible()) {
-        this.domNode.classList.remove('hidden');
-    }    
+TabBar.prototype.show = function() {
+    this.domNode.classList.remove('hidden');
 };
 
-TabListView.prototype.hide = function() {
-    if (this.isVisible()) {
-        this.domNode.classList.add('hidden');
-    }
+TabBar.prototype.hide = function() {
+    this.domNode.classList.add('hidden');
 };
 
-TabListView.prototype.isVisible = function() {
+TabBar.prototype.isVisible = function() {
     return !this.domNode.classList.contains('hidden');  
 };
 
-TabListView.prototype.setActive = function() {
+TabBar.prototype.setActive = function() {
     this.domNode.classList.remove('tab-list-inactive');
 };
 
-TabListView.prototype.setInactive = function() {
+TabBar.prototype.setInactive = function() {
     this.domNode.classList.add('tab-list-inactive');
 };
 
-TabListView.prototype.getHeight = function() {
+TabBar.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
     if (height == null) {
-        throw new Error('TabListView: Unable to parse height.');
+        throw new Error('TabBar: Unable to parse height.');
     }
     return height;
 };
 
-TabListView.prototype.getVisibleHeight = function() {
+TabBar.prototype.getVisibleHeight = function() {
     return this.isVisible() ? this.getHeight() : 0;
 };
 
@@ -142,4 +138,4 @@ TabView.prototype.getWidth = function() {
     return width;
 };
 
-module.exports.TabListView = TabListView;
+module.exports.TabBar = TabBar;

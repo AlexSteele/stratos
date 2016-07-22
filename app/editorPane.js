@@ -68,8 +68,8 @@ EditorPane.prototype._initComponents = function() {
 };
 
 EditorPane.prototype._initEventListeners = function() {
-
     this.domNode.addEventListener('scroll', (e) => {
+        console.log(this.domNode.scrollLeft);
         this.bufferView.setScrollTop(this.domNode.scrollTop);
         this.bufferView.setScrollLeft(this.domNode.scrollLeft);
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
@@ -292,7 +292,6 @@ EditorPane.prototype.isVisible = function() {
 
 EditorPane.prototype.showGutter = function() {
     if (!this.gutterView.isVisible()) {
-            console.log('showing');
         this.gutterView.show();
         const width = this.gutterView.getWidth();
         this.bufferView.setLeftOffset(this.bufferView.getLeftOffset() + width);
@@ -318,9 +317,6 @@ EditorPane.prototype.setActive = function(on) {
 EditorPane.prototype.setInactive = function() {
     this.cursorView.setBlink(false);
     this.domNode.blur();
-    
-    // Idempotent - don't have to worry about whether the
-    // class is already present.
     this.domNode.classList.add('editor-pane-inactive');    
 };
 
@@ -340,12 +336,11 @@ EditorPane.prototype.setVisibleHeight = function(to) {
     this.visibleHeight = to;
     this.domNode.style.height = to + 'px';
     this.bufferView.setVisibleHeight(this.visibleHeight);
-    this.gutterView.setLeftOffset(this.domNode.scrollLeft);
 };
 
 EditorPane.prototype.setVisibleWidth = function(to) {
-    // TODO: Set domNode.style.width.
     this.visibleWidth = to;
+    this.domNode.style.width = to + 'px';
     this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
 };
 
