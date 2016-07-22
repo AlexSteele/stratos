@@ -86,10 +86,6 @@ BufferView.prototype.getLine = function(num) {
     return this.lineElems[num].innerHTML;
 };
 
-BufferView.prototype.setHeight = function(to) {
-    this.domNode.style.height = to + 'px';
-};
-
 // This function is merely for record keeping.
 // It has no side-effects on the DOM.
 BufferView.prototype.setVisibleHeight = function(to) {
@@ -98,10 +94,6 @@ BufferView.prototype.setVisibleHeight = function(to) {
 
 BufferView.prototype.setLeftOffset = function(to) {
     this.domNode.style.left = to + 'px';
-};
-
-BufferView.prototype.setWidth = function(to) {
-    this.domNode.style.width = to + 'px';
 };
 
 BufferView.prototype.setVisibleWidth = function(to) {

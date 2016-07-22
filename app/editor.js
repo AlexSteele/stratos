@@ -161,7 +161,7 @@ Editor.prototype.newTab = function(name = 'untitled') {
         keyMap: this.keyMaps['editor-default'],
         onKeyAction: (action) => this.handleAction(action),
         onKeyError: (error) => this.handleKeyError(error),
-        visibleHeight: paneHeight,
+        height: paneHeight,
         topOffset: tabsHeight
     });
     
@@ -371,11 +371,11 @@ Editor.prototype._checkResizePanes = function() {
     const panesVisibleHeight = this.getVisibleHeight() - this.tabBar.getVisibleHeight() - this.contextBar.getVisibleHeight();
     const panesVisibleWidth = this.getVisibleWidth();
     
-    if (this.activePane.getVisibleHeight() !== panesVisibleHeight) {
-        this.panes.forEach(e => e.setVisibleHeight(panesVisibleHeight));
+    if (this.activePane.getHeight() !== panesVisibleHeight) {
+        this.panes.forEach(e => e.setHeight(panesVisibleHeight));
     }
-    if (this.activePane.getVisibleWidth() !== panesVisibleWidth) {
-        this.panes.forEach(e => e.setVisibleWidth(panesVisibleWidth));
+    if (this.activePane.getWidth() !== panesVisibleWidth) {
+        this.panes.forEach(e => e.setWidth(panesVisibleWidth));
     }
 };
 

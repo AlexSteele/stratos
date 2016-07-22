@@ -39,7 +39,9 @@ GutterView.prototype.appendLine = function() {
     this.lineElems.push(line);
     this.domNode.appendChild(line);
 
-    this._checkUpdateWidth();
+    if (this.isVisible()) {
+        this._checkUpdateWidth();    
+    }    
 };
 
 GutterView.prototype.removeLine = function() {
@@ -49,8 +51,10 @@ GutterView.prototype.removeLine = function() {
     
     const removed = this.lineElems.splice(this.lineElems.length - 1, 1)[0];
     this.domNode.removeChild(removed);
-    
-    this._checkUpdateWidth();
+
+    if (this.isVisible()) {
+        this._checkUpdateWidth();    
+    }    
 };
 
 GutterView.prototype.setActiveLine = function(num) {
@@ -67,6 +71,7 @@ GutterView.prototype.setActiveLine = function(num) {
 
 GutterView.prototype.show = function() {
     this.domNode.classList.remove('hidden');
+    this._checkUpdateWidth();
 };
 
 GutterView.prototype.hide = function() {
@@ -90,19 +95,15 @@ GutterView.prototype.setScrollTop = function(num) {
 };
 
 GutterView.prototype.getWidth = function() {
-    const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
+    const width = parseInt(this.domNode.style.width);
     if (width == null) {
         throw new Error('GutterView: Unable to parse width.');
     }
-    return width;
+    return this.isVisible() ? width : 0;
 };
 
-GutterView.prototype.getHeight = function() {
-    const height = parseInt(this.domNode.style.height) || parseInt(this.domNode.scrollHeight);
-    if (height == null) {
-        throw new Error('GutterView: Unable to parse height.');
-    }
-    return height;
+GutterView.prototype.setWidth = function(to) {
+    this.domNode.style.width = to + 'px';
 };
 
 GutterView.prototype.setLeftOffset = function(num) {
@@ -120,7 +121,7 @@ GutterView.prototype._checkUpdateWidth = function() {
     if (actualLastLineNumDigits != this.lastLineNumDigits) {
         this.lastLineNumDigits = actualLastLineNumDigits;
         const width = this._calculateWidth();
-        this.domNode.style.width = width + 'px';
+        this.setWidth(width);
         this.onWidthChanged(width);
     }
 };

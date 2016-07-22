@@ -22,11 +22,10 @@ html, body {
   left: 0;
   min-height: 30px;
   top: 0;
-  /* overflow: hidden;             /\*TODO: not working *\/ */
   overflow: auto;
   position: absolute;
   width: 100%;
-  white-space: nowrap;          /*TODO: check*/
+  white-space: nowrap;
 }
 
 .tab-list-inactive {
@@ -36,7 +35,7 @@ html, body {
 .tab {
   background-color: #333333;
   border-radius: 20px 20px 0 0;
-  bottom: -5px;                 /*TODO: Hack.*/
+  bottom: -5px;
   color: #c1c1c1;
   cursor: pointer;
   display: inline-block;

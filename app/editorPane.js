@@ -14,8 +14,8 @@ const defaults = {
     onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
     horizontalCursorMargin: 1,  // columns
     verticalCursorMargin: 1,    // lines
-    visibleHeight: '100%',
-    visibleWidth: '100%',
+    height: '100%',
+    width: '100%',
     topOffset: '0px'
 };
 
@@ -23,14 +23,14 @@ function EditorPane(parentElem, settings = defaults) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'editor-pane';
-    this.domNode.style.height = settings.visibleHeight || defaults.visibleHeight;
-    this.domNode.style.width = settings.visibleWidth || defaults.visibleWidth;
+    this.domNode.style.height = settings.height || defaults.height;
+    this.domNode.style.width = settings.width || defaults.width;
     this.domNode.style.top = settings.topOffset || defaults.topOffset;
     this.domNode.tabIndex = 1;
     parentElem.appendChild(this.domNode);
 
-    this.visibleHeight = this.domNode.clientHeight;
-    this.visibleWidth = this.domNode.clientWidth;
+    this.height = this.domNode.clientHeight;
+    this.width = this.domNode.clientWidth;
 
     this.name = settings.name || defaults.name;
     this.tabName = settings.tabName || defaults.tabName;
@@ -63,13 +63,12 @@ function EditorPane(parentElem, settings = defaults) {
 EditorPane.prototype._initComponents = function() {
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
-    this.bufferView.setVisibleHeight(this.visibleHeight);
-    this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
+    this.bufferView.setVisibleHeight(this.getHeight());
+    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
 };
 
 EditorPane.prototype._initEventListeners = function() {
     this.domNode.addEventListener('scroll', (e) => {
-        console.log(this.domNode.scrollLeft);
         this.bufferView.setScrollTop(this.domNode.scrollTop);
         this.bufferView.setScrollLeft(this.domNode.scrollLeft);
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
@@ -251,12 +250,6 @@ EditorPane.prototype.scrollToLine = function(line) {
     const scrollTop = (line - 1) * this.charHeight;
     this.domNode.scrollTop = scrollTop;
     this.bufferView.setScrollTop(scrollTop);
-
-    // TODO: It would be nice to ensure bufferView set its own height
-    // correctly, be it in the css or programatically.
-    if (this.bufferView.getHeight() < this.getHeight()) {
-        this.bufferView.setHeight(this.getHeight());
-    }
 };
 
 // Sets the given column as the first visible. 
@@ -265,11 +258,6 @@ EditorPane.prototype.scrollToCol = function(col) {
     this.domNode.scrollLeft = scrollLeft;
     this.bufferView.setScrollLeft(scrollLeft);
     this.gutterView.setLeftOffset(scrollLeft);
-
-    // TODO: Would be nice if bufferView set its own width. See above.
-    if (this.bufferView.getWidth() < this.getWidth()) {
-        this.bufferView.setWidth(this.getWidth());
-    }
 };
 
 EditorPane.prototype.show = function() {
@@ -294,8 +282,8 @@ EditorPane.prototype.showGutter = function() {
     if (!this.gutterView.isVisible()) {
         this.gutterView.show();
         const width = this.gutterView.getWidth();
-        this.bufferView.setLeftOffset(this.bufferView.getLeftOffset() + width);
-        this.cursorView.setLeftOffset(this.cursorView.getLeftOffset() + width);    
+        this.bufferView.setLeftOffset(width);
+        this.cursorView.setLeftOffset(width);    
     }    
 };
 
@@ -303,8 +291,8 @@ EditorPane.prototype.hideGutter = function() {
     if (this.gutterView.isVisible()) {
         this.gutterView.hide();
         const width = this.gutterView.getWidth();
-        this.bufferView.setLeftOffset(this.bufferView.getLeftOffset() - width);
-        this.cursorView.setLeftOffset(this.cursorView.getLeftOffset() - width);        
+        this.bufferView.setLeftOffset(width);
+        this.cursorView.setLeftOffset(width);        
     }
 };
 
@@ -332,16 +320,14 @@ EditorPane.prototype.setTopOffset = function(to) {
     this.domNode.style.top = to + 'px';
 };
 
-EditorPane.prototype.setVisibleHeight = function(to) {
-    this.visibleHeight = to;
+EditorPane.prototype.setHeight = function(to) {
     this.domNode.style.height = to + 'px';
-    this.bufferView.setVisibleHeight(this.visibleHeight);
+    this.bufferView.setVisibleHeight(this.getHeight());
 };
 
-EditorPane.prototype.setVisibleWidth = function(to) {
-    this.visibleWidth = to;
+EditorPane.prototype.setWidth = function(to) {
     this.domNode.style.width = to + 'px';
-    this.bufferView.setVisibleWidth(this.visibleWidth - this.gutterView.getWidth());
+    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
 };
 
 EditorPane.prototype.getCursorPosition = function() {
@@ -349,27 +335,19 @@ EditorPane.prototype.getCursorPosition = function() {
 };
 
 EditorPane.prototype.getHeight = function() {
-    const height = parseInt(this.domNode.style.height) || this.domNode.scrollHeight;
+    const height = parseInt(this.domNode.style.height);
     if (height == null) {
         throw new Error('EditorPane: Unable to parse height.');
     }
     return height;
 };
 
-EditorPane.prototype.getVisibleHeight = function() {
-    return this.visibleHeight;
-};
-
 EditorPane.prototype.getWidth = function() {
-    const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
+    const width = parseInt(this.domNode.style.width);
     if (width == null) {
         throw new Error('EditorPane: Unable to parse width.');
     }
     return width;
-};
-
-EditorPane.prototype.getVisibleWidth = function() {
-    return this.visibleWidth;
 };
 
 EditorPane.prototype._checkScrollCursorIntoView = function() {
