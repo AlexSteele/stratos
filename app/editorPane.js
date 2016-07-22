@@ -1,5 +1,8 @@
 'use strict';
 
+// TODO: Make line, col indexing consistent between model and view.
+
+const {BufferModel} = require('./bufferModel.js');
 const {BufferView} = require('./bufferView.js');
 const {CursorView} = require('./cursorView.js');
 const {GutterView} = require('./gutterView.js');
@@ -40,6 +43,8 @@ function EditorPane(parentElem, settings = defaults) {
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
 
+    this.model = new BufferModel();
+    
     const sharedEditorSettings = getSharedEditorSettings(document.body);
 
     this.charWidth = sharedEditorSettings.charWidth;
@@ -61,6 +66,7 @@ function EditorPane(parentElem, settings = defaults) {
 }
 
 EditorPane.prototype._initComponents = function() {
+    this.model.appendLine();
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
     this.bufferView.setVisibleHeight(this.getHeight());
@@ -76,7 +82,7 @@ EditorPane.prototype._initEventListeners = function() {
 };
 
 EditorPane.prototype._onBufferMouseClick = function(pos) {
-    const [col, line] = pos;
+    const [line, col] = pos;
     this.cursorView.moveTo(line, col);
     this.gutterView.setActiveLine(line);
 };
@@ -87,22 +93,17 @@ EditorPane.prototype._onGutterWidthChanged = function(width) {
 };
 
 EditorPane.prototype.insert = function(text) {
-    const line = this.bufferView.getLine(this.cursorView.line);
-    const beforeInsert = line.slice(0, this.cursorView.col - 1);
-    const afterInsert = line.slice(this.cursorView.col - 1);
-    this.bufferView.setLine(this.cursorView.line, beforeInsert + text + afterInsert);
+    this.model.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
+    this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     this.cursorView.moveRight(text.length);
 
     this._checkScrollCursorIntoView();
 };
 
 EditorPane.prototype.insertNewLine = function() {
-    const line = this.bufferView.getLine(this.cursorView.line);
-    const toRemain = line.substr(0, this.cursorView.col - 1);
-    const toGo = line.substr(this.cursorView.col - 1);
-
-    this.bufferView.setLine(this.cursorView.line, toRemain);
-    this.bufferView.insertLine(this.cursorView.line + 1, toGo);
+    this.model.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
+    this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+    this.bufferView.insertLine(this.cursorView.line + 1, this.model.getLine(this.cursorView.line));
     this.cursorView.moveTo(this.cursorView.line + 1, 1);
     this.gutterView.appendLine();
     this.gutterView.setActiveLine(this.cursorView.line);
@@ -115,19 +116,22 @@ EditorPane.prototype.deleteBackChar = function() {
         if (this.cursorView.line === 1) {
             return;
         }
+
+        // TODO: Move logic into model.
+
+        const prevLine = this.model.getLine(this.cursorView.line - 2);
+        const line = prevLine + this.model.getLine(this.cursorView.line - 1);
+        this.model.setLine(this.cursorView.line - 2, line);
+        this.model.deleteLine(this.cursorView.line - 1);
         
-        const prevLine = this.bufferView.getLine(this.cursorView.line - 1);
-        this.bufferView.setLine(this.cursorView.line - 1,
-                                prevLine + this.bufferView.getLine(this.cursorView.line));
+        this.bufferView.setLine(this.cursorView.line - 1, line);
         this.bufferView.removeLine(this.cursorView.line);
         this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length + 1);
         this.gutterView.setActiveLine(this.cursorView.line);
         this.gutterView.removeLine();
     } else {
-        const line = this.bufferView.getLine(this.cursorView.line);
-        const beforeDelete = line.slice(0, this.cursorView.col - 2);
-        const afterDelete = line.slice(this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, beforeDelete + afterDelete);
+        this.model.deleteBack(this.cursorView.line - 1, this.cursorView.col - 1);
+        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
         this.cursorView.moveLeft();
     }
 
@@ -136,29 +140,41 @@ EditorPane.prototype.deleteBackChar = function() {
 
 EditorPane.prototype.deleteForwardChar = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line < this.bufferView.getLastLineNum()) {
-            const nextLine = this.bufferView.getLine(this.cursorView.line + 1);
-            this.bufferView.removeLine(this.cursorView.line + 1);
-            this.bufferView.setLine(this.cursorView.line, this.bufferView.getLine(this.cursorView.line) + nextLine);
+        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+            return;
         }
+
+        // TODO: ^ Ditto ^
+
+        const nextLine = this.model.getLine(this.cursorView.line);
+        this.model.setLine(this.cursorView.line - 1,
+                           this.model.getLine(this.cursorView.line - 1) + nextLine);
+        this.model.deleteLine(this.cursorView.line);
+        this.bufferView.removeLine(this.cursorView.line + 1);
+        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     } else {
-        const line = this.bufferView.getLine(this.cursorView.line);
-        this.bufferView.setLine(this.cursorView.line,
-                                line.slice(0, this.cursorView.col - 1) +
-                                line.slice(this.cursorView.col));
+        this.model.deleteForward(this.cursorView.line - 1, this.cursorView.col - 1);
+        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     }
 };
 
 EditorPane.prototype.killLine = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-         if (this.cursorView.line < this.bufferView.getLastLineNum()) {
-             const nextLine = this.bufferView.getLine(this.cursorView.line + 1);
-             this.bufferView.removeLine(this.cursorView.line + 1);
-             this.bufferView.setLine(this.cursorView.line, this.bufferView.getLine(this.cursorView.line) + nextLine);
-             this.gutterView.removeLine();
+        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+            return;
         }
+
+        // TODO: Ditto
+        
+        const nextLine = this.model.getLine(this.cursorView.line);
+        this.model.deleteLine(this.cursorView.line);
+        this.model.setLine(this.cursorView.line - 1, this.model.getLine(this.cursorView.line - 1) + nextLine);
+        this.bufferView.removeLine(this.cursorView.line + 1);
+        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+        this.gutterView.removeLine();
     } else {
-        const lineUpToPoint = this.bufferView.getLine(this.cursorView.line).slice(0, this.cursorView.col - 1);
+        const lineUpToPoint = this.model.getLine(this.cursorView.line - 1).slice(0, this.cursorView.col - 1);
+        this.model.setLine(this.cursorView.line - 1, lineUpToPoint);
         this.bufferView.setLine(this.cursorView.line, lineUpToPoint);
     }
 };
@@ -351,6 +367,8 @@ EditorPane.prototype.getWidth = function() {
 };
 
 EditorPane.prototype._checkScrollCursorIntoView = function() {
+    
+    // Horizontal alignment
     if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
         const firstVisible = Math.max(1, this.cursorView.col - 10);
         this.scrollToCol(firstVisible);    
@@ -360,6 +378,7 @@ EditorPane.prototype._checkScrollCursorIntoView = function() {
         this.scrollToCol(firstVisible);
     }
 
+    // Vertical alignment
     if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum() + this.verticalCursorMargin) {
         const firstVisible = Math.max(1, this.cursorView.line - 10);
         this.scrollToLine(firstVisible); 

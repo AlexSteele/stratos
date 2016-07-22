@@ -147,11 +147,7 @@ BufferView.prototype.getLeftOffset = function() {
 };
 
 BufferView.prototype.getWidth = function() {
-    const width = parseInt(this.domNode.style.width) || this.domNode.scrollWidth;
-    if (width == null) {
-        throw new Error('BufferView: Unable to parse width.');
-    }
-    return width;
+    return this.domNode.scrollWidth;
 };
 
 BufferView.prototype.getWidthCols = function() {
@@ -186,7 +182,7 @@ BufferView.prototype.getLineWidthCols = function(lineNum) {
     return this.lineElems[lineNum].innerHTML.length;
 };
 
-// Returns an [column, line] tuple, or null if the given coordinates'
+// Returns a [line, col] tuple, or null if the given coordinates'
 // y position is greater than the last line of this buffer.
 // If the given coordinates' corresponding column is greater than the
 // width of their corresponding line, returns the width of the line + 1.
@@ -194,17 +190,17 @@ BufferView.prototype._clickToBufferPos = function(x, y) {
     const bounds = this.domNode.getBoundingClientRect();
 
     const adjustedY = y - bounds.top;
-    const line = Math.floor(adjustedY / this.charHeight) + this.getFirstVisibleLineNum();
+    const line = Math.floor(adjustedY / this.charHeight) + 1;
     const lastLine = this.getLastLineNum();
 
     if (line > lastLine) return null;
 
     const adjustedX = x - bounds.left;
-    const col = Math.round(adjustedX / this.charWidth) + this.getFirstVisibleCol();
+    const col = Math.round(adjustedX / this.charWidth) + 1;
     const lastCol = this.getLineWidthCols(line) + 1;
     const clickCol = Math.min(col, lastCol);
     
-    return [clickCol, line];
+    return [line, clickCol];
 };
 
 module.exports.BufferView = BufferView; 
