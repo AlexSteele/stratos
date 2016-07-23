@@ -1,9 +1,9 @@
 'use strict';
 
 const defaults = {
-    charWidth: 10,
-    charHeight: 20,
-    onClick: (pos) => { throw new Error('BufferView: No handler for onClick.'); }
+    charWidth: 0,  // pixels
+    charHeight: 0, // pixels
+    onClick: (line, col) => { throw new Error('BufferView: No handler for onClick.'); }
 };
 
 function BufferView(parentElem, settings = defaults) {
@@ -13,8 +13,8 @@ function BufferView(parentElem, settings = defaults) {
     parentElem.appendChild(this.domNode);
 
     this.lineElems = [null];
-    this.charWidth = settings.charWidth || defaults.charWidth; // pixels
-    this.charHeight = settings.charHeight || defaults.charHeight; //pixels
+    this.charWidth = settings.charWidth || defaults.charWidth;
+    this.charHeight = settings.charHeight || defaults.charHeight;
     this.onClick = settings.onClick || defaults.onClick;
 
     this.visibleHeight = this.domNode.clientHeight;
@@ -32,7 +32,8 @@ BufferView.prototype._initEventListeners = function() {
     this.domNode.addEventListener('mousedown', (e) => {
         const pos = this._clickToBufferPos(e.clientX, e.clientY);
         if (pos) {
-            this.onClick(pos);
+            const [line, col] = pos;
+            this.onClick(line, col);
         }
         e.preventDefault();
     });

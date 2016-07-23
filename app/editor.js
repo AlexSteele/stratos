@@ -24,10 +24,10 @@ function Editor(parentElem, keyMaps) {
 
     this.commandModal = new CommandModal(this.domNode, {
         keyMap: this.keyMaps['command-modal-default'],
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (error) => this.handleKeyError(error),
-        onSubmitAction: (action) => this.handleCommandModalAction(action),
-        onSubmitActionError: () => this.handleCommandModalActionError()
+        onKeyAction: (action) => this._handleAction(action),
+        onKeyError: (error) => this._handleKeyError(error),
+        onSubmitAction: (action) => this._handleCommandModalAction(action),
+        onSubmitActionError: () => this._handleCommandModalActionError()
     });
 
     this.contextBar = new ContextBar(this.domNode);
@@ -37,8 +37,8 @@ function Editor(parentElem, keyMaps) {
     this.noPanesKeyListener = new KeyListener(document.body, {
         keyMap: this.keyMaps['no-panes-default'],
         allowDefaultOnKeyError: true,
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (error) => this.handleKeyError(error)
+        onKeyAction: (action) => this._handleAction(action),
+        onKeyError: (error) => this._handleKeyError(error)
     });
 
     // These are used when instantiating editorPane instances.
@@ -165,8 +165,9 @@ Editor.prototype.newTab = function(name = 'untitled') {
         height: paneHeight,
         topOffset: tabsHeight,
         sharedEditorComponentSettings: this.sharedEditorComponentSettings,
-        onKeyAction: (action) => this.handleAction(action),
-        onKeyError: (error) => this.handleKeyError(error)
+        onKeyAction: (action) => this._handleAction(action),
+        onKeyError: (error) => this._handleKeyError(error),
+        onBufferClick: (line, col) => this._handleBufferClick(line, col)
     });
     
     this.panes.push(pane);
@@ -303,10 +304,18 @@ Editor.prototype.toggleCommandModal = function() {
     }
 };
 
-Editor.prototype.handleCommandModalAction = function(action) {
+Editor.prototype.getVisibleHeight = function() {
+    return this.domNode.clientHeight; // this.domNode.parentElement.clientHeight;
+};
+
+Editor.prototype.getVisibleWidth = function() {
+    return this.domNode.clientWidth;
+};
+
+Editor.prototype._handleCommandModalAction = function(action) {
     this.commandModal.clearInput();
     this.commandModal.toggle();
-    this.handleAction(action);
+    this._handleAction(action);
     if (this.activePane) {
         this.activePane.setActive();
         this.tabBar.setActive();
@@ -314,15 +323,15 @@ Editor.prototype.handleCommandModalAction = function(action) {
     }
 };
 
-Editor.prototype.handleCommandModalActionError = function(action) {
+Editor.prototype._handleCommandModalActionError = function(action) {
     console.log('TextEditor: No command: ' + action);
 };
 
-Editor.prototype.handleKeyError = function(keys) {
+Editor.prototype._handleKeyError = function(keys) {
     console.log('Editor: Key error: ' + keys); 
 };
 
-Editor.prototype.handleAction = function(action) {
+Editor.prototype._handleAction = function(action) {
 
     // TODO: Move into global object to avoid possible redeclarations on each call.
     const actionHandlers = {
@@ -360,12 +369,11 @@ Editor.prototype.handleAction = function(action) {
     }
 };
 
-Editor.prototype.getVisibleHeight = function() {
-    return this.domNode.clientHeight; // this.domNode.parentElement.clientHeight;
-};
-
-Editor.prototype.getVisibleWidth = function() {
-    return this.domNode.clientWidth;
+Editor.prototype._handleBufferClick = function(line, col) {
+    // TODO: This fails if the clicked buffer isn't the active one.
+    if (this.activePane) {
+        this.contextBar.setCursorPositionView(line, col);
+    }
 };
 
 // Assumes that all panes have the same dimensions.

@@ -22,7 +22,8 @@ const defaults = {
         charheight: 0
     },
     onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
-    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); }
+    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
+    onBufferClick: (line, col) => { throw new Error('EditorPane: No handler for onBufferClick.'); }
 };
 
 function EditorPane(parentElem, settings = defaults) {
@@ -45,6 +46,7 @@ function EditorPane(parentElem, settings = defaults) {
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
+    this.onBufferClick = settings.onBufferClick || defaults.onBufferClick;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
@@ -53,7 +55,7 @@ function EditorPane(parentElem, settings = defaults) {
     this.charHeight = sharedEditorSettings.charHeight;    
 
     this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
-    this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (pos) => this._onBufferMouseClick(pos)}, sharedEditorSettings));
+    this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings));
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
 
     this.keyListener = new KeyListener(this.domNode, {
@@ -83,10 +85,11 @@ EditorPane.prototype._initEventListeners = function() {
     });
 };
 
-EditorPane.prototype._onBufferMouseClick = function(pos) {
-    const [line, col] = pos;
+EditorPane.prototype._onBufferClick = function(line, col) {
+    console.log(line, col);
     this.cursorView.moveTo(line, col);
     this.gutterView.setActiveLine(line);
+    this.onBufferClick(line, col);
 };
 
 EditorPane.prototype._onGutterWidthChanged = function(width) {

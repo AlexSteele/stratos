@@ -80,7 +80,7 @@ html, body {
   background-color: #333333;
   min-height: 100%;
   min-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
