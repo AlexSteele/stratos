@@ -21,9 +21,8 @@ const defaults = {
         charWidth: 0,
         charheight: 0
     },
-    onKeyAction: (action) => { throw new Error('EditorPane: No handler for onKeyAction'); },
-    onKeyError: (error) => { throw new Error('EditorPane: No handler for onKeyError.'); },
-    onBufferClick: (line, col) => { throw new Error('EditorPane: No handler for onBufferClick.'); }
+    onUnknownAction: (action) => { throw new Error('EditorPane: No handler for action: ' + action); },
+    onCursorMoved: (line, col) => { throw new Error('EditorPane: No handler for onCursorMoved.'); }
 };
 
 function EditorPane(parentElem, settings = defaults) {
@@ -36,24 +35,19 @@ function EditorPane(parentElem, settings = defaults) {
     this.domNode.tabIndex = 1;
     parentElem.appendChild(this.domNode);
 
-    this.height = this.domNode.clientHeight;
-    this.width = this.domNode.clientWidth;
-
     this.model = new BufferModel();
 
     this.name = settings.name || defaults.name;
     this.tabName = settings.tabName || defaults.tabName;
     this.keyMap = settings.keyMap || defaults.keyMap;
-    this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
-    this.onKeyError = settings.onKeyError || defaults.onKeyError;
-    this.onBufferClick = settings.onBufferClick || defaults.onBufferClick;
+    this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
+    this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
+    
     const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
-
     this.charWidth = sharedEditorSettings.charWidth;
     this.charHeight = sharedEditorSettings.charHeight;    
-
     this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
     this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings));
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
@@ -61,8 +55,8 @@ function EditorPane(parentElem, settings = defaults) {
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.keyMap,
         allowDefaultOnKeyError: false,
-        onKeyAction: this.onKeyAction,
-        onKeyError: this.onKeyError
+        onKeyAction: (action) => this._handleAction(action),
+        onKeyError: (error) => this._handleKeyError(error)
     });
 
     this._initComponents();
@@ -86,10 +80,9 @@ EditorPane.prototype._initEventListeners = function() {
 };
 
 EditorPane.prototype._onBufferClick = function(line, col) {
-    console.log(line, col);
     this.cursorView.moveTo(line, col);
     this.gutterView.setActiveLine(line);
-    this.onBufferClick(line, col);
+    this.onCursorMoved(line, col);
 };
 
 EditorPane.prototype._onGutterWidthChanged = function(width) {
@@ -103,6 +96,7 @@ EditorPane.prototype.insert = function(text) {
     this.cursorView.moveRight(text.length);
 
     this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.insertNewLine = function() {
@@ -114,6 +108,7 @@ EditorPane.prototype.insertNewLine = function() {
     this.gutterView.setActiveLine(this.cursorView.line);
 
     this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.deleteBackChar = function() {
@@ -140,7 +135,8 @@ EditorPane.prototype.deleteBackChar = function() {
         this.cursorView.moveLeft();
     }
 
-     this._checkScrollCursorIntoView();
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.deleteForwardChar = function() {
@@ -186,59 +182,65 @@ EditorPane.prototype.killLine = function() {
 
 EditorPane.prototype.moveCursorLeft = function() {
     if (this.cursorView.col === 1) {
-        if (this.cursorView.line !== 1) {
-            const endOfPrevLine = this.bufferView.getLineWidthCols(this.cursorView.line - 1) + 1;
-            this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
-            this.gutterView.setActiveLine(this.cursorView.line);
-
-            this._checkScrollCursorIntoView();
+        if (this.cursorView.line === 1) {
+            return;
         }
+        const endOfPrevLine = this.bufferView.getLineWidthCols(this.cursorView.line - 1) + 1;
+        this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
+        this.gutterView.setActiveLine(this.cursorView.line);
     } else {
         this.cursorView.moveLeft();
-
-        this._checkScrollCursorIntoView();
     }
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorRight = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line !== this.bufferView.getLastLineNum()) {
-            this.cursorView.moveTo(this.cursorView.line + 1, 1);
-            this.gutterView.setActiveLine(this.cursorView.line);
-
-            this._checkScrollCursorIntoView();
+        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+            return;
         }
+        this.cursorView.moveTo(this.cursorView.line + 1, 1);
+        this.gutterView.setActiveLine(this.cursorView.line);
     } else {
         this.cursorView.moveRight();
-        
-        this._checkScrollCursorIntoView();
     }
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorUp = function() {
-    if (this.cursorView.line > 1) {
-        this.cursorView.moveUp();
-        this.gutterView.setActiveLine(this.cursorView.line);
-        const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-        if (this.cursorView.col > lineWidth + 1) {
-            this.cursorView.setCol(lineWidth + 1);
-        }
+    if (this.cursorView.line === 1) {
+        return;
+    }
+    
+    this.cursorView.moveUp();
+    this.gutterView.setActiveLine(this.cursorView.line);
+    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
+    if (this.cursorView.col > lineWidth + 1) {
+        this.cursorView.setCol(lineWidth + 1);
+    }
 
-        this._checkScrollCursorIntoView();
-    }    
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorDown = function() {
-    if (this.cursorView.line < this.bufferView.getLastLineNum()) {
-        this.cursorView.moveDown();
-        this.gutterView.setActiveLine(this.cursorView.line);
-        const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-        if (this.cursorView.col > lineWidth + 1) {
-            this.cursorView.setCol(lineWidth + 1);
-        }
-
-        this._checkScrollCursorIntoView();
+    if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+        return;
     }
+    
+    this.cursorView.moveDown();
+    this.gutterView.setActiveLine(this.cursorView.line);
+    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
+    if (this.cursorView.col > lineWidth + 1) {
+        this.cursorView.setCol(lineWidth + 1);
+    }
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorBeginningOfLine = function() {
@@ -246,6 +248,7 @@ EditorPane.prototype.moveCursorBeginningOfLine = function() {
     this.cursorView.goalCol = this.cursorView.col;
 
     this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorEndOfLine = function() {
@@ -253,6 +256,7 @@ EditorPane.prototype.moveCursorEndOfLine = function() {
     this.cursorView.goalCol = this.cursorView.col;
 
     this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
 };
 
 EditorPane.prototype.moveCursorTo = function(line, col) {
@@ -260,7 +264,10 @@ EditorPane.prototype.moveCursorTo = function(line, col) {
         col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
+        
         this._checkScrollCursorIntoView();
+        this._emitCursorMoved();
+        
         return true;
     }
     return false;
@@ -372,11 +379,11 @@ EditorPane.prototype.getWidth = function() {
 };
 
 EditorPane.prototype._checkScrollCursorIntoView = function() {
-    
+
     // Horizontal alignment
     if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
         const firstVisible = Math.max(1, this.cursorView.col - 10);
-        this.scrollToCol(firstVisible);    
+        this.scrollToCol(firstVisible);
     } else if (this.cursorView.col > this.bufferView.getLastVisibleCol() - this.horizontalCursorMargin) {
         const lastVisible = Math.min(this.cursorView.col + 10, this.bufferView.getLastColNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
@@ -392,6 +399,43 @@ EditorPane.prototype._checkScrollCursorIntoView = function() {
         const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
         this.scrollToLine(firstVisible);
     }
+
+};
+
+EditorPane.prototype._handleAction = function(action) {
+
+    const actionHandlers = {
+        'INSERT':                        action => this.insert(action.text),
+        'INSERT_NEW_LINE':               () => this.insertNewLine(),
+        'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
+        'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
+        'KILL_LINE':                     () => this.killLine(),
+        'MOVE_TO_POS':                   action => this.moveCursorTo(action.line, action.col),
+        'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
+        'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
+        'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
+        'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
+        'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
+        'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
+        'SHOW_GUTTER':                   () => this.showGutter(),
+        'HIDE_GUTTER':                   () => this.hideGutter()
+    };
+
+    const handler = actionHandlers[action.type];
+
+    if (handler) {
+        handler(action);
+    } else {
+        this.onUnknownAction(action);
+    }
+};
+
+EditorPane.prototype._handleKeyError = function(error) {
+    console.log('EditorPane: key error: ' + error);
+};
+
+EditorPane.prototype._emitCursorMoved = function() {
+    this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
 module.exports.EditorPane = EditorPane;

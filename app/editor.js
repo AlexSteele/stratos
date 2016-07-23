@@ -27,7 +27,7 @@ function Editor(parentElem, keyMaps) {
         onKeyAction: (action) => this._handleAction(action),
         onKeyError: (error) => this._handleKeyError(error),
         onSubmitAction: (action) => this._handleCommandModalAction(action),
-        onSubmitActionError: () => this._handleCommandModalActionError()
+        onSubmitActionError: (input) => this._handleCommandModalActionError(input)
     });
 
     this.contextBar = new ContextBar(this.domNode);
@@ -38,7 +38,7 @@ function Editor(parentElem, keyMaps) {
         keyMap: this.keyMaps['no-panes-default'],
         allowDefaultOnKeyError: true,
         onKeyAction: (action) => this._handleAction(action),
-        onKeyError: (error) => this._handleKeyError(error)
+        onKeyError: (error) => console.log('Editor: Key error: ' + error)
     });
 
     // These are used when instantiating editorPane instances.
@@ -58,102 +58,6 @@ Editor.prototype._initEventListeners = function() {
     });
 };
 
-Editor.prototype.insert = function(text) {
-    if (this.activePane) {
-        this.activePane.insert(text);
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.insertNewLine = function() {
-    if (this.activePane) {
-        this.activePane.insertNewLine();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.deleteBackChar = function() {
-    if (this.activePane) {
-        this.activePane.deleteBackChar();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.deleteForwardChar = function() {
-    if (this.activePane) {
-        this.activePane.deleteForwardChar();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.killLine = function() {
-    if (this.activePane) {
-        this.activePane.killLine();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorLeft = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorLeft();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorRight = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorRight();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorUp = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorUp();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorDown = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorDown();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorBeginningOfLine = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorBeginningOfLine();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorEndOfLine = function() {
-    if (this.activePane) {
-        this.activePane.moveCursorEndOfLine();
-        const [line, col] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
-Editor.prototype.moveCursorTo = function(line, col) {
-    if (this.activePane) {
-        this.activePane.moveCursorTo(line, col);
-        const [cursorLine, cursorCol] = this.activePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);
-    }
-};
-
 Editor.prototype.newTab = function(name = 'untitled') {
     const tabName = this._getUniqueTabName(name);
     const tabsHeight = this.tabBar.getVisibleHeight();
@@ -163,11 +67,11 @@ Editor.prototype.newTab = function(name = 'untitled') {
         tabName: tabName,
         keyMap: this.keyMaps['editor-default'],
         height: paneHeight,
+        width: this.getVisibleWidth(),
         topOffset: tabsHeight,
         sharedEditorComponentSettings: this.sharedEditorComponentSettings,
-        onKeyAction: (action) => this._handleAction(action),
-        onKeyError: (error) => this._handleKeyError(error),
-        onBufferClick: (line, col) => this._handleBufferClick(line, col)
+        onUnknownAction: (action) => this._handleAction(action),
+        onCursorMoved: (line, col) => this._handleCursorMoved(line, col)
     });
     
     this.panes.push(pane);
@@ -181,7 +85,7 @@ Editor.prototype.newTab = function(name = 'untitled') {
 };
 
 // If _tabName is undefined, switches to the previously opened tab.
-Editor.prototype.switchTab = function(tabName = undefined) {
+Editor.prototype.switchTab = function(tabName) {
     if (this.activePane && tabName === this.activePane.tabName) return;
     
     const toSwitchTo = tabName ?
@@ -206,7 +110,7 @@ Editor.prototype.switchTab = function(tabName = undefined) {
 };
 
 // If tabName is undefined, closes the active tab.
-Editor.prototype.closeTab = function(_tabName = undefined) {
+Editor.prototype.closeTab = function(_tabName) {
     if (!_tabName && !this.activePane) return;
 
     const tabName = _tabName || this.activePane.tabName;
@@ -305,7 +209,7 @@ Editor.prototype.toggleCommandModal = function() {
 };
 
 Editor.prototype.getVisibleHeight = function() {
-    return this.domNode.clientHeight; // this.domNode.parentElement.clientHeight;
+    return this.domNode.clientHeight;
 };
 
 Editor.prototype.getVisibleWidth = function() {
@@ -315,11 +219,16 @@ Editor.prototype.getVisibleWidth = function() {
 Editor.prototype._handleCommandModalAction = function(action) {
     this.commandModal.clearInput();
     this.commandModal.toggle();
-    this._handleAction(action);
     if (this.activePane) {
+
+        // If the active pane has no handler, the action will propogate up
+        // to this._handleAction. 
+        this.activePane._handleAction(action);
         this.activePane.setActive();
         this.tabBar.setActive();
         this.contextBar.setActive();
+    } else {
+        this._handleAction(action);
     }
 };
 
@@ -327,26 +236,9 @@ Editor.prototype._handleCommandModalActionError = function(action) {
     console.log('TextEditor: No command: ' + action);
 };
 
-Editor.prototype._handleKeyError = function(keys) {
-    console.log('Editor: Key error: ' + keys); 
-};
-
 Editor.prototype._handleAction = function(action) {
 
-    // TODO: Move into global object to avoid possible redeclarations on each call.
     const actionHandlers = {
-        'INSERT':                        action => this.insert(action.text),
-        'INSERT_NEW_LINE':               () => this.insertNewLine(),
-        'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
-        'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
-        'KILL_LINE':                     () => this.killLine(),
-        'MOVE_TO_POS':                   action => this.moveCursorTo(action.line, action.col),
-        'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
-        'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
-        'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
-        'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
-        'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
-        'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
         'TOGGLE_COMMAND_MODAL':          () => this.toggleCommandModal(),
         'NEW_TAB':                       action => this.newTab(action.name),
         'SWITCH_TAB':                    action => this.switchTab(action.name),
@@ -354,8 +246,6 @@ Editor.prototype._handleAction = function(action) {
         'CLOSE_ALL':                     () => this.closeAllTabs(),
         'SHOW_TABS':                     () => this.showTabBar(),
         'HIDE_TABS':                     () => this.hideTabBar(),
-        'SHOW_GUTTER':                   () => this.showGutter(),
-        'HIDE_GUTTER':                   () => this.hideGutter(),
         'SHOW_CONTEXT':                  () => this.showContextBar(),
         'HIDE_CONTEXT':                  () => this.hideContextBar()
     };
@@ -365,12 +255,15 @@ Editor.prototype._handleAction = function(action) {
     if (handler) {
         handler(action);
     } else {
+        console.log(action);
         throw new Error('Editor: No handler for action ' + action);
+        
     }
 };
 
-Editor.prototype._handleBufferClick = function(line, col) {
-    // TODO: This fails if the clicked buffer isn't the active one.
+Editor.prototype._handleCursorMoved = function(line, col) {
+    // TODO: This makes the assumption that a pane's cursor only moves
+    // when it is the active pane.
     if (this.activePane) {
         this.contextBar.setCursorPositionView(line, col);
     }

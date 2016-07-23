@@ -26,7 +26,7 @@ const defaults = {
     onKeyAction: (action) => { throw new Error('CommandModal: No handler for onKeyAction.'); },
     onKeyError: (error) => { throw new Error('CommandModal: No handler for onKeyError.'); },
     onSubmitAction: (action) => {throw new Error('CommandModal: No handler for onSubmitAction.');},
-    onSubmitActionError: (error) => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
+    onSubmitActionError: (input) => {throw new Error('CommandModal: No handler for onSubmitActionError.');}
 };
 
 function CommandModal(parentElem, settings = defaults) {
