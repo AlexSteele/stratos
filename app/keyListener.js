@@ -86,6 +86,4 @@ KeyListener.prototype.unattach = function() {
     }    
 };
 
-module.exports = {
-    KeyListener
-};
+module.exports = KeyListener;

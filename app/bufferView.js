@@ -204,4 +204,4 @@ BufferView.prototype._clickToBufferPos = function(x, y) {
     return [line, clickCol];
 };
 
-module.exports.BufferView = BufferView; 
+module.exports = BufferView; 

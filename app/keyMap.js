@@ -21,8 +21,8 @@ const defaultEditorMap = (function() {
         'Alt-Meta-Dead':  {type: 'NATIVE!'},
         'Meta-q':         {type: 'NATIVE!'},
         'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
-        'Control-t':      {type: 'NEW_TAB'},
-        'Control-w':      {type: 'CLOSE_TAB'}
+        'Control-t':      {type: 'NEW_PANE'},
+        'Control-w':      {type: 'CLOSE_PANE'}
     };
     
     ['a', 'b', 'c', 'd',
@@ -61,7 +61,7 @@ const defaultCommandModalMap = {
 // Active when no editor panes are open.
 const defaultNoPanesMap = {
     'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
-    'Control-t':      {type: 'NEW_TAB'}
+    'Control-t':      {type: 'NEW_PANE'}
 };
 
 const defaultKeyMaps = {

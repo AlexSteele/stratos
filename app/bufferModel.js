@@ -96,4 +96,4 @@ BufferModel.prototype._validatePos = function(lineNum, col) {
     }
 };
 
-module.exports.BufferModel = BufferModel;
+module.exports = BufferModel;

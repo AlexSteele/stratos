@@ -2,11 +2,11 @@
 
 // TODO: Make line, col indexing consistent between model and view.
 
-const {BufferModel} = require('./bufferModel.js');
-const {BufferView} = require('./bufferView.js');
-const {CursorView} = require('./cursorView.js');
-const {GutterView} = require('./gutterView.js');
-const {KeyListener} = require('./keyListener.js');
+const BufferModel = require('./bufferModel.js');
+const BufferView = require('./bufferView.js');
+const CursorView = require('./cursorView.js');
+const GutterView = require('./gutterView.js');
+const KeyListener = require('./keyListener.js');
 
 const defaults = {
     name: '',
@@ -438,4 +438,4 @@ EditorPane.prototype._emitCursorMoved = function() {
     this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
-module.exports.EditorPane = EditorPane;
+module.exports = EditorPane;

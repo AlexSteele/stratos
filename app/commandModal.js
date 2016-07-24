@@ -1,6 +1,6 @@
 'use strict';
 
-const {KeyListener} = require('./keyListener.js');
+const KeyListener = require('./keyListener.js');
 
 // Map input text to either 1) an editor action or 2) to false (if the input is invalid).
 const inputHandlers = {
@@ -8,9 +8,9 @@ const inputHandlers = {
     'del':         () => ({type: 'DELETE_FORWARD_CHAR'}),    
     'del-back':    () => ({type: 'DELETE_BACK_CHAR'}),
     'goto':        (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
-    'new-tab':     (params) => params.length === 0 ? {type: 'NEW_TAB'} : {type: 'NEW_TAB', name: params[0]},
-    'switch-tab':  (params) => params.length === 0 ? {type: 'SWITCH_TAB'} : {type: 'SWITCH_TAB', name: params[0]},
-    'close-tab':   (params) => params.length === 0 ? {type: 'CLOSE_TAB'} : {type: 'CLOSE_TAB', name: params[0]},
+    'new-pane':     (params) => params.length === 0 ? {type: 'NEW_PANE'} : {type: 'NEW_PANE', name: params[0]},
+    'switch-pane':  (params) => params.length === 0 ? {type: 'SWITCH_PANE'} : {type: 'SWITCH_PANE', name: params[0]},
+    'close-pane':   (params) => params.length === 0 ? {type: 'CLOSE_PANE'} : {type: 'CLOSE_PANE', name: params[0]},
     'close-all':   () => ({type: 'CLOSE_ALL'}),
     'show-tabs':   () => ({type: 'SHOW_TABS'}),
     'hide-tabs':   () => ({type: 'HIDE_TABS'}),
@@ -97,4 +97,4 @@ CommandModal.prototype._handleCommandSubmit = function() {
     this.onSubmitActionError(this.inputNode.value);
 };
 
-module.exports.CommandModal = CommandModal;
+module.exports = CommandModal;

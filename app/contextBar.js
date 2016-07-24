@@ -50,4 +50,4 @@ ContextBar.prototype.getVisibleHeight = function() {
     return this.isVisible() ? this.domNode.clientHeight : 0;
 };
 
-module.exports.ContextBar = ContextBar;
+module.exports = ContextBar;

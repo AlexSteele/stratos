@@ -127,4 +127,4 @@ CursorView.prototype._lineToPix = function() {
     return ((this.line - 1) * this.charHeight) + 'px';
 };
 
-module.exports.CursorView = CursorView;
+module.exports = CursorView;

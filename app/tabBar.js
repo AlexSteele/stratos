@@ -138,4 +138,4 @@ TabView.prototype.getWidth = function() {
     return width;
 };
 
-module.exports.TabBar = TabBar;
+module.exports = TabBar;

@@ -126,4 +126,4 @@ GutterView.prototype._checkUpdateWidth = function() {
     }
 };
 
-module.exports.GutterView = GutterView;
+module.exports = GutterView;
