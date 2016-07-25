@@ -18,7 +18,6 @@ const inputHandlers = {
     'split-down':   () => ({type: 'SPLIT_PANE_GROUP_DOWN'}),
     'split-left':   () => ({type: 'SPLIT_PANE_GROUP_LEFT'}),
     'split-right':  () => ({type: 'SPLIT_PANE_GROUP_RIGHT'}),
-    'split-horiz':  () => ({type: 'SPLIT_PANE_GROUP_HORIZONTAL'}),
     'close-pane':   (params) => params.length === 0 ? {type: 'CLOSE_PANE'} : {type: 'CLOSE_PANE', name: params[0]},
     'close-all':    () => ({type: 'CLOSE_ALL'}),
     'close-group':  () => ({type: 'CLOSE_PANE_GROUP'}),
