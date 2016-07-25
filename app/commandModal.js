@@ -4,20 +4,30 @@ const KeyListener = require('./keyListener.js');
 
 // Map input text to either 1) an editor action or 2) to false (if the input is invalid).
 const inputHandlers = {
-    'ins':         (params) => ({type: 'INSERT', text: params.join(' ')}),
-    'del':         () => ({type: 'DELETE_FORWARD_CHAR'}),    
-    'del-back':    () => ({type: 'DELETE_BACK_CHAR'}),
-    'goto':        (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
+    'ins':          (params) => ({type: 'INSERT', text: params.join(' ')}),
+    'del':          () => ({type: 'DELETE_FORWARD_CHAR'}),    
+    'del-back':     () => ({type: 'DELETE_BACK_CHAR'}),
+    'goto':         (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
     'new-pane':     (params) => params.length === 0 ? {type: 'NEW_PANE'} : {type: 'NEW_PANE', name: params[0]},
     'switch-pane':  (params) => params.length === 0 ? {type: 'SWITCH_PANE'} : {type: 'SWITCH_PANE', name: params[0]},
+    'switch-up':    () => ({type: 'SWITCH_PANE_GROUP_UP'}),
+    'switch-down':  () => ({type: 'SWITCH_PANE_GROUP_DOWN'}),
+    'switch-left':  () => ({type: 'SWITCH_PANE_GROUP_LEFT'}),
+    'switch-right': () => ({type: 'SWITCH_PANE_GROUP_RIGHT'}),
+    'split-up':     () => ({type: 'SPLIT_PANE_GROUP_UP'}),
+    'split-down':   () => ({type: 'SPLIT_PANE_GROUP_DOWN'}),
+    'split-left':   () => ({type: 'SPLIT_PANE_GROUP_LEFT'}),
+    'split-right':  () => ({type: 'SPLIT_PANE_GROUP_RIGHT'}),
+    'split-horiz':  () => ({type: 'SPLIT_PANE_GROUP_HORIZONTAL'}),
     'close-pane':   (params) => params.length === 0 ? {type: 'CLOSE_PANE'} : {type: 'CLOSE_PANE', name: params[0]},
-    'close-all':   () => ({type: 'CLOSE_ALL'}),
-    'show-tabs':   () => ({type: 'SHOW_TABS'}),
-    'hide-tabs':   () => ({type: 'HIDE_TABS'}),
-    'show-gutter': () => ({type: 'SHOW_GUTTER'}),
-    'hide-gutter': () => ({type: 'HIDE_GUTTER'}),
-    'show-ctxt':   () => ({type: 'SHOW_CONTEXT'}),
-    'hide-ctxt':   () => ({type: 'HIDE_CONTEXT'})
+    'close-all':    () => ({type: 'CLOSE_ALL'}),
+    'close-group':  () => ({type: 'CLOSE_PANE_GROUP'}),
+    'show-tabs':    () => ({type: 'SHOW_TABS'}),
+    'hide-tabs':    () => ({type: 'HIDE_TABS'}),
+    'show-gutter':  () => ({type: 'SHOW_GUTTER'}),
+    'hide-gutter':  () => ({type: 'HIDE_GUTTER'}),
+    'show-ctxt':    () => ({type: 'SHOW_CONTEXT'}),
+    'hide-ctxt':    () => ({type: 'HIDE_CONTEXT'})
 };
 
 const defaults = {
@@ -67,14 +77,14 @@ CommandModal.prototype._initEventListeners = function() {
 };
 
 CommandModal.prototype.toggle = function() {
-    const wasToggled = this.isToggled();
-    this.domNode.style.visibility = wasToggled ? 'hidden' : 'visible';
-    if (!wasToggled) {
+    const wasVisible = this.isVisible();
+    this.domNode.style.visibility = wasVisible ? 'hidden' : 'visible';
+    if (!wasVisible) {
         this.inputNode.select();
     }
 };
 
-CommandModal.prototype.isToggled = function() {
+CommandModal.prototype.isVisible = function() {
     return this.domNode.style.visibility === 'visible';
 };
 

@@ -2,19 +2,26 @@
 
 const CommandModal = require('./commandModal.js');
 const ContextBar = require('./contextBar.js');
-const PaneGroup = require('./paneGroup.js');
+const PaneGroupContainer = require('./paneGroupContainer.js');
 const {getSharedEditorComponentSettings} = require('./utils.js');
 
-function Editor(parentElem, keyMaps) {
+const defaults = {
+    keyMaps: {},
+    sharedEditorComponentSettings: {
+        charWidth: 0,
+        charHeight: 0
+    }
+};
 
-    this.keyMaps = keyMaps;
-    this.paneGroups = [];
-    this.activePaneGroup = null;
+function Editor(parentElem, settings = defaults) {
+
+    this.keyMaps = settings.keyMaps || defaults.keyMaps;
+    this.sharedEditorComponentSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'stratos-editor';
     parentElem.appendChild(this.domNode);
-    
+
     this.commandModal = new CommandModal(this.domNode, {
         keyMap: this.keyMaps['command-modal-default'],
         onKeyAction: (action) => this._handleAction(action),
@@ -25,8 +32,19 @@ function Editor(parentElem, keyMaps) {
 
     this.contextBar = new ContextBar(this.domNode);
 
-    // These are used when instantiating editorPane instances.
-    this.sharedEditorComponentSettings = getSharedEditorComponentSettings(document.body);
+    this.panesContainer = new PaneGroupContainer(this.domNode, {
+        onUnknownAction: (action) => this._handleAction(action),
+        paneGroupSettings: {
+            keyMaps: this.keyMaps,
+            height: this.getHeight(),
+            width: this.getWidth(),
+            sharedEditorComponentSettings: this.sharedEditorComponentSettings,
+            onCursorMoved: (line, col) => this._handleCursorMoved(line, col),
+            onNewPane: () => this._handleNewPane(),
+            onSwitchPane: (newActivePane) => this._handleSwitchPane(newActivePane),
+            onClosePane: () => this._handleClosePane()
+        }
+    });
 
     this._initComponents();
     this._initEventListeners();
@@ -34,39 +52,10 @@ function Editor(parentElem, keyMaps) {
 
 Editor.prototype._initComponents = function() {
     this.contextBar.hide();
-    this.activePaneGroup = new PaneGroup(this.domNode, {
-        keyMaps: this.keyMaps,
-        height: this.getHeight(),
-        width: this.getWidth(),
-        sharedEditorComponentSettings: this.sharedEditorComponentSettings,
-        onUnknownAction: (action) => this._handleAction(action),
-        onCursorMoved: (line, col) => this._handleCursorMoved(line, col),
-        onNewPane: () => {
-            const isFirstPane = this.getPaneCount() === 1;
-            if (isFirstPane) {
-                this.contextBar.show();   
-            }
-        },
-        onSwitchPane: (newActivePane) => {
-            this.contextBar.setTabNameView(newActivePane.tabName);
-            const [line, col] = newActivePane.getCursorPosition();
-            this.contextBar.setCursorPositionView(line, col);
-        },
-        onClosePane: () => {
-            const allPanesClosed = this.getPaneCount() === 0;
-            if (allPanesClosed) {
-                this.contextBar.hide();
-            }
-        }
-    });
-    this.paneGroups.push(this.activePaneGroup);
-    this.activePaneGroup.setActive();
 };
 
 Editor.prototype._initEventListeners = function() {
-    window.addEventListener('resize', (e) => {
-        this._checkResizePanes();
-    });
+    window.addEventListener('resize', () => this._checkResizePanes());
 };
 
 Editor.prototype.showContextBar = function() {
@@ -86,13 +75,11 @@ Editor.prototype.hideContextBar = function() {
 Editor.prototype.toggleCommandModal = function() {
     this.commandModal.toggle();
     
-    if (this.paneGroups.length === 0) return;
-    
-    if (this.commandModal.isToggled()) {
-        this.activePaneGroup.setInactive();
+    if (this.commandModal.isVisible()) {
+        this.panesContainer.setInactive();
         this.contextBar.setInactive();
     } else {
-        this.activePaneGroup.setActive();
+        this.panesContainer.setActive();
         this.contextBar.setActive();
     }
 };
@@ -105,22 +92,58 @@ Editor.prototype.getWidth = function() {
     return this.domNode.clientWidth;
 };
 
-Editor.prototype.getPaneCount = function() {
-    return this.paneGroups.reduce((p, c) => p + c.getPaneCount(), 0);
+Editor.prototype._handleCursorMoved = function(line, col) {
+    
+    // This makes the assumption that a pane's cursor only moves
+    // when it is the active pane.
+    this.contextBar.setCursorPositionView(line, col);
+};
+
+Editor.prototype._checkResizePanes = function() {
+
+    const panesHeight = this.getHeight() - this.contextBar.getVisibleHeight();
+    const panesWidth = this.getWidth();
+    
+    if (this.panesContainer.getHeight() !== panesHeight) {
+        this.panesContainer.setHeight(panesHeight);
+    }
+    if (this.panesContainer.getWidth() !== panesWidth) {
+        this.panesContainer.setWidth(panesWidth);
+    }
+};
+
+Editor.prototype._handleNewPane = function(newPane) {
+    const isFirstPane = this.panesContainer.getPaneCount() === 1;
+    if (isFirstPane) {
+        this.contextBar.show();   
+    }
+};
+
+Editor.prototype._handleSwitchPane = function(newActivePane) {
+    this.contextBar.setTabNameView(newActivePane.tabName);
+    const [line, col] = newActivePane.getCursorPosition();
+    this.contextBar.setCursorPositionView(line, col);
+};
+
+Editor.prototype._handleClosePane = function() {
+    const allPanesClosed = this.panesContainer.getPaneCount() === 0;
+    if (allPanesClosed) {
+        this.contextBar.hide();
+    }
 };
 
 Editor.prototype._handleCommandModalAction = function(action) {
     this.commandModal.clearInput();
     this.commandModal.toggle();
-    if (this.activePaneGroup) {
+    if (this.panesContainer.activeGroup) {
         this.contextBar.setActive();
-        this.activePaneGroup.setActive();
+        this.panesContainer.setActive();
         
         // TODO: Don't manually walk down the component tree.
-        if (this.activePaneGroup.activePane) {
-            this.activePaneGroup.activePane._handleAction(action);
+        if (this.panesContainer.activeGroup.activePane) {
+            this.panesContainer.activeGroup.activePane._handleAction(action);
         } else {
-            this.activePaneGroup._handleAction(action);
+            this.panesContainer.activeGroup._handleAction(action);
         }
     } else {
         this._handleAction(action);
@@ -130,9 +153,9 @@ Editor.prototype._handleCommandModalAction = function(action) {
 Editor.prototype._handleAction = function(action) {
 
     const actionHandlers = {
-        'TOGGLE_COMMAND_MODAL': () => this.toggleCommandModal(),
-        'SHOW_CONTEXT':         () => this.showContextBar(),
-        'HIDE_CONTEXT':         () => this.hideContextBar()
+        'TOGGLE_COMMAND_MODAL':  () => this.toggleCommandModal(),
+        'SHOW_CONTEXT':          () => this.showContextBar(),
+        'HIDE_CONTEXT':          () => this.hideContextBar()
     };
     
     const handler = actionHandlers[action.type];
@@ -145,27 +168,5 @@ Editor.prototype._handleAction = function(action) {
     }
 };
 
-Editor.prototype._handleCursorMoved = function(line, col) {
-    
-    // TODO: This makes the assumption that a pane's cursor only moves
-    // when it is the active pane.
-    this.contextBar.setCursorPositionView(line, col);
-};
-
-// Assumes that all pane groups have the same dimensions.
-// TODO: Fix this.
-Editor.prototype._checkResizePanes = function() {
-    if (!this.activePaneGroup) return;
-    
-    const panesVisibleHeight = this.getHeight() - this.contextBar.getVisibleHeight();
-    const panesVisibleWidth = this.getWidth();
-    
-    if (this.activePaneGroup.getHeight() !== panesVisibleHeight) {
-        this.paneGroups.forEach(e => e.setHeight(panesVisibleHeight));
-    }
-    if (this.activePaneGroup.getWidth() !== panesVisibleWidth) {
-        this.paneGroups.forEach(e => e.setWidth(panesVisibleWidth));
-    }
-};
-
 module.exports = Editor;
+

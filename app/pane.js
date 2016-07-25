@@ -21,11 +21,11 @@ const defaults = {
         charWidth: 0,
         charheight: 0
     },
-    onUnknownAction: (action) => { throw new Error('EditorPane: No handler for action: ' + action); },
-    onCursorMoved: (line, col) => { throw new Error('EditorPane: No handler for onCursorMoved.'); }
+    onUnknownAction: (action) => { throw new Error('Pane: No handler for action: ' + action); },
+    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); }
 };
 
-function EditorPane(parentElem, settings = defaults) {
+function Pane(parentElem, settings = defaults) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'editor-pane';
@@ -63,7 +63,7 @@ function EditorPane(parentElem, settings = defaults) {
     this._initEventListeners();
 }
 
-EditorPane.prototype._initComponents = function() {
+Pane.prototype._initComponents = function() {
     this.model.appendLine();
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
@@ -71,26 +71,27 @@ EditorPane.prototype._initComponents = function() {
     this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
 };
 
-EditorPane.prototype._initEventListeners = function() {
+Pane.prototype._initEventListeners = function() {
     this.domNode.addEventListener('scroll', (e) => {
         this.bufferView.setScrollTop(this.domNode.scrollTop);
         this.bufferView.setScrollLeft(this.domNode.scrollLeft);
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
     });
+
 };
 
-EditorPane.prototype._onBufferClick = function(line, col) {
+Pane.prototype._onBufferClick = function(line, col) {
     this.cursorView.moveTo(line, col);
     this.gutterView.setActiveLine(line);
     this.onCursorMoved(line, col);
 };
 
-EditorPane.prototype._onGutterWidthChanged = function(width) {
+Pane.prototype._onGutterWidthChanged = function(width) {
     this.cursorView.setLeftOffset(width);
     this.bufferView.setLeftOffset(width);
 };
 
-EditorPane.prototype.insert = function(text) {
+Pane.prototype.insert = function(text) {
     this.model.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
     this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     this.cursorView.moveRight(text.length);
@@ -99,7 +100,7 @@ EditorPane.prototype.insert = function(text) {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.insertNewLine = function() {
+Pane.prototype.insertNewLine = function() {
     this.model.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
     this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     this.bufferView.insertLine(this.cursorView.line + 1, this.model.getLine(this.cursorView.line));
@@ -111,7 +112,7 @@ EditorPane.prototype.insertNewLine = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.deleteBackChar = function() {
+Pane.prototype.deleteBackChar = function() {
     if (this.cursorView.col === 1) {
         if (this.cursorView.line === 1) {
             return;
@@ -139,18 +140,18 @@ EditorPane.prototype.deleteBackChar = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.deleteForwardChar = function() {
+Pane.prototype.deleteForwardChar = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
         }
 
         // TODO: ^ Ditto ^
-
+        const currLine = this.model.getLine(this.cursorView.line - 1);
         const nextLine = this.model.getLine(this.cursorView.line);
-        this.model.setLine(this.cursorView.line - 1,
-                           this.model.getLine(this.cursorView.line - 1) + nextLine);
+        this.model.setLine(this.cursorView.line - 1, currLine + nextLine);
         this.model.deleteLine(this.cursorView.line);
+        
         this.bufferView.removeLine(this.cursorView.line + 1);
         this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
     } else {
@@ -159,7 +160,7 @@ EditorPane.prototype.deleteForwardChar = function() {
     }
 };
 
-EditorPane.prototype.killLine = function() {
+Pane.prototype.killLine = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
@@ -180,7 +181,7 @@ EditorPane.prototype.killLine = function() {
     }
 };
 
-EditorPane.prototype.moveCursorLeft = function() {
+Pane.prototype.moveCursorLeft = function() {
     if (this.cursorView.col === 1) {
         if (this.cursorView.line === 1) {
             return;
@@ -196,7 +197,7 @@ EditorPane.prototype.moveCursorLeft = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorRight = function() {
+Pane.prototype.moveCursorRight = function() {
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
@@ -211,7 +212,7 @@ EditorPane.prototype.moveCursorRight = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorUp = function() {
+Pane.prototype.moveCursorUp = function() {
     if (this.cursorView.line === 1) {
         return;
     }
@@ -227,7 +228,7 @@ EditorPane.prototype.moveCursorUp = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorDown = function() {
+Pane.prototype.moveCursorDown = function() {
     if (this.cursorView.line === this.bufferView.getLastLineNum()) {
         return;
     }
@@ -243,7 +244,7 @@ EditorPane.prototype.moveCursorDown = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorBeginningOfLine = function() {
+Pane.prototype.moveCursorBeginningOfLine = function() {
     this.cursorView.setCol(1);
     this.cursorView.goalCol = this.cursorView.col;
 
@@ -251,7 +252,7 @@ EditorPane.prototype.moveCursorBeginningOfLine = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorEndOfLine = function() {
+Pane.prototype.moveCursorEndOfLine = function() {
     this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
     this.cursorView.goalCol = this.cursorView.col;
 
@@ -259,7 +260,7 @@ EditorPane.prototype.moveCursorEndOfLine = function() {
     this._emitCursorMoved();
 };
 
-EditorPane.prototype.moveCursorTo = function(line, col) {
+Pane.prototype.moveCursorTo = function(line, col) {
     if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
         col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
         this.cursorView.moveTo(line, col);
@@ -274,39 +275,39 @@ EditorPane.prototype.moveCursorTo = function(line, col) {
 };
 
 // Sets the given line as the first visible.
-EditorPane.prototype.scrollToLine = function(line) {
+Pane.prototype.scrollToLine = function(line) {
     const scrollTop = (line - 1) * this.charHeight;
     this.domNode.scrollTop = scrollTop;
     this.bufferView.setScrollTop(scrollTop);
 };
 
 // Sets the given column as the first visible. 
-EditorPane.prototype.scrollToCol = function(col) {
+Pane.prototype.scrollToCol = function(col) {
     const scrollLeft = (col - 1) * this.charWidth;
     this.domNode.scrollLeft = scrollLeft;
     this.bufferView.setScrollLeft(scrollLeft);
     this.gutterView.setLeftOffset(scrollLeft);
 };
 
-EditorPane.prototype.show = function() {
+Pane.prototype.show = function() {
     if (!this.isVisible()) {
         this.cursorView.show();
         this.domNode.classList.remove('editor-pane-hidden');
     }    
 };
 
-EditorPane.prototype.hide = function() {
+Pane.prototype.hide = function() {
     if (this.isVisible()) {
         this.cursorView.hide();
         this.domNode.classList.add('editor-pane-hidden');
     }    
 };
 
-EditorPane.prototype.isVisible = function() {
+Pane.prototype.isVisible = function() {
     return !this.domNode.classList.contains('editor-pane-hidden');
 };
 
-EditorPane.prototype.showGutter = function() {
+Pane.prototype.showGutter = function() {
     if (!this.gutterView.isVisible()) {
         this.gutterView.show();
         const width = this.gutterView.getWidth();
@@ -315,7 +316,7 @@ EditorPane.prototype.showGutter = function() {
     }    
 };
 
-EditorPane.prototype.hideGutter = function() {
+Pane.prototype.hideGutter = function() {
     if (this.gutterView.isVisible()) {
         this.gutterView.hide();
         const width = this.gutterView.getWidth();
@@ -324,85 +325,85 @@ EditorPane.prototype.hideGutter = function() {
     }
 };
 
-EditorPane.prototype.setActive = function(on) {
+Pane.prototype.setActive = function(on) {
     this.cursorView.setBlink(true);
     this.domNode.focus();
     this.domNode.classList.remove('editor-pane-inactive');    
 };
 
-EditorPane.prototype.setInactive = function() {
+Pane.prototype.setInactive = function() {
     this.cursorView.setBlink(false);
     this.domNode.blur();
     this.domNode.classList.add('editor-pane-inactive');    
 };
 
-EditorPane.prototype.setCursorBlink = function(on) {
+Pane.prototype.setCursorBlink = function(on) {
     this.cursorView.setBlink(on);
 };
 
-EditorPane.prototype.setLeftOffset = function(to) {
+Pane.prototype.setLeftOffset = function(to) {
     this.domNode.style.left = to + 'px';
 };
 
-EditorPane.prototype.setTopOffset = function(to) {
+Pane.prototype.setTopOffset = function(to) {
     this.domNode.style.top = to + 'px';
 };
 
-EditorPane.prototype.setHeight = function(to) {
+Pane.prototype.setHeight = function(to) {
     this.domNode.style.height = to + 'px';
     this.bufferView.setVisibleHeight(this.getHeight());
 };
 
-EditorPane.prototype.setWidth = function(to) {
+Pane.prototype.setWidth = function(to) {
     this.domNode.style.width = to + 'px';
     this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
 };
 
-EditorPane.prototype.getCursorPosition = function() {
+Pane.prototype.getCursorPosition = function() {
     return [this.cursorView.line, this.cursorView.col];
 };
 
-EditorPane.prototype.getHeight = function() {
+Pane.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height);
     if (height == null) {
-        throw new Error('EditorPane: Unable to parse height.');
+        throw new Error('Pane: Unable to parse height.');
     }
     return height;
 };
 
-EditorPane.prototype.getWidth = function() {
+Pane.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width);
     if (width == null) {
-        throw new Error('EditorPane: Unable to parse width.');
+        throw new Error('Pane: Unable to parse width.');
     }
     return width;
 };
 
-EditorPane.prototype._checkScrollCursorIntoView = function() {
+Pane.prototype._checkScrollCursorIntoView = function() {
 
     // Horizontal alignment
     if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.col - 10);
+        const firstVisible = Math.max(1, this.cursorView.col - this.horizontalCursorMargin);
         this.scrollToCol(firstVisible);
     } else if (this.cursorView.col > this.bufferView.getLastVisibleCol() - this.horizontalCursorMargin) {
-        const lastVisible = Math.min(this.cursorView.col + 10, this.bufferView.getLastColNum());
+        const lastVisible = Math.min(this.cursorView.col + this.horizontalCursorMargin, this.bufferView.getLastColNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
         this.scrollToCol(firstVisible);
     }
 
     // Vertical alignment
     if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum() + this.verticalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.line - 10);
+        const firstVisible = Math.max(1, this.cursorView.line - this.verticalCursorMargin);
         this.scrollToLine(firstVisible); 
     } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum() - this.verticalCursorMargin) {
-        const lastVisible = Math.min(this.cursorView.line + 10, this.bufferView.getLastLineNum());
+        const lastVisible = Math.min(this.cursorView.line + this.verticalCursorMargin, this.bufferView.getLastLineNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
         this.scrollToLine(firstVisible);
     }
 
 };
 
-EditorPane.prototype._handleAction = function(action) {
+Pane.prototype._handleAction = function(action) {
 
     const actionHandlers = {
         'INSERT':                        action => this.insert(action.text),
@@ -430,12 +431,12 @@ EditorPane.prototype._handleAction = function(action) {
     }
 };
 
-EditorPane.prototype._handleKeyError = function(error) {
-    console.log('EditorPane: key error: ' + error);
+Pane.prototype._handleKeyError = function(error) {
+    console.log('Pane: key error: ' + error);
 };
 
-EditorPane.prototype._emitCursorMoved = function() {
+Pane.prototype._emitCursorMoved = function() {
     this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
-module.exports = EditorPane;
+module.exports = Pane;

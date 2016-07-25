@@ -17,48 +17,8 @@ html, body {
   position: relative;
 }
 
-.tab-list {
-  background-color: #525151;
-  left: 0;
-  min-height: 30px;
-  top: 0;
-  overflow: auto;
+.pane-group {
   position: absolute;
-  width: 100%;
-  white-space: nowrap;
-}
-
-.tab-list-inactive {
-  opacity: 0.75;
-}
-
-.tab {
-  background-color: #333333;
-  border-radius: 20px 20px 0 0;
-  bottom: -5px;
-  color: #c1c1c1;
-  cursor: pointer;
-  display: inline-block;
-  height: 25px;
-  position: relative;
-  min-width: 90px;
-  white-space: nowrap;
-}
-
-.tab-selected {
-  color: white;
-  z-index: 1;
-}
-
-.tab-name {
-  font-family: Monaco;
-  font-size: .75em;
-  overflow: hidden;
-  padding-left: 10px;
-  position: relative;
-  top: 6px;
-  width: 70px;
-  -webkit-user-select: none;
 }
 
 .editor-pane {
@@ -178,6 +138,50 @@ html, body {
 .context-bar-position {
   margin-left: 20px;
   width: 25%;
+}
+
+.tab-list {
+  background-color: #525151;
+  left: 0;
+  min-height: 30px;
+  top: 0;
+  overflow: auto;
+  position: absolute;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.tab-list-inactive {
+  opacity: 0.75;
+}
+
+.tab {
+  background-color: #333333;
+  border-radius: 20px 20px 0 0;
+  bottom: -5px;
+  color: #c1c1c1;
+  cursor: pointer;
+  display: inline-block;
+  height: 25px;
+  position: relative;
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.tab-selected {
+  color: white;
+  z-index: 1;
+}
+
+.tab-name {
+  font-family: Monaco;
+  font-size: .75em;
+  overflow: hidden;
+  padding-left: 10px;
+  position: relative;
+  top: 6px;
+  width: 70px;
+  -webkit-user-select: none;
 }
 
 .hidden {

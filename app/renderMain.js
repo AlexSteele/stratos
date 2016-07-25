@@ -2,7 +2,13 @@
 
 // const electron = require('electron');
 // const {ipcRenderer} = electron;
-const Editor = require('./app/editor.js');
 const {defaultKeyMaps} = require('./app/keyMap.js');
+const Editor = require('./app/editor.js');
+const {getSharedEditorComponentSettings} = require('./app/utils.js');
 
-const editor = new Editor(document.body, defaultKeyMaps);
+const settings = {
+    keyMaps: defaultKeyMaps,
+    sharedEditorComponentSettings: getSharedEditorComponentSettings(document.body)
+}
+
+const editor = new Editor(document.body, settings);
