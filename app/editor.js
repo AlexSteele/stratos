@@ -33,11 +33,11 @@ function Editor(parentElem, settings = defaults) {
     this.contextBar = new ContextBar(this.domNode);
 
     this.panesContainer = new PaneGroupContainer(this.domNode, {
+        height: this.getHeight(),
+        width: this.getWidth(),
         onUnknownAction: (action) => this._handleAction(action),
         paneGroupSettings: {
             keyMaps: this.keyMaps,
-            height: this.getHeight(),
-            width: this.getWidth(),
             sharedEditorComponentSettings: this.sharedEditorComponentSettings,
             onCursorMoved: (line, col) => this._handleCursorMoved(line, col),
             onNewPane: () => this._handleNewPane(),
@@ -52,6 +52,7 @@ function Editor(parentElem, settings = defaults) {
 
 Editor.prototype._initComponents = function() {
     this.contextBar.hide();
+    this.panesContainer.setActive();
 };
 
 Editor.prototype._initEventListeners = function() {

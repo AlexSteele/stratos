@@ -2,7 +2,7 @@
 
 const KeyListener = require('./keyListener.js');
 const {numDigitsIn} = require('./utils.js');
-const Pane = require('./Pane.js');
+const Pane = require('./pane.js');
 const TabBar = require('./tabBar.js');
 
 const defaults = {
@@ -12,8 +12,8 @@ const defaults = {
     topOffset: 0,
     leftOffset: 0,
     neighbors: {
-        up:    null,
-        down:  null,
+        above: null,
+        below: null,
         left:  null,
         right: null
     },
@@ -26,8 +26,7 @@ const defaults = {
     onNewPane: () => { throw new Error('PaneGroup: No handler for onNewPane.'); },
     onSwitchPane: (newActivePane) => { throw new Error('PaneGroup: No handler for onSwitchPane.'); },
     onClosePane: () => { throw new Error('PaneGroup: No handler for onClosePane.'); },
-    onFocused: (this_EditorPane) => { throw new Error('PaneGroup: No handler for onFocused.'); },
-    onSplit: (newPaneGroup) => { throw new Error('PangeGroup: No handler for onSplit'); }
+    onFocus: (this_EditorPane) => { throw new Error('PaneGroup: No handler for onFocus.'); }
 };
 
 function PaneGroup(parentElem, settings = defaults) {
@@ -52,7 +51,6 @@ function PaneGroup(parentElem, settings = defaults) {
     this.onNewPane = settings.onNewPane || defaults.onNewPane;
     this.onSwitchPane = settings.onSwitchPane || defaults.onSwitchPane;
     this.onClosePane = settings.onClosePane || defaults.onClosePane;
-    this.onSplit = settings.onSplit || defaults.onSplit;
     this.onFocus = settings.onFocus || defaults.onFocus;
         
     // Only active when no panes are open. This is to allow, for instance,
@@ -70,13 +68,6 @@ function PaneGroup(parentElem, settings = defaults) {
 
     // Inactive by default.
     this.setInactive();
-    this._initEventListeners();
-};
-
-PaneGroup.prototype._initEventListeners = function() {
-    this.domNode.addEventListener('focus', () => {
-        this.onFocus(this);
-    });
 };
 
 PaneGroup.prototype.newPane = function(name = 'untitled') {
@@ -92,7 +83,8 @@ PaneGroup.prototype.newPane = function(name = 'untitled') {
         topOffset: tabsHeight,
         sharedEditorComponentSettings: this.sharedEditorComponentSettings,
         onUnknownAction: (action) => this._handleAction(action),
-        onCursorMoved: this.onCursorMoved
+        onCursorMoved: this.onCursorMoved,
+        onFocus: () => this.onFocus(this)
     });
     
     this.panes.push(pane);
@@ -170,62 +162,68 @@ PaneGroup.prototype.closeAllPanes = function() {
     this.noPanesKeyListener.attach();
 };
 
-PaneGroup.prototype.splitUp = function() {
-    const height = Math.round(this.getHeight() / 2);
-    const width = this.getWidth();
-    const topOffset = this.getTopOffset() + height;
-    const leftOffset = this.getLeftOffset();
-    const neighbors = Object.assign({}, this.neighbors, {up: this});
+// Returns the first neighbor whose left offset (if side is 'above' or 'below')
+// or top offset (if side is 'left' or 'right') is greater than this group's
+// left or top offset, respectfully.
+PaneGroup.prototype.getFirstFullNeighbor = function(side) {
+    const startsAfterEdge = (side === 'above' || side === 'below') ?
+              (neighbor) => neighbor.getLeftOffset() >= this.getLeftOffset() :
+              (neighbor) => neighbor.getTopOffset() >= this.getTopOffset();
 
-    const group = this._makeGroup(height, width, topOffset, leftOffset, neighbors);
-    
-    this.setHeight(height);
-    this.neighbors.down = group;
-    this.onSplit(group);
+    return this.getNeighbors(side).find(e => startsAfterEdge(e));
 };
 
-PaneGroup.prototype.splitDown = function() {
-    const height = Math.round(this.getHeight() / 2);
-    const width = this.getWidth();
-    const topOffset = this.getTopOffset();
-    const leftOffset = this.getLeftOffset();
-    const neighbors = Object.assign({}, this.neighbors, {down: this});
-
-    const group = this._makeGroup(height, width, topOffset, leftOffset, neighbors);
+PaneGroup.prototype.getNeighbors = function(side) {
+    if (side !== 'above' && side !== 'below' && side !== 'left' && side !== 'right') {
+        throw new Error('Unrecognized side: ' + side);
+    }
     
-    this.setHeight(height);
-    this.setTopOffset(topOffset + height);
-    this.neighbors.up = group;
-    this.onSplit(group);
+    if (!this.neighbors[side]) return [];
+
+    const searchDirections = (side === 'above' || side === 'below') ? ['left', 'right'] : ['above', 'below'];
+    const neighbors = searchDirections.map(direction => {
+        const toAdd = [];
+        for (let curr = this.neighbors[side].neighbors[direction];
+             curr && this.doesShareBorder(curr, side);
+             curr = curr.neighbors[direction])
+        {
+            toAdd.push(curr);
+        }
+        return toAdd;
+    });
+    return neighbors[0].concat(this.neighbors[side]).concat(neighbors[1]);  
 };
 
-PaneGroup.prototype.splitLeft = function() {
-    const height = this.getHeight();
-    const width = Math.round(this.getWidth() / 2);
-    const topOffset = this.getTopOffset();
-    const leftOffset = this.getLeftOffset() + width;
-    const neighbors = Object.assign({}, this.neighbors, {left: this});
+// Returns whether the given PaneGroup shares a border with this group
+// on the given side. Sharing a border requires overlap of more than
+// a single pixel.
+PaneGroup.prototype.doesShareBorder = function(group, side) {
+    if (side !== 'above' && side !== 'below' && side !== 'left' && side !== 'right') {
+        throw new Error('Unrecognized side: ' + side);
+    }
 
-    const group = this._makeGroup(height, width, topOffset, leftOffset, neighbors);
-    
-    this.setWidth(width);
-    this.neighbors.right = group;
-    this.onSplit(group);
-};
+    function doesOverlap(x1, x2, y1, y2) {
+        return x1 < y2 && y1 < x2;
+    }
 
-PaneGroup.prototype.splitRight = function() {
-    const height = this.getHeight();
-    const width = Math.round(this.getWidth() / 2);
-    const topOffset = this.getTopOffset();
-    const leftOffset = this.getLeftOffset();
-    const neighbors = Object.assign({}, this.neighbors, {right: this});
-
-    const group = this._makeGroup(height, width, topOffset, leftOffset, neighbors);
-    
-    this.setWidth(width);
-    this.setLeftOffset(leftOffset + width);
-    this.neighbors.left = group;
-    this.onSplit(group);
+    switch (side) {
+    case 'above':
+        return group.getBottomOffset() === this.getTopOffset() &&
+            doesOverlap(this.getLeftOffset(), this.getRightOffset(),
+                        group.getLeftOffset(), group.getRightOffset());
+    case 'below':
+        return group.getTopOffset() === this.getBottomOffset() &&
+            doesOverlap(this.getLeftOffset(), this.getRightOffset(),
+                        group.getLeftOffset(), group.getRightOffset());
+    case 'left':
+        return group.getRightOffset() === this.getLeftOffset() &&
+            doesOverlap(this.getTopOffset(), this.getBottomOffset(),
+                        group.getTopOffset(), group.getBottomOffset());
+    case 'right':
+        return group.getLeftOffset() === this.getRightOffset() &&
+            doesOverlap(this.getTopOffset(),this.getBottomOffset(),
+                        group.getTopOffset(), group.getBottomOffset());
+    }
 };
 
 PaneGroup.prototype.showTabBar = function() {
@@ -324,6 +322,14 @@ PaneGroup.prototype.getLeftOffset = function() {
     return offset;
 };
 
+PaneGroup.prototype.getRightOffset = function() {
+    return this.getLeftOffset() + this.getWidth();
+};
+
+PaneGroup.prototype.getBottomOffset = function() {
+    return this.getTopOffset() + this.getHeight();
+};
+
 PaneGroup.prototype._resizePanes = function() {
     if (!this.activePane) return;
     
@@ -336,27 +342,6 @@ PaneGroup.prototype._resizePanes = function() {
     if (this.activePane.getWidth() !== panesWidth) {
         this.panes.forEach(e => e.setWidth(panesWidth));    
     }    
-};
-
-// Returns a new pane group whose settings are the result of merging this group's settings
-// with the fields given.
-PaneGroup.prototype._makeGroup = function(height, width, topOffset, leftOffset, neighbors) {
-    return new PaneGroup(this.parentElem, {
-        keyMaps: this.keyMaps,
-        height,
-        width,
-        topOffset,
-        leftOffset,
-        neighbors,
-        sharedEditorComponentSettings: this.sharedEditorComponentSettings,
-        onUnknownAction: this.onUnknownAction,
-        onCursorMoved: this.onCursorMoved,
-        onNewPane: this.onNewPane,
-        onSwitchPane: this.onSwitchPane,
-        onClosePane: this.onClosePane,
-        onFocused: this.onFocused,
-        onSplit: this.onSplit
-    });
 };
 
 // If an editor pane exists with the same name as that given, returns a unique
@@ -382,20 +367,16 @@ PaneGroup.prototype._getUniqueTabName = function(name) {
 
 PaneGroup.prototype._handleAction = function(action) {
 
-    const actionHandlers = {
+    const handlers = {
         'NEW_PANE':               (action) => this.newPane(action.name),
         'SWITCH_PANE':            (action) => this.switchPane(action.name),
         'CLOSE_PANE':             (action) => this.closePane(action.name),
-        'SPLIT_PANE_GROUP_UP':    () => this.splitUp(),
-        'SPLIT_PANE_GROUP_DOWN':  () => this.splitDown(),
-        'SPLIT_PANE_GROUP_LEFT':  () => this.splitLeft(),
-        'SPLIT_PANE_GROUP_RIGHT': () => this.splitRight(),
         'CLOSE_ALL':              () => this.closeAllPanes(),
         'SHOW_TABS':              () => this.showTabBar(),
         'HIDE_TABS':              () => this.hideTabBar()
     };
     
-    const handler = actionHandlers[action.type];
+    const handler = handlers[action.type];
 
     if (handler) {
         handler(action);

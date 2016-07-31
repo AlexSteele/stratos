@@ -22,7 +22,11 @@ const defaultEditorMap = (function() {
         'Meta-q':         {type: 'NATIVE!'},
         'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},
         'Control-t':      {type: 'NEW_PANE'},
-        'Control-w':      {type: 'CLOSE_PANE'}
+        'Control-w':      {type: 'CLOSE_PANE'},
+        'Meta-h':         {type: 'SWITCH_PANE_GROUP_LEFT'},
+        'Meta-j':         {type: 'SWITCH_PANE_GROUP_DOWN'},
+        'Meta-k':         {type: 'SWITCH_PANE_GROUP_UP'},
+        'Meta-l':         {type: 'SWITCH_PANE_GROUP_RIGHT'}
     };
     
     ['a', 'b', 'c', 'd',
