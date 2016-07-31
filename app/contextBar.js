@@ -22,6 +22,11 @@ ContextBar.prototype.setCursorPositionView = function(line, col) {
     this.positionNode.innerHTML = `Line ${line}, Column ${col}`;
 };
 
+ContextBar.prototype.clear = function() {
+    this.tabNameNode.innerHTML = '';
+    this.positionNode.innerHTML = '';
+};
+
 ContextBar.prototype.setActive = function() {
     this.domNode.classList.remove('context-bar-inactive');    
 };

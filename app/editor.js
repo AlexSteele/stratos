@@ -121,15 +121,21 @@ Editor.prototype._handleNewPane = function(newPane) {
 };
 
 Editor.prototype._handleSwitchPane = function(newActivePane) {
-    this.contextBar.setTabNameView(newActivePane.tabName);
-    const [line, col] = newActivePane.getCursorPosition();
-    this.contextBar.setCursorPositionView(line, col);
+    if (newActivePane) {
+        this.contextBar.setTabNameView(newActivePane.tabName);
+        const [line, col] = newActivePane.getCursorPosition();
+        this.contextBar.setCursorPositionView(line, col);    
+    } else {
+        this.contextBar.clear();
+    }
 };
 
 Editor.prototype._handleClosePane = function() {
     const allPanesClosed = this.panesContainer.getPaneCount() === 0;
     if (allPanesClosed) {
         this.contextBar.hide();
+    } else {
+        this.contextBar.clear();
     }
 };
 

@@ -5,7 +5,9 @@ const PaneGroup = require('./paneGroup.js');
 const defaults = {
     height: 0,
     width: 0,
-    paneGroupSettings: {},
+    paneGroupSettings: {
+        onSwitchPane: (new_Pane) => { throw new Error('PaneGroupContainer: No handler for onSwitchPane.'); }
+    },
     onUnknownAction: (action) => { throw new Error('PaneGroupContainer: No handler for onUnknownAction.'); }
 };
 
@@ -15,16 +17,20 @@ function PaneGroupContainer(parentElem, settings = defaults) {
     this.height = settings.height || defaults.height;
     this.width = settings.width || defaults.width;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
-    
+
     const paneGroupSettings = settings.paneGroupSettings || defaults.paneGroupSettings;
+    this.onSwitchPane = paneGroupSettings.onSwitchPane || defaults.paneGroupSettings.onSwitchPane;
     this.paneGroupSettings = Object.assign({}, paneGroupSettings, {
         onUnknownAction: (action) => this._handleAction(action),
         onFocus: (paneGroup) => {
+            if (!this.isActive()) return;
+            
             if (this.activeGroup) {
                 this.activeGroup.setInactive();
             }
             this.activeGroup = paneGroup;
             this.activeGroup.setActive();
+            this.onSwitchPane(this.activeGroup.activePane);
         }    
     });
 
@@ -62,6 +68,7 @@ PaneGroupContainer.prototype._switchGroup = function(direction) {
     this.activeGroup.setInactive();
     neighbor.setActive();
     this.activeGroup = neighbor;
+    this.onSwitchPane(this.activeGroup.activePane);
 };
 
 // Places the active group in the upper half of its currently occupied area
@@ -297,12 +304,24 @@ PaneGroupContainer.prototype.setInactive = function() {
     this.activeGroup.setInactive();
 };
 
+PaneGroupContainer.prototype.isActive =  function() {
+    return this.activeGroup.isActive();
+};
+
 PaneGroupContainer.prototype.getPaneCount = function() {
     return this.paneGroups.reduce((p, c) => p + c.getPaneCount(), 0);
 };
 
 PaneGroupContainer.prototype.setHeight = function(to) {
-    //this.paneGroups.forEach(e => e.setHeight(to)); // TODO: fix
+    this.paneGroups.forEach(e => {
+        const proportion = e.getHeight() / this.height;
+        const newHeight = Math.round(proportion * to);
+        e.setHeight(newHeight);
+
+        const offsetProportion = e.getTopOffset() / this.height;
+        const newOffset = Math.round(offsetProportion * to);
+        e.setTopOffset(newOffset);
+    });
     this.height = to;
 };
 
@@ -311,7 +330,15 @@ PaneGroupContainer.prototype.getHeight = function() {
 };
 
 PaneGroupContainer.prototype.setWidth = function(to) {
-    //this.paneGroups.forEach(e => e.setWidth(to)); // TODO: fix
+    this.paneGroups.forEach(e => {
+        const proportion = e.getWidth() / this.width;
+        const newWidth = Math.round(proportion * to);
+        e.setWidth(newWidth);
+
+        const offsetProportion = e.getLeftOffset() / this.width;
+        const newOffset = Math.round(offsetProportion * to);
+        e.setLeftOffset(newOffset);
+    });
     this.width = to;
 };
 

@@ -66,8 +66,19 @@ function PaneGroup(parentElem, settings = defaults) {
         onTabClick: (name) => this.switchPane(name)
     });
 
+    this._initEventListeners();
+
     // Inactive by default.
     this.setInactive();
+
+};
+
+PaneGroup.prototype._initEventListeners = function() {
+    this.domNode.addEventListener('mousedown', () => {
+        if (!this.isActive()) {
+            this.onFocus(this);
+        }
+    });
 };
 
 PaneGroup.prototype.newPane = function(name = 'untitled') {
@@ -83,8 +94,7 @@ PaneGroup.prototype.newPane = function(name = 'untitled') {
         topOffset: tabsHeight,
         sharedEditorComponentSettings: this.sharedEditorComponentSettings,
         onUnknownAction: (action) => this._handleAction(action),
-        onCursorMoved: this.onCursorMoved,
-        onFocus: () => this.onFocus(this)
+        onCursorMoved: this.onCursorMoved
     });
     
     this.panes.push(pane);
@@ -191,7 +201,7 @@ PaneGroup.prototype.getNeighbors = function(side) {
         }
         return toAdd;
     });
-    return neighbors[0].concat(this.neighbors[side]).concat(neighbors[1]);  
+    return neighbors[0].reverse().concat(this.neighbors[side]).concat(neighbors[1]);  
 };
 
 // Returns whether the given PaneGroup shares a border with this group
@@ -258,6 +268,12 @@ PaneGroup.prototype.setInactive = function() {
     } else {
         this.domNode.blur();
     }
+};
+
+PaneGroup.prototype.isActive = function() {
+    return this.activePane ?
+        this.activePane.isActive() :
+        document.activeElement === this.domNode;
 };
 
 PaneGroup.prototype.show = function() {

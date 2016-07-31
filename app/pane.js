@@ -22,8 +22,7 @@ const defaults = {
         charheight: 0
     },
     onUnknownAction: (action) => { throw new Error('Pane: No handler for action: ' + action); },
-    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); },
-    onFocus: () => { throw new Error('Pane: No handler for onFocus.'); }
+    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); }
 };
 
 function Pane(parentElem, settings = defaults) {
@@ -43,7 +42,6 @@ function Pane(parentElem, settings = defaults) {
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
-    this.onFocus = settings.onFocus || defaults.onFocus;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     
@@ -82,9 +80,7 @@ Pane.prototype._initEventListeners = function() {
 };
 
 Pane.prototype._onBufferClick = function(line, col) {
-    if (!this.isActive()) {
-        this.onFocus();
-    }
+    if (!this.isActive()) return;
     
     this.cursorView.moveTo(line, col);
     this.gutterView.setActiveLine(line);
