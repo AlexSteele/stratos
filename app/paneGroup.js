@@ -12,10 +12,10 @@ const defaults = {
     topOffset: 0,
     leftOffset: 0,
     neighbors: {
-        above: null,
-        below: null,
-        left:  null,
-        right: null
+        above: undefined,
+        below: undefined,
+        left:  undefined,
+        right: undefined
     },
     sharedEditorComponentSettings: {
         charWidth: 0,

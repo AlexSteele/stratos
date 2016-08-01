@@ -1,5 +1,11 @@
 'use strict';
 
+//
+//
+// TODO: USE FLEXBOX
+//
+// 
+
 const PaneGroup = require('./paneGroup.js');
 
 const defaults = {
@@ -31,7 +37,7 @@ function PaneGroupContainer(parentElem, settings = defaults) {
             this.activeGroup = paneGroup;
             this.activeGroup.setActive();
             this.onSwitchPane(this.activeGroup.activePane);
-        }
+        }    
     });
 
     // Add first PaneGroup.
@@ -43,25 +49,27 @@ function PaneGroupContainer(parentElem, settings = defaults) {
     this.activeGroup.setActive();
 };
 
-PaneGroupContainer.prototype.switchUpGroup = function() {
+PaneGroupContainer.prototype.switchGroupAbove = function() {
     return this._switchGroup('above');
 };
 
-PaneGroupContainer.prototype.switchDownGroup = function() {
+PaneGroupContainer.prototype.switchGroupBelow = function() {
     return this._switchGroup('below');
 };
 
-PaneGroupContainer.prototype.switchLeftGroup = function() {
+PaneGroupContainer.prototype.switchGroupLeft = function() {
     return this._switchGroup('left');
 };
 
-PaneGroupContainer.prototype.switchRightGroup = function() {
+PaneGroupContainer.prototype.switchGroupRight = function() {
     return this._switchGroup('right');
 };
 
 // Where direction is 'above', 'below', 'left', or 'right'.
-PaneGroupContainer.prototype._switchGroup = function(direction) {
-    const neighbor = this.activeGroup.neighbors[direction];
+PaneGroupContainer.prototype._switchGroup = function(side) {
+    if (!this.activeGroup) return;
+    
+    const neighbor = this.activeGroup.neighbors[side];
     
     if (!neighbor) return;
     
@@ -71,40 +79,67 @@ PaneGroupContainer.prototype._switchGroup = function(direction) {
     this.onSwitchPane(this.activeGroup.activePane);
 };
 
-// Places the active group in the upper half of its currently occupied area
-// and the new group in the lower half.
-PaneGroupContainer.prototype.splitUp = function() {
+PaneGroupContainer.prototype.swapGroupAbove = function() {
+    this._swapGroup('above');
+};
+
+PaneGroupContainer.prototype.swapGroupBelow = function() {
+    this._swapGroup('below');
+};
+
+PaneGroupContainer.prototype.swapGroupLeft = function() {
+    this._swapGroup('left');
+};
+
+PaneGroupContainer.prototype.swapGroupRight = function() {
+    this._swapGroup('right');
+};
+
+PaneGroupContainer.prototype._swapGroup = function(_side) {
     if (!this.activeGroup) return;
     
-    const height = Math.round(this.activeGroup.getHeight() / 2);
-    const width = this.activeGroup.getWidth();
-    const topOffset = this.activeGroup.getTopOffset() + height;
-    const leftOffset = this.activeGroup.getLeftOffset();
-    const neighbors = Object.assign({}, this.activeGroup.neighbors);
-    const settings =  {height, width, topOffset, leftOffset, neighbors};
-    const mergedSettings = Object.assign({}, this.paneGroupSettings, settings);
-    const newGroup = new PaneGroup(this.parentElem, mergedSettings);
-    this.paneGroups.push(newGroup);
+    const neighbor = this.activeGroup.neighbors[_side];
+
+    if (!neighbor) return;
     
-    this.activeGroup.setHeight(this.activeGroup.getHeight() - height);
+    const sidesAndOpposites = [['above', 'below'], ['below', 'above'],
+                               ['left', 'right'],  ['right', 'left']];
+    
+    sidesAndOpposites.forEach(e => {
+        const [side, opposite] = e;
 
-    // Update neighbor pointers.
+        neighbor.getNeighbors(side).
+            filter(n => n.neighbors[opposite] === neighbor && n !== this.activeGroup).
+            forEach(n => n.neighbors[opposite] = this.activeGroup);
+        
+        this.activeGroup.getNeighbors(side).
+            filter(n => n.neighbors[opposite] === this.activeGroup && n !== neighbor).
+            forEach(n => n.neighbors[opposite] = neighbor);
 
-    // above/below 
-    this.activeGroup.neighbors.below = newGroup;
-    newGroup.neighbors.above = this.activeGroup;
-    newGroup.getNeighbors('below').forEach(e => e.neighbors.above = newGroup);
+        const n = this.activeGroup.neighbors[side];
+        this.activeGroup.neighbors[side] = neighbor.neighbors[side] === this.activeGroup ? neighbor : neighbor.neighbors[side];
+        neighbor.neighbors[side] = n === neighbor ? this.activeGroup : n;
+    });
 
-    // left/right
-    newGroup.neighbors.left = newGroup.getFirstFullNeighbor('left') || newGroup.neighbors.left;
-    newGroup.neighbors.right = newGroup.getFirstFullNeighbor('right') || newGroup.neighbors.right;
-    this.activeGroup.getNeighbors('left').forEach(e => e.neighbors.right = e.getFirstFullNeighbor('right') || e.neighbors.right);
-    this.activeGroup.getNeighbors('right').forEach(e => e.neighbors.left = e.getFirstFullNeighbor('left') || e.neighbors.right);
+    const topOffset = this.activeGroup.getTopOffset();
+    const leftOffset = this.activeGroup.getLeftOffset();
+    const height = this.activeGroup.getHeight();
+    const width = this.activeGroup.getWidth();
+
+    this.activeGroup.setTopOffset(neighbor.getTopOffset());
+    this.activeGroup.setLeftOffset(neighbor.getLeftOffset());
+    this.activeGroup.setHeight(neighbor.getHeight());
+    this.activeGroup.setWidth(neighbor.getWidth());
+
+    neighbor.setTopOffset(topOffset);
+    neighbor.setLeftOffset(leftOffset);
+    neighbor.setHeight(height);
+    neighbor.setWidth(width);    
 };
 
 // Places the active group in the lower half of its currently occupied area
 // and the new group in the upper half.
-PaneGroupContainer.prototype.splitDown = function() {
+PaneGroupContainer.prototype.splitGroupAbove = function() {
     if (!this.activeGroup) return;
     
     const height = Math.round(this.activeGroup.getHeight() / 2);
@@ -132,38 +167,38 @@ PaneGroupContainer.prototype.splitDown = function() {
     newGroup.getNeighbors('right').forEach(e => e.neighbors.left = e.getFirstFullNeighbor('left') || e.neighbors.left);
 };
 
-// Places the active group in the left half of its currently occupied area
-// and the new group in the right half.
-PaneGroupContainer.prototype.splitLeft = function() {
+// Places the active group in the upper half of its currently occupied area
+// and the new group in the lower half.
+PaneGroupContainer.prototype.splitGroupBelow = function() {
     if (!this.activeGroup) return;
     
-    const height = this.activeGroup.getHeight();
-    const width = Math.round(this.activeGroup.getWidth() / 2);
-    const topOffset = this.activeGroup.getTopOffset();
-    const leftOffset = this.activeGroup.getLeftOffset() + width;
+    const height = Math.round(this.activeGroup.getHeight() / 2);
+    const width = this.activeGroup.getWidth();
+    const topOffset = this.activeGroup.getTopOffset() + height;
+    const leftOffset = this.activeGroup.getLeftOffset();
     const neighbors = Object.assign({}, this.activeGroup.neighbors);
     const settings =  {height, width, topOffset, leftOffset, neighbors};
     const mergedSettings = Object.assign({}, this.paneGroupSettings, settings);
     const newGroup = new PaneGroup(this.parentElem, mergedSettings);
     this.paneGroups.push(newGroup);
     
-    this.activeGroup.setWidth(this.activeGroup.getWidth() - width);
+    this.activeGroup.setHeight(this.activeGroup.getHeight() - height);
+
+    // above/below 
+    this.activeGroup.neighbors.below = newGroup;
+    newGroup.neighbors.above = this.activeGroup;
+    newGroup.getNeighbors('below').forEach(e => e.neighbors.above = newGroup);
 
     // left/right
-    this.activeGroup.neighbors.right = newGroup;
-    newGroup.neighbors.left = this.activeGroup;
-    newGroup.getNeighbors('right').forEach(e => e.neighbors.left = newGroup);
-
-    // above/below
-    newGroup.neighbors.above = newGroup.getFirstFullNeighbor('above') || newGroup.neighbors.above;
-    newGroup.neighbors.below = newGroup.getFirstFullNeighbor('below') || newGroup.neighbors.below;
-    this.activeGroup.getNeighbors('above').forEach(e => e.neighbors.below = e.getFirstFullNeighbor('below') || e.neighbors.below);
-    this.activeGroup.getNeighbors('below').forEach(e => e.neighbors.above = e.getFirstFullNeighbor('above') || e.neighbors.above);
+    newGroup.neighbors.left = newGroup.getFirstFullNeighbor('left') || newGroup.neighbors.left;
+    newGroup.neighbors.right = newGroup.getFirstFullNeighbor('right') || newGroup.neighbors.right;
+    this.activeGroup.getNeighbors('left').forEach(e => e.neighbors.right = e.getFirstFullNeighbor('right') || e.neighbors.right);
+    this.activeGroup.getNeighbors('right').forEach(e => e.neighbors.left = e.getFirstFullNeighbor('left') || e.neighbors.left);
 };
 
 // Places the active group in the right half of its currently occupied area
 // and the new group in the left half.
-PaneGroupContainer.prototype.splitRight = function() {
+PaneGroupContainer.prototype.splitGroupLeft = function() {
     if (!this.activeGroup) return;
     
     const height = this.activeGroup.getHeight();
@@ -189,6 +224,35 @@ PaneGroupContainer.prototype.splitRight = function() {
     this.activeGroup.neighbors.below = this.activeGroup.getFirstFullNeighbor('below') || this.activeGroup.neighbors.below;
     newGroup.getNeighbors('above').forEach(e => e.neighbors.below = e.getFirstFullNeighbor('below') || e.neighbors.below);
     newGroup.getNeighbors('below').forEach(e => e.neighbors.above = e.getFirstFullNeighbor('above') || e.neighbors.above);
+};
+
+// Places the active group in the left half of its currently occupied area
+// and the new group in the right half.
+PaneGroupContainer.prototype.splitGroupRight = function() {
+    if (!this.activeGroup) return;
+    
+    const height = this.activeGroup.getHeight();
+    const width = Math.round(this.activeGroup.getWidth() / 2);
+    const topOffset = this.activeGroup.getTopOffset();
+    const leftOffset = this.activeGroup.getLeftOffset() + width;
+    const neighbors = Object.assign({}, this.activeGroup.neighbors);
+    const settings =  {height, width, topOffset, leftOffset, neighbors};
+    const mergedSettings = Object.assign({}, this.paneGroupSettings, settings);
+    const newGroup = new PaneGroup(this.parentElem, mergedSettings);
+    this.paneGroups.push(newGroup);
+    
+    this.activeGroup.setWidth(this.activeGroup.getWidth() - width);
+
+    // left/right
+    this.activeGroup.neighbors.right = newGroup;
+    newGroup.neighbors.left = this.activeGroup;
+    newGroup.getNeighbors('right').forEach(e => e.neighbors.left = newGroup);
+
+    // above/below
+    newGroup.neighbors.above = newGroup.getFirstFullNeighbor('above') || newGroup.neighbors.above;
+    newGroup.neighbors.below = newGroup.getFirstFullNeighbor('below') || newGroup.neighbors.below;
+    this.activeGroup.getNeighbors('above').forEach(e => e.neighbors.below = e.getFirstFullNeighbor('below') || e.neighbors.below);
+    this.activeGroup.getNeighbors('below').forEach(e => e.neighbors.above = e.getFirstFullNeighbor('above') || e.neighbors.above);
 };
 
 PaneGroupContainer.prototype.closeGroup = function() {
@@ -349,14 +413,18 @@ PaneGroupContainer.prototype.getWidth = function() {
 PaneGroupContainer.prototype._handleAction = function(action) {
 
     const handlers = {
-        'SWITCH_PANE_GROUP_UP':    () => this.switchUpGroup(),
-        'SWITCH_PANE_GROUP_DOWN':  () => this.switchDownGroup(),
-        'SWITCH_PANE_GROUP_LEFT':  () => this.switchLeftGroup(),
-        'SWITCH_PANE_GROUP_RIGHT': () => this.switchRightGroup(),
-        'SPLIT_PANE_GROUP_UP':     () => this.splitUp(),
-        'SPLIT_PANE_GROUP_DOWN':   () => this.splitDown(),
-        'SPLIT_PANE_GROUP_LEFT':   () => this.splitLeft(),
-        'SPLIT_PANE_GROUP_RIGHT':  () => this.splitRight(),
+        'SWITCH_PANE_GROUP_ABOVE': () => this.switchGroupAbove(),
+        'SWITCH_PANE_GROUP_BELOW': () => this.switchGroupBelow(),
+        'SWITCH_PANE_GROUP_LEFT':  () => this.switchGroupLeft(),
+        'SWITCH_PANE_GROUP_RIGHT': () => this.switchGroupRight(),
+        'SWAP_PANE_GROUP_ABOVE':   () => this.swapGroupAbove(),
+        'SWAP_PANE_GROUP_BELOW':   () => this.swapGroupBelow(),
+        'SWAP_PANE_GROUP_LEFT':    () => this.swapGroupLeft(),
+        'SWAP_PANE_GROUP_RIGHT':   () => this.swapGroupRight(),
+        'SPLIT_PANE_GROUP_ABOVE':  () => this.splitGroupAbove(),
+        'SPLIT_PANE_GROUP_BELOW':  () => this.splitGroupBelow(),
+        'SPLIT_PANE_GROUP_LEFT':   () => this.splitGroupLeft(),
+        'SPLIT_PANE_GROUP_RIGHT':  () => this.splitGroupRight(),
         'CLOSE_PANE_GROUP':        () => this.closeGroup()
     };
 
