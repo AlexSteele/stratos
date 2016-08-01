@@ -33,7 +33,7 @@ function PaneGroup(parentElem, settings = defaults) {
     this.panes = [];
     this.activePane = null;
     this.prevActivePane = null;
-    this.isActive = false;
+    this._isActive = false;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'pane-group';
@@ -128,7 +128,7 @@ PaneGroup.prototype.switchPane = function(tabName) {
     this.activePane = toSwitchTo;
     this.activePane.show();
 
-    if (this.isActive) {
+    if (this.isActive()) {
         this.activePane.setActive();
     }
     
@@ -258,7 +258,7 @@ PaneGroup.prototype.hideTabBar = function() {
 };
 
 PaneGroup.prototype.setActive = function() {
-    this.isActive = true;
+    this._isActive = true;
     if (this.activePane) {
         this.activePane.setActive();
         this.tabBar.setActive();
@@ -268,7 +268,7 @@ PaneGroup.prototype.setActive = function() {
 };
 
 PaneGroup.prototype.setInactive = function() {
-    this.isActive = false;
+    this._isActive = false;
     if (this.activePane) {
         this.activePane.setInactive();
         this.tabBar.setInactive();
@@ -278,7 +278,7 @@ PaneGroup.prototype.setInactive = function() {
 };
 
 PaneGroup.prototype.isActive = function() {
-    return this.isActive;
+    return this._isActive;
 };
 
 PaneGroup.prototype.show = function() {
