@@ -16,6 +16,8 @@ const defaultEditorMap = (function() {
         'Control-p':      {type: 'MOVE_CURSOR_UP'},
         'ArrowDown':      {type: 'MOVE_CURSOR_DOWN'},
         'Control-n':      {type: 'MOVE_CURSOR_DOWN'},
+        'Meta-f':         {type: 'MOVE_CURSOR_FORWARD_WORD'},
+        'Meta-b':         {type: 'MOVE_CURSOR_BACK_WORD'},
         'Control-a':      {type: 'MOVE_CURSOR_BEGINNING_OF_LINE'},
         'Control-e':      {type: 'MOVE_CURSOR_END_OF_LINE'},
         'Alt-Meta-Dead':  {type: 'NATIVE!'},

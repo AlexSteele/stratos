@@ -28,7 +28,7 @@ const defaults = {
 function Pane(parentElem, settings = defaults) {
 
     this.domNode = document.createElement('div');
-    this.domNode.className = 'editor-pane';
+    this.domNode.className = 'pane';
     this.domNode.style.height = settings.height || defaults.height;
     this.domNode.style.width = settings.width || defaults.width;
     this.domNode.style.top = settings.topOffset || defaults.topOffset;
@@ -248,6 +248,22 @@ Pane.prototype.moveCursorDown = function() {
     this._emitCursorMoved();
 };
 
+Pane.prototype.moveCursorForwardWord = function() {
+    const [line, col] = this.model.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
+    this.cursorView.moveTo(line + 1, col + 1);
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
+};
+
+Pane.prototype.moveCursorBackWord = function() {
+    const [line, col] = this.model.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
+    this.cursorView.moveTo(line + 1, col + 1);
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
+};
+
 Pane.prototype.moveCursorBeginningOfLine = function() {
     this.cursorView.setCol(1);
     this.cursorView.goalCol = this.cursorView.col;
@@ -272,10 +288,7 @@ Pane.prototype.moveCursorTo = function(line, col) {
         
         this._checkScrollCursorIntoView();
         this._emitCursorMoved();
-        
-        return true;
     }
-    return false;
 };
 
 // Sets the given line as the first visible.
@@ -424,6 +437,8 @@ Pane.prototype._handleAction = function(action) {
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
         'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
         'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
+        'MOVE_CURSOR_FORWARD_WORD':      () => this.moveCursorForwardWord(),
+        'MOVE_CURSOR_BACK_WORD':         () => this.moveCursorBackWord(),
         'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
         'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
         'SHOW_GUTTER':                   () => this.showGutter(),

@@ -21,7 +21,7 @@ html, body {
   position: absolute;
 }
 
-.editor-pane {
+.pane {
   outline-style: none;
   overflow-y: scroll;
   position: absolute;
