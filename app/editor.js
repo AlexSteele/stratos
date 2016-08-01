@@ -51,7 +51,6 @@ function Editor(parentElem, settings = defaults) {
 };
 
 Editor.prototype._initComponents = function() {
-    this.contextBar.hide();
     this.panesContainer.setActive();
 };
 
@@ -114,7 +113,7 @@ Editor.prototype._checkResizePanes = function() {
 };
 
 Editor.prototype._handleNewPane = function(newPane) {
-    const isFirstPane = this.panesContainer.getPaneCount() === 1;
+    const isFirstPane = (!this.panesContainer) || this.panesContainer.getPaneCount() === 1;
     if (isFirstPane) {
         this.contextBar.show();   
     }

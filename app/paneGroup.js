@@ -26,13 +26,14 @@ const defaults = {
     onNewPane: () => { throw new Error('PaneGroup: No handler for onNewPane.'); },
     onSwitchPane: (newActivePane) => { throw new Error('PaneGroup: No handler for onSwitchPane.'); },
     onClosePane: () => { throw new Error('PaneGroup: No handler for onClosePane.'); },
-    onFocus: (this_EditorPane) => { throw new Error('PaneGroup: No handler for onFocus.'); }
+    onFocus: (this_PaneGroup) => { throw new Error('PaneGroup: No handler for onFocus.'); }
 };
 
 function PaneGroup(parentElem, settings = defaults) {
     this.panes = [];
     this.activePane = null;
     this.prevActivePane = null;
+    this.isActive = false;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'pane-group';
@@ -68,9 +69,9 @@ function PaneGroup(parentElem, settings = defaults) {
 
     this._initEventListeners();
 
-    // Inactive by default.
+    // Inactive with one pane by default.
+    this.newPane();
     this.setInactive();
-
 };
 
 PaneGroup.prototype._initEventListeners = function() {
@@ -119,14 +120,18 @@ PaneGroup.prototype.switchPane = function(tabName) {
     if (!toSwitchTo) return;
     
     if (this.activePane) {
+        this.activePane.setInactive();
         this.activePane.hide();
     }
 
     this.prevActivePane = this.activePane;
     this.activePane = toSwitchTo;
     this.activePane.show();
-    this.activePane.setActive();
 
+    if (this.isActive) {
+        this.activePane.setActive();
+    }
+    
     this.tabBar.setSelected(this.activePane.tabName);
     this.onSwitchPane(this.activePane);
 };
@@ -253,6 +258,7 @@ PaneGroup.prototype.hideTabBar = function() {
 };
 
 PaneGroup.prototype.setActive = function() {
+    this.isActive = true;
     if (this.activePane) {
         this.activePane.setActive();
         this.tabBar.setActive();
@@ -262,6 +268,7 @@ PaneGroup.prototype.setActive = function() {
 };
 
 PaneGroup.prototype.setInactive = function() {
+    this.isActive = false;
     if (this.activePane) {
         this.activePane.setInactive();
         this.tabBar.setInactive();
@@ -271,9 +278,7 @@ PaneGroup.prototype.setInactive = function() {
 };
 
 PaneGroup.prototype.isActive = function() {
-    return this.activePane ?
-        this.activePane.isActive() :
-        document.activeElement === this.domNode;
+    return this.isActive;
 };
 
 PaneGroup.prototype.show = function() {

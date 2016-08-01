@@ -61,6 +61,9 @@ function Pane(parentElem, settings = defaults) {
 
     this._initComponents();
     this._initEventListeners();
+
+    // Inactive by default.
+    this.setInactive();
 }
 
 Pane.prototype._initComponents = function() {
@@ -313,8 +316,8 @@ Pane.prototype.showGutter = function() {
         this.gutterView.show();
         const width = this.gutterView.getWidth();
         this.bufferView.setLeftOffset(width);
-        this.cursorView.setLeftOffset(width);    
-    }    
+        this.cursorView.setLeftOffset(width);
+    }
 };
 
 Pane.prototype.hideGutter = function() {
@@ -322,7 +325,7 @@ Pane.prototype.hideGutter = function() {
         this.gutterView.hide();
         const width = this.gutterView.getWidth();
         this.bufferView.setLeftOffset(width);
-        this.cursorView.setLeftOffset(width);        
+        this.cursorView.setLeftOffset(width);
     }
 };
 

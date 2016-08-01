@@ -31,7 +31,7 @@ function PaneGroupContainer(parentElem, settings = defaults) {
             this.activeGroup = paneGroup;
             this.activeGroup.setActive();
             this.onSwitchPane(this.activeGroup.activePane);
-        }    
+        }
     });
 
     // Add first PaneGroup.
