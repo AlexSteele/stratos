@@ -4,7 +4,7 @@ const {defaults} = require('./keyMap.js');
 
 const plainText = {
     name: 'plain-text',
-    filePatters: /txt/,
+    filePatterns: /txt/,
     keyMap: defaults['editor'],
     wordDelimiters: [' ', '.', ',', '-', '/', '!', '?', '"', '\'', '(', ')', '[', ']', '{', '}'],
     isWordDelimiter: (c) => plainText.wordDelimiters.some(e => e === c)
