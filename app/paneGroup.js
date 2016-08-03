@@ -60,7 +60,7 @@ function PaneGroup(parentElem, settings = defaults) {
     // Only active when no panes are open. This is to allow, for instance,
     // an 'open tab' keybinding even when no EditorPanes are active.
     this.noPanesKeyListener = new KeyListener(document.body, {
-        keyMap: this.keyMaps['no-panes-default'],
+        keyMap: this.keyMaps['no-panes'],
         allowDefaultOnKeyError: true,
         onKeyAction: (action) => this._handleAction(action),
         onKeyError: (error) => console.log('Editor: Key error: ' + error)
@@ -87,13 +87,13 @@ PaneGroup.prototype._initEventListeners = function() {
 
 PaneGroup.prototype.newPane = function(name = 'untitled', fileName) {
     const buffer = new BufferModel({fileName: fileName});
-    const tabName = fileName ? buffer.getFileBaseName() : this._getUniqueTabName(name);
+    const tabName = fileName ? this._getUniqueTabName(buffer.getFileBaseName()) : this._getUniqueTabName(name);
     const tabsHeight = this.tabBar.getVisibleHeight();
     const height = this.getHeight() - tabsHeight;
     const pane = new Pane(this.domNode, buffer, {
         buffer,
         tabName,
-        keyMap: this.keyMaps['editor-default'],
+        keyMap: this.keyMaps['editor'],
         height, 
         width: this.getWidth(),
         topOffset: tabsHeight,
@@ -381,8 +381,8 @@ PaneGroup.prototype._getUniqueTabName = function(name) {
             return prev + 1;
         }
         if (prev > 0) {
-            // untitled-1 -> untitled
-            const sansSuffix = curr.tabName.slice(0, curr.tabName.length - numDigitsIn(prev) - 1);
+            // untitled(1) -> untitled
+            const sansSuffix = curr.tabName.slice(0, curr.tabName.length - numDigitsIn(prev) - 2);
             if (sansSuffix === name) {
                 return prev + 1;   
             }
@@ -391,7 +391,7 @@ PaneGroup.prototype._getUniqueTabName = function(name) {
         return prev;
     }, 0);
 
-    return suffixNum === 0 ? name : name + '-' + suffixNum;
+    return suffixNum === 0 ? name : name + '(' + suffixNum + ')';
 };
 
 PaneGroup.prototype._handleAction = function(action) {

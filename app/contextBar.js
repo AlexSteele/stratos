@@ -12,6 +12,10 @@ function ContextBar(parentElem) {
     this.positionNode = document.createElement('div');
     this.positionNode.className = 'context-bar-widget context-bar-position';
     this.domNode.appendChild(this.positionNode);
+
+    this.modeNode = document.createElement('div');
+    this.modeNode.className = 'context-bar-widget context-bar-mode-name';
+    this.domNode.appendChild(this.modeNode);
 }
 
 ContextBar.prototype.setTabNameView = function(to) {
@@ -22,9 +26,14 @@ ContextBar.prototype.setCursorPositionView = function(line, col) {
     this.positionNode.innerHTML = `Line ${line}, Column ${col}`;
 };
 
+ContextBar.prototype.setModeNameView = function(to) {
+    this.modeNode.innerHTML = to;
+};
+
 ContextBar.prototype.clear = function() {
     this.tabNameNode.innerHTML = '';
     this.positionNode.innerHTML = '';
+    this.modeNode.innerHTML = '';
 };
 
 ContextBar.prototype.setActive = function() {

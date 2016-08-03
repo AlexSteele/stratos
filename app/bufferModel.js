@@ -1,21 +1,12 @@
 'use strict';
 
+const modes = require('./mode.js');
 const fs = require('fs');
 const path = require('path');
 
-const plainTextMode = {
-
-    fileEndings: ['.txt'],
-    
-    wordDelimiters: [' ', '.', ',', '-', '/', '!', '?', '"', '\'', '(', ')'],
-
-    isWordDelimiter: function(c) {
-        return plainTextMode.wordDelimiters.some(e => e === c);
-    }
-};
-
 const defaults  = {
-    fileName: ''
+    fileName: '',
+    mode: modes.default
 };
 
 function BufferModel(settings = defaults) {
@@ -23,7 +14,7 @@ function BufferModel(settings = defaults) {
     // Lines is an array of strings, with each representing a line
     // in the buffer. Line and character access is 0 based.
     this.lines = [];
-    this.mode = plainTextMode;
+    this.mode = settings.mode || defaults.mode;
     this.fileName = settings.fileName || defaults.fileName;
 
     if (this.fileName !== '') {
@@ -127,8 +118,6 @@ BufferModel.prototype.getLine = function(lineNum) {
 BufferModel.prototype.getLastWordStart = function(lineNum, col) {
     this._validatePosHard(lineNum, col);
     
-    // Regex? Nah
-
     let l = lineNum,
         c = col - 1; // Start one back from the given column.
 
@@ -196,7 +185,7 @@ BufferModel.prototype.save = function(as) {
     }
     
     if (this.fileName === '') {
-        throw new Error('No file given.');
+        throw new Error('BufferModel: No file present.');
     }
     
     const text = this.lines.join('\n');
@@ -221,6 +210,10 @@ BufferModel.prototype.getFileBaseName = function() {
 
 BufferModel.prototype.getLines = function() {
     return this.lines;
+};
+
+BufferModel.prototype.getMode = function() {
+    return this.mode;
 };
 
 BufferModel.prototype.clear = function() {

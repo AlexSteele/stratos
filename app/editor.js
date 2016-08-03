@@ -23,7 +23,7 @@ function Editor(parentElem, settings = defaults) {
     parentElem.appendChild(this.domNode);
 
     this.commandModal = new CommandModal(this.domNode, {
-        keyMap: this.keyMaps['command-modal-default'],
+        keyMap: this.keyMaps['command-modal'],
         onKeyAction: (action) => this._handleAction(action),
         onKeyError: (error) => this._handleKeyError(error),
         onSubmitAction: (action) => this._handleCommandModalAction(action),
@@ -124,7 +124,8 @@ Editor.prototype._handleSwitchPane = function(newActivePane) {
     if (newActivePane) {
         this.contextBar.setTabNameView(newActivePane.tabName);
         const [line, col] = newActivePane.getCursorPosition();
-        this.contextBar.setCursorPositionView(line, col);    
+        this.contextBar.setCursorPositionView(line, col);
+        this.contextBar.setModeNameView(newActivePane.getModeName());
     } else {
         this.contextBar.clear();
     }
@@ -134,8 +135,6 @@ Editor.prototype._handleClosePane = function() {
     const allPanesClosed = this.panesContainer.getPaneCount() === 0;
     if (allPanesClosed) {
         this.contextBar.hide();
-    } else {
-        this.contextBar.clear();
     }
 };
 

@@ -5,6 +5,7 @@ const defaultEditorMap = (function() {
     const keys = {
         'Enter':          {type: 'INSERT_NEW_LINE'},
         'Tab':            {type: 'INSERT', text: '    '}, // TODO: Change this to reflect preferences/mode etc.
+        'Control-o':      {type: 'OPEN_LINE'},
         'Backspace':      {type: 'DELETE_BACK_CHAR'},
         'Control-d':      {type: 'DELETE_FORWARD_CHAR'},
         'Meta-d':         {type: 'DELETE_FORWARD_WORD'},
@@ -73,12 +74,12 @@ const defaultNoPanesMap = {
     'Control-t':      {type: 'NEW_PANE'}
 };
 
-const defaultKeyMaps = {
-    'editor-default': defaultEditorMap,
-    'command-modal-default': defaultCommandModalMap,
-    'no-panes-default': defaultNoPanesMap
+const defaults = {
+    'editor': defaultEditorMap,
+    'command-modal': defaultCommandModalMap,
+    'no-panes': defaultNoPanesMap
 };
 
 module.exports = {
-    defaultKeyMaps
+    defaults   
 };

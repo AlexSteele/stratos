@@ -18,8 +18,8 @@ const defaults = {
         charheight: 0
     },
     onUnknownAction: (action) => { throw new Error('Pane: No handler for action: ' + action); },
-    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); },
-    onNameChanged: (oldName, newName) => { throw new Error('Pane: No handler for onNameChanged'); }
+    onNameChanged: (oldName, newName) => { throw new Error('Pane: No handler for onNameChanged'); },
+    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); }
 };
 
 function Pane(parentElem, buffer, settings = defaults) {
@@ -49,7 +49,7 @@ function Pane(parentElem, buffer, settings = defaults) {
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
 
     this.keyListener = new KeyListener(this.domNode, {
-        keyMap: this.keyMap,
+        keyMap: this.buffer.getMode().keyMap,
         allowDefaultOnKeyError: false,
         onKeyAction: (action) => this._handleAction(action),
         onKeyError: (error) => this._handleKeyError(error)
@@ -107,15 +107,19 @@ Pane.prototype.insert = function(text) {
 };
 
 Pane.prototype.insertNewLine = function() {
-    this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
-    this.cursorView.moveTo(this.cursorView.line + 1, 1);
-    this.gutterView.appendLine();
+    this.openLine();
+    this.cursorView.moveTo(this.cursorView.line + 1, 1); 
     this.gutterView.setActiveLine(this.cursorView.line);
 
     this._checkScrollCursorIntoView();
     this._emitCursorMoved();
+};
+
+Pane.prototype.openLine = function() {
+    this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
+    this.gutterView.appendLine();
 };
 
 Pane.prototype.deleteBackChar = function() {
@@ -179,6 +183,7 @@ Pane.prototype.deleteBackWord = function() {
 };
 
 Pane.prototype.deleteForwardWord = function() {
+    this.cursorView.setBlink(false);
     const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
     const [startLine, endLine] = this.buffer.deleteRange(this.cursorView.line - 1, this.cursorView.col - 1, line, col);
     for (let i = startLine; i < endLine; i++) {
@@ -186,6 +191,7 @@ Pane.prototype.deleteForwardWord = function() {
         this.gutterView.removeLine(startLine + 1);
     }
     this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+    this.cursorView.setBlink(true);
 };
 
 Pane.prototype.killLine = function() {
@@ -411,15 +417,6 @@ Pane.prototype.setHeight = function(to) {
     this.bufferView.setVisibleHeight(this.getHeight());
 };
 
-Pane.prototype.setWidth = function(to) {
-    this.domNode.style.width = to + 'px';
-    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
-};
-
-Pane.prototype.getCursorPosition = function() {
-    return [this.cursorView.line, this.cursorView.col];
-};
-
 Pane.prototype.getHeight = function() {
     const height = parseInt(this.domNode.style.height);
     if (height == null) {
@@ -428,12 +425,25 @@ Pane.prototype.getHeight = function() {
     return height;
 };
 
+Pane.prototype.setWidth = function(to) {
+    this.domNode.style.width = to + 'px';
+    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
+};
+
 Pane.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width);
     if (width == null) {
         throw new Error('Pane: Unable to parse width.');
     }
     return width;
+};
+
+Pane.prototype.getCursorPosition = function() {
+    return [this.cursorView.line, this.cursorView.col];
+};
+
+Pane.prototype.getModeName = function() {
+    return this.buffer.getMode().name;
 };
 
 Pane.prototype._checkScrollCursorIntoView = function() {
@@ -465,6 +475,7 @@ Pane.prototype._handleAction = function(action) {
     const actionHandlers = {
         'INSERT':                        (action) => this.insert(action.text),
         'INSERT_NEW_LINE':               () => this.insertNewLine(),
+        'OPEN_LINE':                     () => this.openLine(),
         'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
         'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
         'DELETE_FORWARD_WORD':           () => this.deleteForwardWord(),
