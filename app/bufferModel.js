@@ -1,13 +1,34 @@
 'use strict';
 
-// This is a minimal, straightforward implementation,
-// not a robust or fast one (necessarily). Its semantics
-// are a tad sloppy.
-function BufferModel() {
+const fs = require('fs');
+const path = require('path');
+
+const plainTextMode = {
+
+    fileEndings: ['.txt'],
+    
+    wordDelimiters: [' ', '.', ',', '-', '/', '!', '?', '"', '\'', '(', ')'],
+
+    isWordDelimiter: function(c) {
+        return plainTextMode.wordDelimiters.some(e => e === c);
+    }
+};
+
+const defaults  = {
+    fileName: ''
+};
+
+function BufferModel(settings = defaults) {
 
     // Lines is an array of strings, with each representing a line
     // in the buffer. Line and character access is 0 based.
     this.lines = [];
+    this.mode = plainTextMode;
+    this.fileName = settings.fileName || defaults.fileName;
+
+    if (this.fileName !== '') {
+        this.reloadFromFile();
+    }
 };
 
 BufferModel.prototype.appendLine = function(text = '') {
@@ -47,7 +68,7 @@ BufferModel.prototype.setLine = function(lineNum, text) {
 
 BufferModel.prototype.deleteBack = function(lineNum, col, amount = 1) {
     this._validatePosSoft(lineNum, col);
-    
+
     const line = this.lines[lineNum];
     const before = line.slice(0, col - amount);
     const after = line.slice(col);
@@ -55,33 +76,53 @@ BufferModel.prototype.deleteBack = function(lineNum, col, amount = 1) {
 };
 
 BufferModel.prototype.deleteForward = function(lineNum, col, amount = 1) {
-    this._validatePosSoft(lineNum, col);
-
-    const line = this.lines[lineNum];
-    const before = line.slice(0, col);
-    const after = line.slice(col + amount);
-    this.lines[lineNum] = before + after;
+    this.deleteBack(lineNum, col + amount, amount);
 };
 
 BufferModel.prototype.deleteLine = function(lineNum) {
     this._validateLineNumHard(lineNum);
-
+    
     this.lines.splice(lineNum, 1);
 };
+
+// The range is exclusive: the final character will not be deleted.
+// Returns the range of lines deleted, in the form [start, end], where
+// start === end signifies no lines were deleted.
+BufferModel.prototype.deleteRange = function(_startLine, _startCol, _endLine, _endCol) {
+    this._validatePosHard(_startLine, _startCol);
+    this._validatePosHard(_endLine, _endCol);
+
+    const [startLine, startCol, endLine, endCol] = orderPositions(_startLine, _startCol, _endLine, _endCol);
+    
+    if (startLine === endLine) {
+        const n = endCol - startCol;
+        this.deleteForward(startLine, startCol, n);
+        return [startLine, startLine];
+    }
+
+    this.deleteForward(startLine, startCol, this.lines[startLine].length - startCol);
+    this.deleteBack(endLine, endCol, endCol);
+    this.lines[startLine] = this.lines[startLine] + this.lines[endLine];
+
+    const toDelete = endLine - startLine;
+    for (let i = 0; i < toDelete; i++) {
+        this.deleteLine(startLine + 1);
+    }
+
+    return [startLine + 1, endLine + 1];
+};
+
+function orderPositions(startLine, startCol, endLine, endCol) {
+    const byLineThenColumn = (start, end) => start[0] === end[0] ? start[1] - end[1] : start[0] - end[0];
+    const [startingPos, endingPos] = [[startLine, startCol], [endLine, endCol]].sort(byLineThenColumn);
+    return [...startingPos, ...endingPos];
+}
 
 BufferModel.prototype.getLine = function(lineNum) {
     this._validateLineNumHard(lineNum);
 
     return this.lines[lineNum];
 };
-
-// TODO: Eventually, these should be determined by the current buffer's `mode`,
-// unless simple delimiters don't suffice...
-const wordDelimiters = [' ', '.', ',', '-', '/', '!', '?', '"', '\'', '(', ')'];
-
-function isDelimiter(c) {
-    return wordDelimiters.some(e => e === c);
-}
 
 BufferModel.prototype.getLastWordStart = function(lineNum, col) {
     this._validatePosHard(lineNum, col);
@@ -102,14 +143,14 @@ BufferModel.prototype.getLastWordStart = function(lineNum, col) {
             } else {
                 return [0, 0];   
             }
-        } else if (!isDelimiter(line[c])) {
+        } else if (!this.mode.isWordDelimiter(line[c])) {
             break;
         } else {
              c--;
         }
     }
 
-    while (c >= 0 && !isDelimiter(line[c])) {
+    while (c >= 0 && !this.mode.isWordDelimiter(line[c])) {
         c--;
     }
 
@@ -135,22 +176,59 @@ BufferModel.prototype.getNextWordEnd = function(lineNum, col) {
             } else {
                 return [l, line.length];
             }
-        } else if (!isDelimiter(line[c])) {
+        } else if (!this.mode.isWordDelimiter(line[c])) {
             break;   
         } else {
             c++;
         }
     }
 
-    while (c < line.length && !isDelimiter(line[c])) {
+    while (c < line.length && !this.mode.isWordDelimiter(line[c])) {
         c++;
     }
 
     return [l, c];
 };
 
+BufferModel.prototype.save = function(as) {
+    if (as) {
+        this.fileName = as;
+    }
+    
+    if (this.fileName === '') {
+        throw new Error('No file given.');
+    }
+    
+    const text = this.lines.join('\n');
+    fs.writeFileSync(this.fileName, text);
+};
+
+BufferModel.prototype.reloadFromFile = function() {
+    if (this.fileName === '') {
+        throw new Error('BufferModel: No file present.');
+    }
+
+    const contents = fs.readFileSync(this.fileName, 'utf8');
+    this.lines = contents.split('\n');
+};
+
+BufferModel.prototype.getFileBaseName = function() {
+    if (this.fileName === '') {
+        throw new Error('BufferModel: No file present.');
+    }
+    return path.basename(this.fileName);
+};
+
+BufferModel.prototype.getLines = function() {
+    return this.lines;
+};
+
 BufferModel.prototype.clear = function() {
     this.lines = [];
+};
+
+BufferModel.prototype.isEmpty = function() {
+    return this.lines.length === 0;
 };
 
 BufferModel.prototype._validateLineNumHard = function(lineNum) {

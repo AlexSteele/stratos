@@ -1,5 +1,6 @@
 'use strict';
 
+const BufferModel = require('./bufferModel.js');
 const KeyListener = require('./keyListener.js');
 const {numDigitsIn} = require('./utils.js');
 const Pane = require('./pane.js');
@@ -26,6 +27,7 @@ const defaults = {
     onNewPane: () => { throw new Error('PaneGroup: No handler for onNewPane.'); },
     onSwitchPane: (newActivePane) => { throw new Error('PaneGroup: No handler for onSwitchPane.'); },
     onClosePane: () => { throw new Error('PaneGroup: No handler for onClosePane.'); },
+    onActivePaneNameChanged: (newName) => { throw new Error('PaneGroup: No handler for onActivePaneNameChanged.'); },
     onFocus: (this_PaneGroup) => { throw new Error('PaneGroup: No handler for onFocus.'); }
 };
 
@@ -52,6 +54,7 @@ function PaneGroup(parentElem, settings = defaults) {
     this.onNewPane = settings.onNewPane || defaults.onNewPane;
     this.onSwitchPane = settings.onSwitchPane || defaults.onSwitchPane;
     this.onClosePane = settings.onClosePane || defaults.onClosePane;
+    this.onActivePaneNameChanged = settings.onActivePaneNameChanged || defaults.onActivePaneNameChanged;
     this.onFocus = settings.onFocus || defaults.onFocus;
         
     // Only active when no panes are open. This is to allow, for instance,
@@ -82,12 +85,13 @@ PaneGroup.prototype._initEventListeners = function() {
     });
 };
 
-PaneGroup.prototype.newPane = function(name = 'untitled') {
-    const tabName = this._getUniqueTabName(name);
+PaneGroup.prototype.newPane = function(name = 'untitled', fileName) {
+    const buffer = new BufferModel({fileName: fileName});
+    const tabName = fileName ? buffer.getFileBaseName() : this._getUniqueTabName(name);
     const tabsHeight = this.tabBar.getVisibleHeight();
     const height = this.getHeight() - tabsHeight;
-    const pane = new Pane(this.domNode, {
-        name,
+    const pane = new Pane(this.domNode, buffer, {
+        buffer,
         tabName,
         keyMap: this.keyMaps['editor-default'],
         height, 
@@ -95,7 +99,11 @@ PaneGroup.prototype.newPane = function(name = 'untitled') {
         topOffset: tabsHeight,
         sharedEditorComponentSettings: this.sharedEditorComponentSettings,
         onUnknownAction: (action) => this._handleAction(action),
-        onCursorMoved: this.onCursorMoved
+        onCursorMoved: this.onCursorMoved,
+        onNameChanged: (oldName, newName) => {
+            this.tabBar.rename(oldName, newName);
+            this.onActivePaneNameChanged(newName);
+        }
     });
     
     this.panes.push(pane);
@@ -390,6 +398,7 @@ PaneGroup.prototype._handleAction = function(action) {
 
     const handlers = {
         'NEW_PANE':               (action) => this.newPane(action.name),
+        'OPEN_FILE':              (action) => this.newPane(action.name, action.name),
         'SWITCH_PANE':            (action) => this.switchPane(action.name),
         'CLOSE_PANE':             (action) => this.closePane(action.name),
         'CLOSE_ALL':              () => this.closeAllPanes(),

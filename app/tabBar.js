@@ -29,10 +29,11 @@ TabBar.prototype.add = function(tabName) {
 
 TabBar.prototype.remove = function(tabName) {
     const index = this.tabViews.findIndex(e => e.getName() === tabName);
+    
     if (index === -1) throw new Error('TabBar: No tab with name ' + tabName);
+    
     const tab = this.tabViews.splice(index, 1)[0];
     this.domNode.removeChild(tab.domNode);
-    return true;
 };
 
 TabBar.prototype.setSelected = function(tabName) {
@@ -46,8 +47,14 @@ TabBar.prototype.setSelected = function(tabName) {
 
     this.selectedTab = toSelect;
     this.selectedTab.setSelected(true);
+};
 
-    return true;
+TabBar.prototype.rename = function(tabName, to) {
+    const toRename = this.tabViews.find(e => e.getName() === tabName);
+
+    if (!toRename) throw new Error('TabBar: No tab with name ' + tabName);
+
+    toRename.setName(to);
 };
 
 TabBar.prototype.show = function() {
@@ -113,6 +120,10 @@ TabView.prototype.setName = function(name) {
     this.tabNameNode.innerHTML = name;
 };
 
+TabView.prototype.getName = function() {
+    return this.tabNameNode.innerHTML;
+};
+
 TabView.prototype.setLeftOffset = function(to) {
     this.domNode.style.left = to + 'px';
 };
@@ -124,10 +135,6 @@ TabView.prototype.setSelected = function(on) {
     } else {
         this.domNode.classList.remove('tab-selected');
     }
-};
-
-TabView.prototype.getName = function() {
-    return this.tabNameNode.innerHTML;
 };
 
 TabView.prototype.getWidth = function() {

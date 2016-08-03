@@ -1,16 +1,12 @@
 'use strict';
 
-// TODO: Make line, col indexing consistent between model and view.
-
-const BufferModel = require('./bufferModel.js');
 const BufferView = require('./bufferView.js');
 const CursorView = require('./cursorView.js');
 const GutterView = require('./gutterView.js');
 const KeyListener = require('./keyListener.js');
 
 const defaults = {
-    name: '',
-    tabName: '', // A unique identifier. May be the same as the pane's name. 
+    tabName: '',
     keyMap: {},
     horizontalCursorMargin: 1,  // columns
     verticalCursorMargin: 1,    // lines
@@ -22,10 +18,11 @@ const defaults = {
         charheight: 0
     },
     onUnknownAction: (action) => { throw new Error('Pane: No handler for action: ' + action); },
-    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); }
+    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); },
+    onNameChanged: (oldName, newName) => { throw new Error('Pane: No handler for onNameChanged'); }
 };
 
-function Pane(parentElem, settings = defaults) {
+function Pane(parentElem, buffer, settings = defaults) {
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'pane';
@@ -35,13 +32,12 @@ function Pane(parentElem, settings = defaults) {
     this.domNode.tabIndex = 1;
     parentElem.appendChild(this.domNode);
 
-    this.model = new BufferModel();
-
-    this.name = settings.name || defaults.name;
+    this.buffer = buffer;
     this.tabName = settings.tabName || defaults.tabName;
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
+    this.onNameChanged = settings.onNameChanged || defaults.onNameChanged;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     
@@ -67,11 +63,17 @@ function Pane(parentElem, settings = defaults) {
 }
 
 Pane.prototype._initComponents = function() {
-    this.model.appendLine();
     this.cursorView.setLeftOffset(this.gutterView.getWidth());
     this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
     this.bufferView.setVisibleHeight(this.getHeight());
     this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
+    
+    if (this.buffer.isEmpty()) {
+        this.buffer.appendLine();
+        this.bufferView.appendLine();
+    } else {
+        this.buffer.getLines().forEach(e => this.bufferView.appendLine(e));        
+    }
 };
 
 Pane.prototype._initEventListeners = function() {
@@ -96,8 +98,8 @@ Pane.prototype._onGutterWidthChanged = function(width) {
 };
 
 Pane.prototype.insert = function(text) {
-    this.model.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
-    this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+    this.buffer.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     this.cursorView.moveRight(text.length);
 
     this._checkScrollCursorIntoView();
@@ -105,9 +107,9 @@ Pane.prototype.insert = function(text) {
 };
 
 Pane.prototype.insertNewLine = function() {
-    this.model.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
-    this.bufferView.insertLine(this.cursorView.line + 1, this.model.getLine(this.cursorView.line));
+    this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
     this.cursorView.moveTo(this.cursorView.line + 1, 1);
     this.gutterView.appendLine();
     this.gutterView.setActiveLine(this.cursorView.line);
@@ -122,12 +124,10 @@ Pane.prototype.deleteBackChar = function() {
             return;
         }
 
-        // TODO: Move logic into model.
-
-        const prevLine = this.model.getLine(this.cursorView.line - 2);
-        const line = prevLine + this.model.getLine(this.cursorView.line - 1);
-        this.model.setLine(this.cursorView.line - 2, line);
-        this.model.deleteLine(this.cursorView.line - 1);
+        const prevLine = this.buffer.getLine(this.cursorView.line - 2);
+        const line = prevLine + this.buffer.getLine(this.cursorView.line - 1);
+        this.buffer.setLine(this.cursorView.line - 2, line);
+        this.buffer.deleteLine(this.cursorView.line - 1);
         
         this.bufferView.setLine(this.cursorView.line - 1, line);
         this.bufferView.removeLine(this.cursorView.line);
@@ -135,8 +135,8 @@ Pane.prototype.deleteBackChar = function() {
         this.gutterView.setActiveLine(this.cursorView.line);
         this.gutterView.removeLine();
     } else {
-        this.model.deleteBack(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+        this.buffer.deleteBack(this.cursorView.line - 1, this.cursorView.col - 1);
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
         this.cursorView.moveLeft();
     }
 
@@ -150,18 +150,42 @@ Pane.prototype.deleteForwardChar = function() {
             return;
         }
 
-        // TODO: ^ Ditto ^
-        const currLine = this.model.getLine(this.cursorView.line - 1);
-        const nextLine = this.model.getLine(this.cursorView.line);
-        this.model.setLine(this.cursorView.line - 1, currLine + nextLine);
-        this.model.deleteLine(this.cursorView.line);
+        const currLine = this.buffer.getLine(this.cursorView.line - 1);
+        const nextLine = this.buffer.getLine(this.cursorView.line);
+        this.buffer.setLine(this.cursorView.line - 1, currLine + nextLine);
+        this.buffer.deleteLine(this.cursorView.line);
         
         this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     } else {
-        this.model.deleteForward(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+        this.buffer.deleteForward(this.cursorView.line - 1, this.cursorView.col - 1);
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     }
+};
+
+Pane.prototype.deleteBackWord = function() {
+    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
+    const [startLine, endLine] = this.buffer.deleteRange(line, col, this.cursorView.line - 1, this.cursorView.col - 1);
+    for (let i = startLine; i < endLine; i++) {
+        this.bufferView.removeLine(startLine + 1);
+        this.gutterView.removeLine(startLine + 1);
+    }
+    this.bufferView.setLine(line + 1, this.buffer.getLine(line));
+    this.gutterView.setActiveLine(line + 1);
+    this.cursorView.moveTo(line + 1, col + 1);
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
+};
+
+Pane.prototype.deleteForwardWord = function() {
+    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
+    const [startLine, endLine] = this.buffer.deleteRange(this.cursorView.line - 1, this.cursorView.col - 1, line, col);
+    for (let i = startLine; i < endLine; i++) {
+        this.bufferView.removeLine(startLine + 1);
+        this.gutterView.removeLine(startLine + 1);
+    }
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
 };
 
 Pane.prototype.killLine = function() {
@@ -170,18 +194,30 @@ Pane.prototype.killLine = function() {
             return;
         }
 
-        // TODO: Ditto
-        
-        const nextLine = this.model.getLine(this.cursorView.line);
-        this.model.deleteLine(this.cursorView.line);
-        this.model.setLine(this.cursorView.line - 1, this.model.getLine(this.cursorView.line - 1) + nextLine);
+        const nextLine = this.buffer.getLine(this.cursorView.line);
+        this.buffer.deleteLine(this.cursorView.line);
+        this.buffer.setLine(this.cursorView.line - 1, this.buffer.getLine(this.cursorView.line - 1) + nextLine);
         this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.model.getLine(this.cursorView.line - 1));
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
         this.gutterView.removeLine();
     } else {
-        const lineUpToPoint = this.model.getLine(this.cursorView.line - 1).slice(0, this.cursorView.col - 1);
-        this.model.setLine(this.cursorView.line - 1, lineUpToPoint);
+        const lineUpToPoint = this.buffer.getLine(this.cursorView.line - 1).slice(0, this.cursorView.col - 1);
+        this.buffer.setLine(this.cursorView.line - 1, lineUpToPoint);
         this.bufferView.setLine(this.cursorView.line, lineUpToPoint);
+    }
+};
+
+Pane.prototype.saveBuffer = function(as) {
+    try {
+        this.buffer.save(as);
+        if (as && as !== this.tabName) {
+            const base = this.buffer.getFileBaseName();
+            this.onNameChanged(this.tabName, base);
+            this.tabName = base;
+        }
+    } catch (e) {
+        // TODO: Implement.
+        console.warn(e);
     }
 };
 
@@ -249,7 +285,7 @@ Pane.prototype.moveCursorDown = function() {
 };
 
 Pane.prototype.moveCursorForwardWord = function() {
-    const [line, col] = this.model.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
+    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
     this._checkScrollCursorIntoView();
@@ -257,7 +293,7 @@ Pane.prototype.moveCursorForwardWord = function() {
 };
 
 Pane.prototype.moveCursorBackWord = function() {
-    const [line, col] = this.model.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
+    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
     this._checkScrollCursorIntoView();
@@ -427,12 +463,14 @@ Pane.prototype._checkScrollCursorIntoView = function() {
 Pane.prototype._handleAction = function(action) {
 
     const actionHandlers = {
-        'INSERT':                        action => this.insert(action.text),
+        'INSERT':                        (action) => this.insert(action.text),
         'INSERT_NEW_LINE':               () => this.insertNewLine(),
         'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
         'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
+        'DELETE_FORWARD_WORD':           () => this.deleteForwardWord(),
+        'DELETE_BACK_WORD':              () => this.deleteBackWord(),
         'KILL_LINE':                     () => this.killLine(),
-        'MOVE_TO_POS':                   action => this.moveCursorTo(action.line, action.col),
+        'MOVE_TO_POS':                   (action) => this.moveCursorTo(action.line, action.col),
         'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
         'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
@@ -442,7 +480,9 @@ Pane.prototype._handleAction = function(action) {
         'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
         'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
         'SHOW_GUTTER':                   () => this.showGutter(),
-        'HIDE_GUTTER':                   () => this.hideGutter()
+        'HIDE_GUTTER':                   () => this.hideGutter(),
+        'SAVE_BUFFER':                   () => this.saveBuffer(),
+        'SAVE_BUFFER_AS':                (action) => this.saveBuffer(action.name)
     };
 
     const handler = actionHandlers[action.type];

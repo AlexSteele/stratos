@@ -8,6 +8,8 @@ const inputHandlers = {
     'del':          () => ({type: 'DELETE_FORWARD_CHAR'}),    
     'del-back':     () => ({type: 'DELETE_BACK_CHAR'}),
     'goto':         (params) => params.length > 0 ? {type: 'MOVE_TO_POS', line: +params[0], col: (+params[1] || 1)} : false,
+    'open':         (params) => params.length === 1 ? {type: 'OPEN_FILE', name: params[0]} : false,
+    'save-as':      (params) => params.length === 1 ? {type: 'SAVE_BUFFER_AS', name: params[0]} : false,
     'new-pane':     (params) => params.length === 0 ? {type: 'NEW_PANE'} : {type: 'NEW_PANE', name: params[0]},
     'switch-pane':  (params) => params.length === 0 ? {type: 'SWITCH_PANE'} : {type: 'SWITCH_PANE', name: params[0]},
     'switch-above': () => ({type: 'SWITCH_PANE_GROUP_ABOVE'}),

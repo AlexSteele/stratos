@@ -42,7 +42,8 @@ function Editor(parentElem, settings = defaults) {
             onCursorMoved: (line, col) => this._handleCursorMoved(line, col),
             onNewPane: () => this._handleNewPane(),
             onSwitchPane: (newActivePane) => this._handleSwitchPane(newActivePane),
-            onClosePane: () => this._handleClosePane()
+            onClosePane: () => this._handleClosePane(),
+            onActivePaneNameChanged: (newName) => this.contextBar.setTabNameView(newName)
         }
     });
 

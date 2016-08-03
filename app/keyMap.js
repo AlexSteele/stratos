@@ -7,6 +7,8 @@ const defaultEditorMap = (function() {
         'Tab':            {type: 'INSERT', text: '    '}, // TODO: Change this to reflect preferences/mode etc.
         'Backspace':      {type: 'DELETE_BACK_CHAR'},
         'Control-d':      {type: 'DELETE_FORWARD_CHAR'},
+        'Meta-d':         {type: 'DELETE_FORWARD_WORD'},
+        'Meta-Backspace': {type: 'DELETE_BACK_WORD'},
         'Control-k':      {type: 'KILL_LINE'},
         'ArrowLeft':      {type: 'MOVE_CURSOR_LEFT'},
         'Control-b':      {type: 'MOVE_CURSOR_LEFT'},
@@ -20,6 +22,7 @@ const defaultEditorMap = (function() {
         'Meta-b':         {type: 'MOVE_CURSOR_BACK_WORD'},
         'Control-a':      {type: 'MOVE_CURSOR_BEGINNING_OF_LINE'},
         'Control-e':      {type: 'MOVE_CURSOR_END_OF_LINE'},
+        'Control-s':      {type: 'SAVE_BUFFER'},
         'Alt-Meta-Dead':  {type: 'NATIVE!'},
         'Meta-q':         {type: 'NATIVE!'},
         'Meta-Control-p': {type: 'TOGGLE_COMMAND_MODAL'},

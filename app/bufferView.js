@@ -23,9 +23,6 @@ function BufferView(parentElem, settings = defaults) {
     this.scrollLeft = this.domNode.scrollLeft;
 
     this._initEventListeners();
-
-    // Start with empty line.
-    this.appendLine('');
 }
 
 BufferView.prototype._initEventListeners = function() {
@@ -39,7 +36,7 @@ BufferView.prototype._initEventListeners = function() {
     });
 };
 
-BufferView.prototype.appendLine = function(text) {
+BufferView.prototype.appendLine = function(text = '') {
     this.insertLine(this.lineElems.length, text);
 };
 
