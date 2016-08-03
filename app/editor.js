@@ -43,7 +43,11 @@ function Editor(parentElem, settings = defaults) {
             onNewPane: () => this._handleNewPane(),
             onSwitchPane: (newActivePane) => this._handleSwitchPane(newActivePane),
             onClosePane: () => this._handleClosePane(),
-            onActivePaneNameChanged: (newName) => this.contextBar.setTabNameView(newName)
+            onActivePaneNameChanged: (newName) => this.contextBar.setTabNameView(newName),
+            bufferSettings: {
+                onUnsavedChanges: () => this.contextBar.setUnsavedChangesView(true),
+                onNoUnsavedChanges: () => this.contextBar.setUnsavedChangesView(false)
+            }
         }
     });
 
@@ -126,6 +130,7 @@ Editor.prototype._handleSwitchPane = function(newActivePane) {
         const [line, col] = newActivePane.getCursorPosition();
         this.contextBar.setCursorPositionView(line, col);
         this.contextBar.setModeNameView(newActivePane.getModeName());
+        this.contextBar.setUnsavedChangesView(newActivePane.hasUnsavedChanges());
     } else {
         this.contextBar.clear();
     }

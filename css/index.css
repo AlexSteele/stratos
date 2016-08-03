@@ -142,7 +142,12 @@ html, body {
 
 .context-bar-mode-name {
   float: right;
-  margin: 0 200px 0 20px;
+  margin: 0 20px 0 20px;
+}
+
+.context-bar-unsaved-changes {
+  float: right;
+  margin: 0 100px 0 20px;
 }
 
 .tab-list {

@@ -13,6 +13,10 @@ function ContextBar(parentElem) {
     this.positionNode.className = 'context-bar-widget context-bar-position';
     this.domNode.appendChild(this.positionNode);
 
+    this.unsavedChangesNode = document.createElement('div');
+    this.unsavedChangesNode.className = 'context-bar-widget context-bar-unsaved-changes';
+    this.domNode.appendChild(this.unsavedChangesNode);
+
     this.modeNode = document.createElement('div');
     this.modeNode.className = 'context-bar-widget context-bar-mode-name';
     this.domNode.appendChild(this.modeNode);
@@ -30,10 +34,15 @@ ContextBar.prototype.setModeNameView = function(to) {
     this.modeNode.innerHTML = to;
 };
 
+ContextBar.prototype.setUnsavedChangesView = function(on) {
+    this.unsavedChangesNode.innerHTML = on ? 'U' : 'S';
+};
+
 ContextBar.prototype.clear = function() {
     this.tabNameNode.innerHTML = '';
     this.positionNode.innerHTML = '';
     this.modeNode.innerHTML = '';
+    this.unsavedChangesNode.innerHTML = '';
 };
 
 ContextBar.prototype.setActive = function() {

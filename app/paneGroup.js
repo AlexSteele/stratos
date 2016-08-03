@@ -22,6 +22,7 @@ const defaults = {
         charWidth: 0,
         charHeight: 0
     },
+    bufferSettings: {},
     onUnknownAction: (action) => { throw new Error('PaneGroup: No handler for action ' + action); },
     onCursorMoved: (line, col) => { throw new Error('PaneGroup: No handler for onCursorMoved.'); },
     onNewPane: () => { throw new Error('PaneGroup: No handler for onNewPane.'); },
@@ -49,6 +50,7 @@ function PaneGroup(parentElem, settings = defaults) {
     this.keyMaps = settings.keyMaps || defaults.keyMaps;
     this.neighbors = settings.neighbors || defaults.neighbors;
     this.sharedEditorComponentSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
+    this.bufferSettings = settings.bufferSettings || defaults.bufferSettings;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
     this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
     this.onNewPane = settings.onNewPane || defaults.onNewPane;
@@ -86,7 +88,7 @@ PaneGroup.prototype._initEventListeners = function() {
 };
 
 PaneGroup.prototype.newPane = function(name = 'untitled', fileName) {
-    const buffer = new BufferModel({fileName: fileName});
+    const buffer = new BufferModel(Object.assign({}, this.bufferSettings, {fileName: fileName}));
     const tabName = fileName ? this._getUniqueTabName(buffer.getFileBaseName()) : this._getUniqueTabName(name);
     const tabsHeight = this.tabBar.getVisibleHeight();
     const height = this.getHeight() - tabsHeight;

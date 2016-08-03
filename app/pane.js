@@ -68,11 +68,12 @@ Pane.prototype._initComponents = function() {
     this.bufferView.setVisibleHeight(this.getHeight());
     this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
     
-    if (this.buffer.isEmpty()) {
+    if (this.buffer.hasFile()) {
+        this.buffer.reloadFromFile();
+        this.buffer.getLines().forEach(e => this.bufferView.appendLine(e));
+    } else {
         this.buffer.appendLine();
         this.bufferView.appendLine();
-    } else {
-        this.buffer.getLines().forEach(e => this.bufferView.appendLine(e));        
     }
 };
 
@@ -444,6 +445,10 @@ Pane.prototype.getCursorPosition = function() {
 
 Pane.prototype.getModeName = function() {
     return this.buffer.getMode().name;
+};
+
+Pane.prototype.hasUnsavedChanges = function() {
+    return this.buffer.hasUnsavedChanges();
 };
 
 Pane.prototype._checkScrollCursorIntoView = function() {

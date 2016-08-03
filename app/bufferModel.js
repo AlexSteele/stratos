@@ -6,7 +6,9 @@ const path = require('path');
 
 const defaults  = {
     fileName: '',
-    mode: modes.default
+    mode: modes.default,
+    onUnsavedChanges: () => { throw new Error('BufferModel: No handler for onUnsavedChanges.'); },
+    onNoUnsavedChanges: () => { throw new Error('BufferModel: No handler for onNoUnsavedChanges.'); }
 };
 
 function BufferModel(settings = defaults) {
@@ -16,6 +18,10 @@ function BufferModel(settings = defaults) {
     this.lines = [];
     this.mode = settings.mode || defaults.mode;
     this.fileName = settings.fileName || defaults.fileName;
+    this.unsavedChanges = false;
+
+    this.onUnsavedChanges = settings.onUnsavedChanges || defaults.onUnsavedChanges;
+    this.onNoUnsavedChanges = settings.onNoUnsavedChanges || defaults.onNoUnsavedChanges;
 
     if (this.fileName !== '') {
         this.reloadFromFile();
@@ -24,6 +30,7 @@ function BufferModel(settings = defaults) {
 
 BufferModel.prototype.appendLine = function(text = '') {
     this.lines.push(text);
+    this.unsavedChanges = true;
 };
 
 BufferModel.prototype.insert = function(lineNum, col, text) {
@@ -33,6 +40,8 @@ BufferModel.prototype.insert = function(lineNum, col, text) {
     const before = line.slice(0, col);
     const after = line.slice(col);
     this.lines[lineNum] = before + text + after;
+
+    this._onChange();
 };
 
 // For convenience, lineNum may equal the number of lines in the model,
@@ -49,12 +58,16 @@ BufferModel.prototype.insertNewLine = function(lineNum, col) {
     const after = line.substr(col);
     this.lines[lineNum] = before;
     this.lines.splice(lineNum + 1, 0, after);
+
+    this._onChange();
 };
 
 BufferModel.prototype.setLine = function(lineNum, text) {
     this._validateLineNumHard();
 
     this.lines[lineNum] = text;
+
+    this._onChange();
 };
 
 BufferModel.prototype.deleteBack = function(lineNum, col, amount = 1) {
@@ -64,6 +77,8 @@ BufferModel.prototype.deleteBack = function(lineNum, col, amount = 1) {
     const before = line.slice(0, col - amount);
     const after = line.slice(col);
     this.lines[lineNum] = before + after;
+
+    this._onChange();
 };
 
 BufferModel.prototype.deleteForward = function(lineNum, col, amount = 1) {
@@ -74,6 +89,8 @@ BufferModel.prototype.deleteLine = function(lineNum) {
     this._validateLineNumHard(lineNum);
     
     this.lines.splice(lineNum, 1);
+
+    this._onChange();
 };
 
 // The range is exclusive: the final character will not be deleted.
@@ -84,23 +101,26 @@ BufferModel.prototype.deleteRange = function(_startLine, _startCol, _endLine, _e
     this._validatePosHard(_endLine, _endCol);
 
     const [startLine, startCol, endLine, endCol] = orderPositions(_startLine, _startCol, _endLine, _endCol);
-    
+
+    let deletedLineRange;
     if (startLine === endLine) {
         const n = endCol - startCol;
         this.deleteForward(startLine, startCol, n);
-        return [startLine, startLine];
+        deletedLineRange =  [startLine, startLine];
+    } else {
+        this.deleteForward(startLine, startCol, this.lines[startLine].length - startCol);
+        this.deleteBack(endLine, endCol, endCol);
+        this.lines[startLine] = this.lines[startLine] + this.lines[endLine];
+
+        const toDelete = endLine - startLine;
+        for (let i = 0; i < toDelete; i++) {
+            this.deleteLine(startLine + 1);
+        }
+        deletedLineRange = [startLine + 1, endLine + 1];
     }
 
-    this.deleteForward(startLine, startCol, this.lines[startLine].length - startCol);
-    this.deleteBack(endLine, endCol, endCol);
-    this.lines[startLine] = this.lines[startLine] + this.lines[endLine];
-
-    const toDelete = endLine - startLine;
-    for (let i = 0; i < toDelete; i++) {
-        this.deleteLine(startLine + 1);
-    }
-
-    return [startLine + 1, endLine + 1];
+    this._onChange();
+    return deletedLineRange;
 };
 
 function orderPositions(startLine, startCol, endLine, endCol) {
@@ -184,16 +204,21 @@ BufferModel.prototype.save = function(as) {
         this.fileName = as;
     }
     
-    if (this.fileName === '') {
+    if (!this.hasFile()) {
         throw new Error('BufferModel: No file present.');
     }
     
     const text = this.lines.join('\n');
     fs.writeFileSync(this.fileName, text);
+
+    if (this.unsavedChanges) {
+        this.unsavedChanges = false;
+        this.onNoUnsavedChanges();
+    }
 };
 
 BufferModel.prototype.reloadFromFile = function() {
-    if (this.fileName === '') {
+    if (!this.hasFile()) {
         throw new Error('BufferModel: No file present.');
     }
 
@@ -202,10 +227,18 @@ BufferModel.prototype.reloadFromFile = function() {
 };
 
 BufferModel.prototype.getFileBaseName = function() {
-    if (this.fileName === '') {
+    if (!this.hasFile()) {
         throw new Error('BufferModel: No file present.');
     }
     return path.basename(this.fileName);
+};
+
+BufferModel.prototype.hasFile = function() {
+    return this.fileName !== '';
+};
+
+BufferModel.prototype.hasUnsavedChanges = function() {
+    return this.unsavedChanges;
 };
 
 BufferModel.prototype.getLines = function() {
@@ -222,6 +255,13 @@ BufferModel.prototype.clear = function() {
 
 BufferModel.prototype.isEmpty = function() {
     return this.lines.length === 0;
+};
+
+BufferModel.prototype._onChange = function() {
+    if (!this.unsavedChanges) {
+        this.unsavedChanges = true;
+        this.onUnsavedChanges();
+    }
 };
 
 BufferModel.prototype._validateLineNumHard = function(lineNum) {
