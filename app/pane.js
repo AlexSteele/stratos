@@ -4,6 +4,7 @@ const BufferView = require('./bufferView.js');
 const CursorView = require('./cursorView.js');
 const GutterView = require('./gutterView.js');
 const KeyListener = require('./keyListener.js');
+const MouseListener = require('./mouseListener.js');
 
 const defaults = {
     tabName: '',
@@ -35,19 +36,19 @@ function Pane(parentElem, buffer, settings = defaults) {
     this.buffer = buffer;
     this.tabName = settings.tabName || defaults.tabName;
     this.keyMap = settings.keyMap || defaults.keyMap;
+    this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
+    this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
     this.onNameChanged = settings.onNameChanged || defaults.onNameChanged;
-    this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
-    this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     
     const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
     this.charWidth = sharedEditorSettings.charWidth;
     this.charHeight = sharedEditorSettings.charHeight;    
-    this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
     this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings));
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
-
+    this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
+    this.mouseListener = new MouseListener(this.bufferView, this.cursorView, this.gutterView, {onCursorMoved: this.onCursorMoved});
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.buffer.getMode().keyMap,
         allowDefaultOnKeyError: false,
@@ -83,14 +84,6 @@ Pane.prototype._initEventListeners = function() {
         this.bufferView.setScrollLeft(this.domNode.scrollLeft);
         this.gutterView.setLeftOffset(this.domNode.scrollLeft);
     });
-};
-
-Pane.prototype._onBufferClick = function(line, col) {
-    if (!this.isActive()) return;
-    
-    this.cursorView.moveTo(line, col);
-    this.gutterView.setActiveLine(line);
-    this.onCursorMoved(line, col);
 };
 
 Pane.prototype._onGutterWidthChanged = function(width) {
@@ -388,12 +381,14 @@ Pane.prototype.hideGutter = function() {
 Pane.prototype.setActive = function(on) {
     this.cursorView.setBlink(true);
     this.domNode.focus();
+    this.mouseListener.setActive();
     this.domNode.classList.remove('editor-pane-inactive');    
 };
 
 Pane.prototype.setInactive = function() {
     this.cursorView.setBlink(false);
     this.domNode.blur();
+    this.mouseListener.setActive();
     this.domNode.classList.add('editor-pane-inactive');    
 };
 

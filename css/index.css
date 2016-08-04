@@ -46,10 +46,21 @@ html, body {
 
 .line {
   color: #ffffff;
+  display: block;
   font-family: Consolas, monospace;
   font-size: 1em;
+  position: relative;
   white-space: pre;
-  display: block;
+  -webkit-user-select: none;
+}
+
+.line-decoration {
+  position: absolute;
+  top: 0;
+}
+
+.selection {
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 .gutter {

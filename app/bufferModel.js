@@ -1,6 +1,7 @@
 'use strict';
 
 const modes = require('./mode.js');
+const {sortRange} = require('./utils.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,10 +23,6 @@ function BufferModel(settings = defaults) {
 
     this.onUnsavedChanges = settings.onUnsavedChanges || defaults.onUnsavedChanges;
     this.onNoUnsavedChanges = settings.onNoUnsavedChanges || defaults.onNoUnsavedChanges;
-
-    if (this.fileName !== '') {
-        this.reloadFromFile();
-    }
 };
 
 BufferModel.prototype.appendLine = function(text = '') {
@@ -100,7 +97,7 @@ BufferModel.prototype.deleteRange = function(_startLine, _startCol, _endLine, _e
     this._validatePosHard(_startLine, _startCol);
     this._validatePosHard(_endLine, _endCol);
 
-    const [startLine, startCol, endLine, endCol] = orderPositions(_startLine, _startCol, _endLine, _endCol);
+    const [[startLine, startCol], [endLine, endCol]] = sortRange([_startLine, _startCol], [_endLine, _endCol]);
 
     let deletedLineRange;
     if (startLine === endLine) {
@@ -122,12 +119,6 @@ BufferModel.prototype.deleteRange = function(_startLine, _startCol, _endLine, _e
     this._onChange();
     return deletedLineRange;
 };
-
-function orderPositions(startLine, startCol, endLine, endCol) {
-    const byLineThenColumn = (start, end) => start[0] === end[0] ? start[1] - end[1] : start[0] - end[0];
-    const [startingPos, endingPos] = [[startLine, startCol], [endLine, endCol]].sort(byLineThenColumn);
-    return [...startingPos, ...endingPos];
-}
 
 BufferModel.prototype.getLine = function(lineNum) {
     this._validateLineNumHard(lineNum);

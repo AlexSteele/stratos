@@ -36,7 +36,14 @@ function numDigitsIn(num) {
     return numDigits;
 };
 
+// Returns the range sorted by line then column, where 'start' and 'end' are two-element arrays. 
+function sortRange(start, end) {
+    const byLineThenColumn = (start, end) => start[0] === end[0] ? start[1] - end[1] : start[0] - end[0];
+    return [start, end].sort(byLineThenColumn);
+}
+
 module.exports = {
     getSharedEditorComponentSettings,
-    numDigitsIn
+    numDigitsIn,
+    sortRange
 };
