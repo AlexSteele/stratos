@@ -1,7 +1,6 @@
 'use strict';
 
 const modes = require('./mode.js');
-const {sortRange} = require('./utils.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -92,12 +91,10 @@ BufferModel.prototype.deleteLine = function(lineNum) {
 
 // The range is exclusive: the final character will not be deleted.
 // Returns the range of lines deleted, in the form [start, end], where
-// start === end signifies no lines were deleted.
-BufferModel.prototype.deleteRange = function(_startLine, _startCol, _endLine, _endCol) {
-    this._validatePosHard(_startLine, _startCol);
-    this._validatePosHard(_endLine, _endCol);
-
-    const [[startLine, startCol], [endLine, endCol]] = sortRange([_startLine, _startCol], [_endLine, _endCol]);
+// start === end signifies no lines were deleted. 
+BufferModel.prototype.deleteRange = function(startLine, startCol, endLine, endCol) {
+    this._validatePosHard(startLine, startCol);
+    this._validatePosHard(endLine, endCol);
 
     let deletedLineRange;
     if (startLine === endLine) {

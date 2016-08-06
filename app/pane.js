@@ -101,6 +101,7 @@ Pane.prototype._onGutterWidthChanged = function(width) {
 };
 
 Pane.prototype.insert = function(text) {
+    this.bufferView.clearActiveSelection();
     this.buffer.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
     this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     this.cursorView.moveRight(text.length);
@@ -110,6 +111,7 @@ Pane.prototype.insert = function(text) {
 };
 
 Pane.prototype.insertNewLine = function() {
+    this.bufferView.clearActiveSelection();
     this.openLine();
     this.cursorView.moveTo(this.cursorView.line + 1, 1); 
     this.gutterView.setActiveLine(this.cursorView.line);
@@ -119,6 +121,7 @@ Pane.prototype.insertNewLine = function() {
 };
 
 Pane.prototype.openLine = function() {
+    this.bufferView.clearActiveSelection();
     this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
     this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
@@ -126,6 +129,11 @@ Pane.prototype.openLine = function() {
 };
 
 Pane.prototype.deleteBackChar = function() {
+    if (this.bufferView.hasActiveSelection()) {
+        const {startLine, startCol, endLine, endCol} = this.bufferView.getActiveSelectionRange().splat();
+        this._deleteRange(startLine, startCol, endLine, endCol);
+        return;
+    }
     if (this.cursorView.col === 1) {
         if (this.cursorView.line === 1) {
             return;
@@ -151,7 +159,9 @@ Pane.prototype.deleteBackChar = function() {
     this._emitCursorMoved();
 };
 
+
 Pane.prototype.deleteForwardChar = function() {
+    this.bufferView.clearActiveSelection();
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
@@ -172,20 +182,11 @@ Pane.prototype.deleteForwardChar = function() {
 
 Pane.prototype.deleteBackWord = function() {
     const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
-    const [startLine, endLine] = this.buffer.deleteRange(line, col, this.cursorView.line - 1, this.cursorView.col - 1);
-    for (let i = startLine; i < endLine; i++) {
-        this.bufferView.removeLine(startLine + 1);
-        this.gutterView.removeLine(startLine + 1);
-    }
-    this.bufferView.setLine(line + 1, this.buffer.getLine(line));
-    this.gutterView.setActiveLine(line + 1);
-    this.cursorView.moveTo(line + 1, col + 1);
-
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._deleteRange(line + 1, col + 1, this.cursorView.line, this.cursorView.col);
 };
 
 Pane.prototype.deleteForwardWord = function() {
+    this.bufferView.clearActiveSelection();
     this.cursorView.setBlink(false);
     const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
     const [startLine, endLine] = this.buffer.deleteRange(this.cursorView.line - 1, this.cursorView.col - 1, line, col);
@@ -197,7 +198,24 @@ Pane.prototype.deleteForwardWord = function() {
     this.cursorView.setBlink(true);
 };
 
+// Moves the cursor to the start of the range and clears the buffer's active selection.
+Pane.prototype._deleteRange = function(startL, startC, endL, endC) {
+    this.bufferView.clearActiveSelection();
+    this.buffer.deleteRange(startL - 1, startC - 1, endL - 1, endC - 1);
+    for (let i = startL; i < endL; i++) {
+        this.bufferView.removeLine(startL);
+        this.gutterView.removeLine(startL);
+    }
+    this.bufferView.setLine(startL, this.buffer.getLine(startL - 1));
+    this.gutterView.setActiveLine(startL);
+    this.cursorView.moveTo(startL, startC);
+
+    this._checkScrollCursorIntoView();
+    this._emitCursorMoved();
+};
+
 Pane.prototype.killLine = function() {
+    this.bufferView.clearActiveSelection();
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
@@ -231,6 +249,7 @@ Pane.prototype.saveBuffer = function(as) {
 };
 
 Pane.prototype.moveCursorLeft = function() {
+    this.bufferView.clearActiveSelection();
     if (this.cursorView.col === 1) {
         if (this.cursorView.line === 1) {
             return;
@@ -247,6 +266,7 @@ Pane.prototype.moveCursorLeft = function() {
 };
 
 Pane.prototype.moveCursorRight = function() {
+    this.bufferView.clearActiveSelection();
     if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
         if (this.cursorView.line === this.bufferView.getLastLineNum()) {
             return;
@@ -265,7 +285,8 @@ Pane.prototype.moveCursorUp = function() {
     if (this.cursorView.line === 1) {
         return;
     }
-    
+
+    this.bufferView.clearActiveSelection();
     this.cursorView.moveUp();
     this.gutterView.setActiveLine(this.cursorView.line);
     const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
@@ -281,7 +302,8 @@ Pane.prototype.moveCursorDown = function() {
     if (this.cursorView.line === this.bufferView.getLastLineNum()) {
         return;
     }
-    
+
+    this.bufferView.clearActiveSelection();
     this.cursorView.moveDown();
     this.gutterView.setActiveLine(this.cursorView.line);
     const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
@@ -294,6 +316,7 @@ Pane.prototype.moveCursorDown = function() {
 };
 
 Pane.prototype.moveCursorForwardWord = function() {
+    this.bufferView.clearActiveSelection();
     const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
@@ -302,6 +325,7 @@ Pane.prototype.moveCursorForwardWord = function() {
 };
 
 Pane.prototype.moveCursorBackWord = function() {
+    this.bufferView.clearActiveSelection();
     const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
@@ -310,6 +334,7 @@ Pane.prototype.moveCursorBackWord = function() {
 };
 
 Pane.prototype.moveCursorBeginningOfLine = function() {
+    this.bufferView.clearActiveSelection();
     this.cursorView.setCol(1);
     this.cursorView.goalCol = this.cursorView.col;
 
@@ -318,6 +343,7 @@ Pane.prototype.moveCursorBeginningOfLine = function() {
 };
 
 Pane.prototype.moveCursorEndOfLine = function() {
+    this.bufferView.clearActiveSelection();
     this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
     this.cursorView.goalCol = this.cursorView.col;
 
@@ -328,6 +354,7 @@ Pane.prototype.moveCursorEndOfLine = function() {
 Pane.prototype.moveCursorTo = function(line, col) {
     if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
         col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
+        this.bufferView.clearActiveSelection();
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
         

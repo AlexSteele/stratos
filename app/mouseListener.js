@@ -26,8 +26,8 @@ function MouseListener(bufferView, cursorView, gutterView, settings = defaults) 
             const [line, col] = this._getBufferPosFromMouse(e.clientX, e.clientY);
             this.cursorView.moveTo(line, col);
             this.gutterView.setActiveLine(this.cursorView.line);
-            const [start, end] = sortRange(this.mouseDownPosition, [line, col]);
-            this.bufferView.setActiveSelectionRange({start, end});
+            const [[startLine, startCol], [endLine, endCol]] = sortRange(this.mouseDownPosition, [line, col]);
+            this.bufferView.setActiveSelectionRange(startLine, startCol, endLine, endCol);
             this.onCursorMoved(line, col);
         });
     };

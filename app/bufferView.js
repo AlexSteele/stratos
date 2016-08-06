@@ -1,5 +1,7 @@
 'use strict';
 
+const LineRange = require('./lineRange.js');
+
 const defaults = {
     charWidth: 0,  // pixels
     charHeight: 0, // pixels
@@ -13,7 +15,7 @@ function BufferView(parentElem, settings = defaults) {
     parentElem.appendChild(this.domNode);
 
     this.lineElems = [null];
-    this.activeSelectionRange = null;
+    this.activeSelectionRange = new LineRange();
     this.onClick = settings.onClick || defaults.onClick;
 
     this.charWidth = settings.charWidth || defaults.charWidth;
@@ -71,41 +73,48 @@ BufferView.prototype.removeLine = function(num) {
     this.domNode.removeChild(removed.domNode); 
 };
 
-BufferView.prototype.setActiveSelectionRange = function(range) {
+BufferView.prototype.setActiveSelectionRange = function(startLine, startCol, endLine, endCol) {
+    // TODO: Compute diff. Don't clear whole thing.
     this.clearActiveSelection();
-    this.activeSelectionRange = range;
-    if (range.start[0] === range.end[0]) {
-        this._addLineSelection(range.start[0], {
-            className: 'selection',
-            start: range.start[1],
-            end: range.end[1]
-        });
+    this.activeSelectionRange.setTo(startLine, startCol, endLine, endCol);
+    if (startLine === endLine) {
+        this._addSelectionHighlight(startLine, startCol, endCol);
     } else {
-        this._addLineSelection(range.start[0], {className: 'selection', start: range.start[1]});
-        for (let i = range.start[0] + 1; i < range.end[0]; i++) {
-            this._addLineSelection(i, {className: 'selection'});
+        this._addSelectionHighlight(startLine, startCol);
+        for (let i = startLine + 1; i < endLine; i++) {
+            this._addSelectionHighlight(i);
         }
-        this._addLineSelection(range.end[0], {className: 'selection', end: range.end[1]});    
+        this._addSelectionHighlight(endLine, undefined, endCol);    
     }    
 };
 
-BufferView.prototype.clearActiveSelection = function() {
-    if (!this.activeSelectionRange) return;
+BufferView.prototype.getActiveSelectionRange = function() {
+    return this.activeSelectionRange;
+};
 
-    const {start, end} = this.activeSelectionRange;
-    this.lineElems.slice(start[0], end[0] + 1).forEach(e => {
+BufferView.prototype.hasActiveSelection = function() {
+    return !this.activeSelectionRange.isEmpty(); 
+};
+
+BufferView.prototype.clearActiveSelection = function() {
+    if (this.activeSelectionRange.isEmpty()) return;
+
+    const {startLine, startCol, endLine, endCol} = this.activeSelectionRange.splat();
+    this.lineElems.slice(startLine, endLine + 1).forEach(e => {
         e.domNode.removeChild(e.selectionNode);
         delete e.selectionNode;
     });
-    this.activeSelectionRange = null;
+    this.activeSelectionRange.clear();
 };
 
-BufferView.prototype._addLineSelection = function(lineNum, decoration) {
+// If given, colRange should be an object with 'start' and 'end' fields, denoting
+// the column range to highlight.
+BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
     const line = this.lineElems[lineNum];
-    const start = decoration.start || 0;
-    const end = decoration.end || line.textNode.textContent.length + 1;
+    const start = colStart || 0;
+    const end = colEnd || line.textNode.textContent.length + 1;
     const node = document.createElement('div');
-    node.className = 'line-decoration ' + decoration.className;
+    node.className = 'line-decoration selection';
     node.style.left = (start - 1) * this.charWidth;
     node.style.width = (end - start) * this.charWidth;
     node.style.height = this.charHeight;
