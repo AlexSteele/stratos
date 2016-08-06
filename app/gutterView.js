@@ -25,10 +25,6 @@ function GutterView(parentElem, settings = defaults) {
     this.onWidthChanged = settings.onWidthChanged || defaults.onWidthChanged;
 
     this.domNode.style.width = this._calculateWidth() + 'px';
-    
-    // Start with one line.
-    this.appendLine();
-    this.setActiveLine(1);
 }
 
 GutterView.prototype.appendLine = function() {

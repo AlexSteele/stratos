@@ -71,10 +71,19 @@ Pane.prototype._initComponents = function() {
     
     if (this.buffer.hasFile()) {
         this.buffer.reloadFromFile();
-        this.buffer.getLines().forEach(e => this.bufferView.appendLine(e));
+        const lines = this.buffer.getLines();
+        lines.forEach(e => {
+            this.bufferView.appendLine(e);
+            this.gutterView.appendLine();
+        });
+        if (lines.length > 0) {
+            this.gutterView.setActiveLine(1);
+        }
     } else {
         this.buffer.appendLine();
         this.bufferView.appendLine();
+        this.gutterView.appendLine();
+        this.gutterView.setActiveLine(1);
     }
 };
 

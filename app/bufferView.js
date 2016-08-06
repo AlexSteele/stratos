@@ -95,7 +95,6 @@ BufferView.prototype.clearActiveSelection = function() {
     const {start, end} = this.activeSelectionRange;
     this.lineElems.slice(start[0], end[0] + 1).forEach(e => {
         e.domNode.removeChild(e.selectionNode);
-        console.log('removed!');
         delete e.selectionNode;
     });
     this.activeSelectionRange = null;
