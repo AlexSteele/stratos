@@ -194,6 +194,8 @@ BufferModel.prototype.getNextWordEnd = function(lineNum, col) {
 // If term is falsy, returns the next match of the currently active search term,
 // if one exists, or null otherwise.
 BufferModel.prototype.search = function(term, direction = 'forward', startLine, startCol) {
+    this._validatePosHard(startLine, startCol);
+    
     if (term) {
         this.activeSearchTerm = new RegExp(term, 'g');
     }
