@@ -110,6 +110,9 @@ BufferView.prototype.clearActiveSelection = function() {
 // If given, colRange should be an object with 'start' and 'end' fields, denoting
 // the column range to highlight.
 BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
+    if (lineNum < 1 || lineNum >= this.lineElems.length) {
+        throw new Error('BufferView: No line with number ' + lineNum);
+    }
     const line = this.lineElems[lineNum];
     const start = colStart || 0;
     const end = colEnd || line.textNode.textContent.length + 1;

@@ -18,8 +18,9 @@ function BufferModel(settings = defaults) {
     this.lines = [];
     this.mode = settings.mode || defaults.mode;
     this.fileName = settings.fileName || defaults.fileName;
-    this.unsavedChanges = false;
 
+    // RegExp of the term currently being searched for with a call to search().
+    this.activeSearchTerm = null;
     this.onUnsavedChanges = settings.onUnsavedChanges || defaults.onUnsavedChanges;
     this.onNoUnsavedChanges = settings.onNoUnsavedChanges || defaults.onNoUnsavedChanges;
 };
@@ -186,6 +187,111 @@ BufferModel.prototype.getNextWordEnd = function(lineNum, col) {
 
     return [l, c];
 };
+
+// Performs a wrapping search in the given direction.
+// If term is given, returns the location of the first occurence of
+// term after [startLine, startCol], or null if none exist.
+// If term is falsy, returns the next match of the currently active search term,
+// if one exists, or null otherwise.
+BufferModel.prototype.search = function(term, direction = 'forward', startLine, startCol) {
+    if (term) {
+        this.activeSearchTerm = new RegExp(term, 'g');
+    }
+    if (!this.activeSearchTerm) {
+        return null;
+    }
+    return direction === 'forward' ?
+        this._searchForward(startLine, startCol) :
+        this._searchBack(startLine, startCol);
+};
+
+BufferModel.prototype._searchForward = function (startLine, startCol) {
+    const start = this.lines[startLine].slice(startCol);
+    let match = this.activeSearchTerm.exec(start);
+    if (match) {
+        return [startLine, match.index + startCol];
+    }
+    for (let i = startLine + 1; i < this.lines.length; i++) {
+        match = this.activeSearchTerm.exec(this.lines[i]);
+        if (match) {
+            return [i, match.index];
+        }
+    }
+    for (let i = 0; i < startLine; i++) {
+        match = this.activeSearchTerm.exec(this.lines[i]);
+        if (match) {
+            return [i, match.index];
+        }
+    }
+    const end = this.lines[startLine].slice(0, startCol);
+    match = this.activeSearchTerm.exec(end);
+    return match ? [startLine, match.index] : null;
+};
+
+BufferModel.prototype._searchBack = function(startLine, startCol) {
+    const start = this.lines[startLine].slice(0, startCol);
+    let match = getLastMatch(start, this.activeSearchTerm);
+    if (match) {
+        return [startLine, match.index];
+    }
+    for (let i = startLine - 1; i >= 0; i--) {
+        match = getLastMatch(this.lines[i], this.activeSearchTerm);
+        if (match) {
+            return [i, match.index];
+        }
+    }
+    for (let i = this.lines.length - 1; i > startLine; i--) {
+        match = getLastMatch(this.lines[i], this.activeSearchTerm);
+        if (match) {
+            return [i, match.index];
+        }
+    }
+    const end = this.lines[startLine].slice(startCol);
+    match = this.activeSearchTerm.exec(end);
+    return match ? [startLine, match.index + startCol] : null;
+};
+
+function getLastMatch(text, regexp) {
+    let last = regexp.exec(text);
+    while (true) {
+        const curr = regexp.exec(text);
+        if (!curr) {
+            break;
+        }
+        last = curr;
+    }
+    return last;
+}
+
+// Returns all matches of a wrapped search for 'term', ordered in accordance with the
+// direction starting at [startLine, startCol].
+BufferModel.prototype._searchAll = function(term, direction, startLine, startCol) {
+    this._validatePosHard(startLine, startCol);
+
+    const regex = new RegExp(term, 'g');
+    const matches = [];
+    
+    findAllMatches(this.lines[startLine].slice(startCol), regex, startLine, startCol, matches);
+    for (let i = startLine + 1; i < this.lines.length; i++) {
+        findAllMatches(this.lines[i], regex, i, 0, matches);
+    }
+    for (let i = 0; i < startLine; i++) {
+        findAllMatches(this.lines[i], regex, i, 0, matches);
+    }
+    findAllMatches(this.lines[startLine].slice(0, startCol), regex, startLine, 0, matches);
+
+    return direction === 'forward' ? matches : matches.reverse();
+};
+
+function findAllMatches(term, regex, line, offset, out) {
+    while (true) {
+        const match = regex.exec(term);
+        if (!match) {
+            break;
+        }
+        out.push([line, match.index + offset]);
+    }
+}
 
 BufferModel.prototype.save = function(as) {
     if (as) {

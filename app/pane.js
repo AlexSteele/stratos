@@ -143,7 +143,6 @@ Pane.prototype.deleteBackChar = function() {
         const line = prevLine + this.buffer.getLine(this.cursorView.line - 1);
         this.buffer.setLine(this.cursorView.line - 2, line);
         this.buffer.deleteLine(this.cursorView.line - 1);
-        
         this.bufferView.setLine(this.cursorView.line - 1, line);
         this.bufferView.removeLine(this.cursorView.line);
         this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length + 1);
@@ -171,7 +170,6 @@ Pane.prototype.deleteForwardChar = function() {
         const nextLine = this.buffer.getLine(this.cursorView.line);
         this.buffer.setLine(this.cursorView.line - 1, currLine + nextLine);
         this.buffer.deleteLine(this.cursorView.line);
-        
         this.bufferView.removeLine(this.cursorView.line + 1);
         this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     } else {
@@ -231,6 +229,24 @@ Pane.prototype.killLine = function() {
         const lineUpToPoint = this.buffer.getLine(this.cursorView.line - 1).slice(0, this.cursorView.col - 1);
         this.buffer.setLine(this.cursorView.line - 1, lineUpToPoint);
         this.bufferView.setLine(this.cursorView.line, lineUpToPoint);
+    }
+};
+
+// If term is given, starts a new search for term starting at the current cursor position.
+// Otherwise, attempts to cycle to the next active match of the previous search term.
+Pane.prototype.search = function(term, direction) {
+    this.bufferView.clearActiveSelection();
+    const match = this.buffer.search(
+        term,
+        direction,
+        this.cursorView.line - 1,
+        this.cursorView.col - 1
+    );
+    
+    if (match) {
+        this.cursorView.moveTo(match[0] + 1, match[1] + 1);
+        this._emitCursorMoved();
+        this._checkScrollCursorIntoView();
     }
 };
 
@@ -528,6 +544,8 @@ Pane.prototype._handleAction = function(action) {
         'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
         'SHOW_GUTTER':                   () => this.showGutter(),
         'HIDE_GUTTER':                   () => this.hideGutter(),
+        'SEARCH_FORWARD':                (action) => this.search(action.text, 'forward'),
+        'SEARCH_BACK':                   (action) => this.search(action.text, 'back'),
         'SAVE_BUFFER':                   () => this.saveBuffer(),
         'SAVE_BUFFER_AS':                (action) => this.saveBuffer(action.name)
     };

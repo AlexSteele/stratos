@@ -72,8 +72,12 @@ MouseListener.prototype._getBufferPosFromMouse = function(x, y) {
 
     const adjustedY = y - bounds.top;
     const line = Math.floor(adjustedY / this.bufferView.charHeight) + 1;
-    const lastLine = this.bufferView.getLastLineNum();
+    const firstLine = this.bufferView.getFirstVisibleLineNum();
+    const lastLine = this.bufferView.getLastVisibleLineNum();
 
+    if (line < firstLine) {
+        return [firstLine, 1];
+    }
     if (line > lastLine) {
         return [lastLine, this.bufferView.getLineWidthCols(lastLine) + 1];
     }
@@ -81,9 +85,15 @@ MouseListener.prototype._getBufferPosFromMouse = function(x, y) {
     const adjustedX = x - bounds.left;
     const col = Math.round(adjustedX / this.bufferView.charWidth) + 1;
     const lastCol = this.bufferView.getLineWidthCols(line) + 1;
-    const clickCol = Math.min(col, lastCol);
-    
-    return [line, clickCol];
+
+    if (col < 1) {
+        return [line, 1];
+    }
+    if (col > lastCol) {
+        return [line, lastCol];
+    }
+
+    return [line, col];
 };
 
 module.exports = MouseListener;
