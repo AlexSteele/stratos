@@ -31,7 +31,7 @@ BufferModel.prototype.appendLine = function(text = '') {
 };
 
 BufferModel.prototype.insert = function(lineNum, col, text) {
-    this._validatePosSoft(lineNum, col);
+    this._validatePosHard(lineNum, col);
     
     const line = this.lines[lineNum];
     const before = line.slice(0, col);

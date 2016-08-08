@@ -70,21 +70,26 @@ Pane.prototype._initComponents = function() {
     this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
     
     if (this.buffer.hasFile()) {
-        this.buffer.reloadFromFile();
-        const lines = this.buffer.getLines();
-        lines.forEach(e => {
-            this.bufferView.appendLine(e);
-            this.gutterView.appendLine();
-        });
-        if (lines.length > 0) {
-            this.gutterView.setActiveLine(1);
+        try {
+            this.buffer.reloadFromFile();
+            const lines = this.buffer.getLines();
+            lines.forEach(e => {
+                this.bufferView.appendLine(e);
+                this.gutterView.appendLine();
+            });
+            if (lines.length > 0) {
+                this.gutterView.setActiveLine(1);
+            }
+            return;
+        } catch (e) {
+            // TODO: Show error dialog.
+            console.warn(e);
         }
-    } else {
-        this.buffer.appendLine();
-        this.bufferView.appendLine();
-        this.gutterView.appendLine();
-        this.gutterView.setActiveLine(1);
-    }
+    } 
+    this.buffer.appendLine();
+    this.bufferView.appendLine();
+    this.gutterView.appendLine();
+    this.gutterView.setActiveLine(1);
 };
 
 Pane.prototype._initEventListeners = function() {
