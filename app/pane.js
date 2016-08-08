@@ -111,8 +111,7 @@ Pane.prototype.insert = function(text) {
     this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
     this.cursorView.moveRight(text.length);
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.insertNewLine = function() {
@@ -121,8 +120,7 @@ Pane.prototype.insertNewLine = function() {
     this.cursorView.moveTo(this.cursorView.line + 1, 1); 
     this.gutterView.setActiveLine(this.cursorView.line);
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.openLine = function() {
@@ -159,8 +157,7 @@ Pane.prototype.deleteBackChar = function() {
         this.cursorView.moveLeft();
     }
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 
@@ -213,8 +210,7 @@ Pane.prototype._deleteRange = function(startL, startC, endL, endC) {
     this.gutterView.setActiveLine(startL);
     this.cursorView.moveTo(startL, startC);
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.killLine = function() {
@@ -250,8 +246,7 @@ Pane.prototype.search = function(term, direction) {
     
     if (match) {
         this.cursorView.moveTo(match[0] + 1, match[1] + 1);
-        this._emitCursorMoved();
-        this._checkScrollCursorIntoView();
+        this._onCursorMoved();
     }
 };
 
@@ -282,8 +277,7 @@ Pane.prototype.moveCursorLeft = function() {
         this.cursorView.moveLeft();
     }
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorRight = function() {
@@ -298,8 +292,7 @@ Pane.prototype.moveCursorRight = function() {
         this.cursorView.moveRight();
     }
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorUp = function() {
@@ -315,8 +308,7 @@ Pane.prototype.moveCursorUp = function() {
         this.cursorView.setCol(lineWidth + 1);
     }
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorDown = function() {
@@ -332,8 +324,7 @@ Pane.prototype.moveCursorDown = function() {
         this.cursorView.setCol(lineWidth + 1);
     }
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorForwardWord = function() {
@@ -341,8 +332,7 @@ Pane.prototype.moveCursorForwardWord = function() {
     const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorBackWord = function() {
@@ -350,8 +340,7 @@ Pane.prototype.moveCursorBackWord = function() {
     const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
     this.cursorView.moveTo(line + 1, col + 1);
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorBeginningOfLine = function() {
@@ -359,8 +348,7 @@ Pane.prototype.moveCursorBeginningOfLine = function() {
     this.cursorView.setCol(1);
     this.cursorView.goalCol = this.cursorView.col;
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorEndOfLine = function() {
@@ -368,8 +356,7 @@ Pane.prototype.moveCursorEndOfLine = function() {
     this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
     this.cursorView.goalCol = this.cursorView.col;
 
-    this._checkScrollCursorIntoView();
-    this._emitCursorMoved();
+    this._onCursorMoved();
 };
 
 Pane.prototype.moveCursorTo = function(line, col) {
@@ -379,8 +366,7 @@ Pane.prototype.moveCursorTo = function(line, col) {
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
         
-        this._checkScrollCursorIntoView();
-        this._emitCursorMoved();
+        this._onCursorMoved();
     }
 };
 
@@ -591,7 +577,8 @@ Pane.prototype._handleKeyError = function(error) {
     console.log('Pane: key error: ' + error);
 };
 
-Pane.prototype._emitCursorMoved = function() {
+Pane.prototype._onCursorMoved = function() {
+    this._checkScrollCursorIntoView();
     this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
