@@ -384,6 +384,28 @@ Pane.prototype.moveCursorTo = function(line, col) {
     }
 };
 
+Pane.prototype.getCursorRelPosition = function() {
+    const first = this.bufferView.getFirstVisibleLineNum();
+    const height = this.bufferView.getVisibleHeightLines();
+    const ratio = (this.cursorView.line - first) / height;
+    if (ratio < 0.25) return 'buffer-top';
+    if (ratio < 0.75) return 'buffer-middle';
+    else              return 'buffer-bottom';
+};
+
+Pane.prototype.toggleCursorRelPosition = function() {
+    const cursorRelPosition = this.getCursorRelPosition();
+    if (cursorRelPosition === 'buffer-top') {
+        const halfHeight = Math.round(this.bufferView.getVisibleHeightLines() / 2);
+        this.scrollToLine(Math.max(this.cursorView.line - halfHeight + 1, 1));
+    } else if (cursorRelPosition === 'buffer-middle') {
+        const fullHeight = this.bufferView.getVisibleHeightLines();
+        this.scrollToLine(Math.max(this.cursorView.line - fullHeight + 1, 1));
+    } else {
+        this.scrollToLine(this.cursorView.line);
+    }
+};
+
 // Sets the given line as the first visible.
 Pane.prototype.scrollToLine = function(line) {
     const scrollTop = (line - 1) * this.charHeight;
@@ -538,6 +560,7 @@ Pane.prototype._handleAction = function(action) {
         'DELETE_FORWARD_WORD':           () => this.deleteForwardWord(),
         'DELETE_BACK_WORD':              () => this.deleteBackWord(),
         'KILL_LINE':                     () => this.killLine(),
+        'TOGGLE_CURSOR_REL_POS':         () => this.toggleCursorRelPosition(),
         'MOVE_TO_POS':                   (action) => this.moveCursorTo(action.line, action.col),
         'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),

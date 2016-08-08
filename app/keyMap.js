@@ -13,6 +13,7 @@ const defaultEditorMap = (function() {
         'Control-k':      {type: 'KILL_LINE'},
         'Control-s':      {type: 'SEARCH_FORWARD'},
         'Control-r':      {type: 'SEARCH_BACK'},
+        'Control-l':      {type: 'TOGGLE_CURSOR_REL_POS'},
         'ArrowLeft':      {type: 'MOVE_CURSOR_LEFT'},
         'Control-b':      {type: 'MOVE_CURSOR_LEFT'},
         'ArrowRight':     {type: 'MOVE_CURSOR_RIGHT'},
