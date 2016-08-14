@@ -15,7 +15,7 @@ function BufferView(parentElem, settings = defaults) {
     parentElem.appendChild(this.domNode);
 
     this.lineElems = [null];
-    this.activeSelectionRange = new LineRange();
+    this.selectionRange = new LineRange();
     this.onClick = settings.onClick || defaults.onClick;
 
     this.charWidth = settings.charWidth || defaults.charWidth;
@@ -73,10 +73,10 @@ BufferView.prototype.removeLine = function(num) {
     this.domNode.removeChild(removed.domNode); 
 };
 
-BufferView.prototype.setActiveSelectionRange = function(startLine, startCol, endLine, endCol) {
+BufferView.prototype.setSelectionRange = function(startLine, startCol, endLine, endCol) {
     // TODO: Compute diff. Don't clear whole thing.
-    this.clearActiveSelection();
-    this.activeSelectionRange.setTo(startLine, startCol, endLine, endCol);
+    this.clearSelection();
+    this.selectionRange.setTo(startLine, startCol, endLine, endCol);
     if (startLine === endLine) {
         this._addSelectionHighlight(startLine, startCol, endCol);
     } else {
@@ -88,33 +88,32 @@ BufferView.prototype.setActiveSelectionRange = function(startLine, startCol, end
     }    
 };
 
-BufferView.prototype.getActiveSelectionRange = function() {
-    return this.activeSelectionRange;
+BufferView.prototype.getSelectionRange = function() {
+    return this.selectionRange;
 };
 
-BufferView.prototype.hasActiveSelection = function() {
-    return !this.activeSelectionRange.isEmpty(); 
+BufferView.prototype.hasSelection = function() {
+    return !this.selectionRange.isEmpty(); 
 };
 
-BufferView.prototype.clearActiveSelection = function() {
-    if (this.activeSelectionRange.isEmpty()) return;
+BufferView.prototype.clearSelection = function() {
+    if (this.selectionRange.isEmpty()) return;
 
-    const {startLine, startCol, endLine, endCol} = this.activeSelectionRange.splat();
+    const {startLine, startCol, endLine, endCol} = this.selectionRange.splat();
     this.lineElems.slice(startLine, endLine + 1).forEach(e => {
         e.domNode.removeChild(e.selectionNode);
         delete e.selectionNode;
     });
-    this.activeSelectionRange.clear();
+    this.selectionRange.clear();
 };
 
-// If given, colRange should be an object with 'start' and 'end' fields, denoting
-// the column range to highlight.
+// colEnd is not included in the highlighted range.
 BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
     if (lineNum < 1 || lineNum >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + lineNum);
     }
     const line = this.lineElems[lineNum];
-    const start = colStart || 0;
+    const start = colStart || 1;
     const end = colEnd || line.textNode.textContent.length + 1;
     const node = document.createElement('div');
     node.className = 'line-decoration selection';

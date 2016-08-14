@@ -1,5 +1,6 @@
 'use strict';
 
+const ClipBoard = require('./clipBoard.js');
 const modes = require('./mode.js');
 const fs = require('fs');
 const path = require('path');
@@ -7,6 +8,7 @@ const path = require('path');
 const defaults  = {
     fileName: '',
     mode: modes.default,
+    clipBoard: {},
     onUnsavedChanges: () => { throw new Error('BufferModel: No handler for onUnsavedChanges.'); },
     onNoUnsavedChanges: () => { throw new Error('BufferModel: No handler for onNoUnsavedChanges.'); }
 };
@@ -17,6 +19,7 @@ function BufferModel(settings = defaults) {
     // in the buffer. Line and character access is 0 based.
     this.lines = [];
     this.mode = settings.mode || defaults.mode;
+    this.clipBoard = settings.clipBoard || new ClipBoard();
     this.fileName = settings.fileName || defaults.fileName;
 
     // RegExp of the term currently being searched for with a call to search().
@@ -84,24 +87,18 @@ BufferModel.prototype.deleteForward = function(lineNum, col, amount = 1) {
 
 BufferModel.prototype.deleteLine = function(lineNum) {
     this._validateLineNumHard(lineNum);
-    
     this.lines.splice(lineNum, 1);
-
     this._onChange();
 };
 
-// The range is exclusive: the final character will not be deleted.
-// Returns the range of lines deleted, in the form [start, end], where
-// start === end signifies no lines were deleted. 
+// The range excludes [endLine, endCol].
 BufferModel.prototype.deleteRange = function(startLine, startCol, endLine, endCol) {
     this._validatePosHard(startLine, startCol);
     this._validatePosHard(endLine, endCol);
 
-    let deletedLineRange;
     if (startLine === endLine) {
         const n = endCol - startCol;
         this.deleteForward(startLine, startCol, n);
-        deletedLineRange =  [startLine, startLine];
     } else {
         this.deleteForward(startLine, startCol, this.lines[startLine].length - startCol);
         this.deleteBack(endLine, endCol, endCol);
@@ -111,17 +108,67 @@ BufferModel.prototype.deleteRange = function(startLine, startCol, endLine, endCo
         for (let i = 0; i < toDelete; i++) {
             this.deleteLine(startLine + 1);
         }
-        deletedLineRange = [startLine + 1, endLine + 1];
     }
 
     this._onChange();
-    return deletedLineRange;
+};
+
+BufferModel.prototype.copyRange = function(startLine, startCol, endLine, endCol) {
+    const range = this.getRange(startLine, startCol, endLine, endCol);
+    this.clipBoard.add(range.join('\n'));
+};
+
+// Returns the position of the last character of the pasted text.
+BufferModel.prototype.pasteAt = function(startLine, startCol) {
+    this._validatePosHard(startLine, startCol);
+
+    const rawClip = this.clipBoard.peek();
+    
+    if (!rawClip) return null;
+
+    const linesToAdd = rawClip.split('\n');
+    const beforePaste = this.lines[startLine].slice(0, startCol);
+    const afterPaste = this.lines[startLine].slice(startCol);
+    
+    const endLine = startLine + linesToAdd.length - 1;
+    let endCol;
+    if (startLine === endLine) {
+        endCol = startCol + linesToAdd[0].length;
+        this.lines[startLine] = beforePaste + linesToAdd[0] + afterPaste;
+    } else {
+        endCol = linesToAdd[linesToAdd.length - 1].length;
+        this.lines[startLine] = beforePaste + linesToAdd[0];
+        for (let i = 1; i < linesToAdd.length; i++) {
+            this.lines.splice(startLine + i, 0, linesToAdd[i]);
+        }
+        this.lines[endLine] += afterPaste;
+    }
+
+    this._onChange();
+    return [endLine, endCol];
 };
 
 BufferModel.prototype.getLine = function(lineNum) {
     this._validateLineNumHard(lineNum);
 
     return this.lines[lineNum];
+};
+
+BufferModel.prototype.getRange = function(startLine, startCol, endLine, endCol) {
+    this._validatePosHard(startLine, startCol);
+    this._validatePosHard(endLine, endCol);
+
+    const res = [];
+    if (startLine === endLine) {
+        res.push(this.lines[startLine].slice(startCol, endCol));
+    } else {
+        res.push(this.lines[startLine].slice(startCol));
+        for (let i = startLine + 1; i < endLine; i++) {
+            res.push(this.lines[i]);
+        }
+        res.push(this.lines[endLine].slice(0, endCol));        
+    }
+    return res;
 };
 
 BufferModel.prototype.getLastWordStart = function(lineNum, col) {
@@ -368,7 +415,7 @@ BufferModel.prototype._validateLineNumHard = function(lineNum) {
 
 BufferModel.prototype._validatePosHard = function(lineNum, col) {
     this._validateLineNumHard(lineNum);
-    if (col < 0|| col > this.lines[lineNum].length) {
+    if (col < 0 || col > this.lines[lineNum].length) {
         throw new Error('BufferModel: col out of bounds. Given: ' + col);
     }
 };

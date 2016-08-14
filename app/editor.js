@@ -1,5 +1,6 @@
 'use strict';
 
+const ClipBoard = require('./clipBoard.js');
 const CommandModal = require('./commandModal.js');
 const ContextBar = require('./contextBar.js');
 const PaneGroupContainer = require('./paneGroupContainer.js');
@@ -16,6 +17,7 @@ const defaults = {
 function Editor(parentElem, settings = defaults) {
 
     this.keyMaps = settings.keyMaps || defaults.keyMaps;
+    this.clipBoard = new ClipBoard();
     this.sharedEditorComponentSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
 
     this.domNode = document.createElement('div');
@@ -45,6 +47,7 @@ function Editor(parentElem, settings = defaults) {
             onClosePane: () => this._handleClosePane(),
             onActivePaneNameChanged: (newName) => this.contextBar.setTabNameView(newName),
             bufferSettings: {
+                clipBoard: this.clipBoard,
                 onUnsavedChanges: () => this.contextBar.setUnsavedChangesView(true),
                 onNoUnsavedChanges: () => this.contextBar.setUnsavedChangesView(false)
             }

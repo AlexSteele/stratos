@@ -27,7 +27,7 @@ function MouseListener(bufferView, cursorView, gutterView, settings = defaults) 
             this.cursorView.moveTo(line, col);
             this.gutterView.setActiveLine(this.cursorView.line);
             const [[startLine, startCol], [endLine, endCol]] = sortRange(this.mouseDownPosition, [line, col]);
-            this.bufferView.setActiveSelectionRange(startLine, startCol, endLine, endCol);
+            this.bufferView.setSelectionRange(startLine, startCol, endLine, endCol);
             this.onCursorMoved(line, col);
         });
     };
@@ -43,7 +43,7 @@ function MouseListener(bufferView, cursorView, gutterView, settings = defaults) 
     this._onMouseDown = (e) => {
         e.preventDefault();
       
-        this.bufferView.clearActiveSelection();
+        this.bufferView.clearSelection();
         this.mouseDownPosition = this._getBufferPosFromMouse(e.clientX, e.clientY);
         const [line, col] = this.mouseDownPosition;
         this.cursorView.moveTo(line, col);
