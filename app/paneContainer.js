@@ -25,7 +25,7 @@ function PaneContainer(parentElem, settings = defaults) {
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
 
     const paneSettings = settings.paneSettings || defaults.paneSettings;
-    this.onSwitchPane = paneSettings.onSwitchPane || defaults.paneSettings.onSwitchPane;
+    this.onSwitchEditor = paneSettings.onSwitchEditor || defaults.paneSettings.onSwitchEditor;
     this.paneSettings = Object.assign({}, paneSettings, {
         onUnknownAction: (action) => this._handleAction(action),
         onFocus: (pane) => {
@@ -36,7 +36,7 @@ function PaneContainer(parentElem, settings = defaults) {
             }
             this.activePane = pane;
             this.activePane.setActive();
-            this.onSwitchPane(this.activePane.activePane);
+            this.onSwitchEditor(this.activePane.activeEditor);
         }    
     });
 
@@ -76,7 +76,7 @@ PaneContainer.prototype._switchPane = function(side) {
     this.activePane.setInactive();
     neighbor.setActive();
     this.activePane = neighbor;
-    this.onSwitchPane(this.activePane.activePane);
+    this.onSwitchEditor(this.activePane.activeEditor);
 };
 
 PaneContainer.prototype.swapPaneAbove = function() {

@@ -96,7 +96,7 @@ StratosEditor.prototype._handleCursorMoved = function(line, col) {
     
     // This makes the assumption that a pane's cursor only moves
     // when it is the active pane.
-    this.contextBar.setCursorPositionView(line, col);
+    this.contextBar.setCursorPositionView(line + 1, col + 1);
 };
 
 StratosEditor.prototype._checkResizePanes = function() {

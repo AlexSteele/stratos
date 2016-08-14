@@ -154,6 +154,10 @@ BufferModel.prototype.getLine = function(lineNum) {
     return this.lines[lineNum];
 };
 
+BufferModel.prototype.getLastLineNum = function() {
+    return this.lines.length - 1;
+};
+
 BufferModel.prototype.getRange = function(startLine, startCol, endLine, endCol) {
     this._validatePosHard(startLine, startCol);
     this._validatePosHard(endLine, endCol);

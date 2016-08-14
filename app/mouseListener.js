@@ -66,28 +66,28 @@ MouseListener.prototype.setInactive = function() {
 // If the given coordinates' corresponding line is greater than the last line
 // of the buffer, returns the last position in the buffer.
 // If the given coordinates' corresponding column is greater than the
-// width of their corresponding line, the col returned is the width of the line + 1.
+// width of their corresponding line, the col returned is the width of the line.
 MouseListener.prototype._getBufferPosFromMouse = function(x, y) {
     const bounds = this.bufferView.domNode.getBoundingClientRect();
 
     const adjustedY = y - bounds.top;
-    const line = Math.floor(adjustedY / this.bufferView.charHeight) + 1;
+    const line = Math.floor(adjustedY / this.bufferView.charHeight);
     const firstLine = this.bufferView.getFirstVisibleLineNum();
     const lastLine = this.bufferView.getLastVisibleLineNum();
 
     if (line < firstLine) {
-        return [firstLine, 1];
+        return [firstLine, 0];
     }
     if (line > lastLine) {
-        return [lastLine, this.bufferView.getLineWidthCols(lastLine) + 1];
+        return [lastLine, this.bufferView.getLineWidthCols(lastLine)];
     }
 
     const adjustedX = x - bounds.left;
-    const col = Math.round(adjustedX / this.bufferView.charWidth) + 1;
-    const lastCol = this.bufferView.getLineWidthCols(line) + 1;
+    const col = Math.round(adjustedX / this.bufferView.charWidth);
+    const lastCol = this.bufferView.getLineWidthCols(line);
 
-    if (col < 1) {
-        return [line, 1];
+    if (col < 0) {
+        return [line, 0];
     }
     if (col > lastCol) {
         return [line, lastCol];

@@ -54,7 +54,7 @@ GutterView.prototype.removeLine = function() {
 };
 
 GutterView.prototype.setActiveLine = function(num) {
-    const line = this.lineElems[num];
+    const line = this.lineElems[num + 1];
     if (!line) {
         throw new Error('GutterView: No line with number ' + num); 
     }

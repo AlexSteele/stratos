@@ -78,7 +78,7 @@ Editor.prototype._initComponents = function() {
                 this.gutterView.appendLine();
             });
             if (lines.length > 0) {
-                this.gutterView.setActiveLine(1);
+                this.gutterView.setActiveLine(0);
             }
             return;
         } catch (e) {
@@ -89,7 +89,7 @@ Editor.prototype._initComponents = function() {
     this.buffer.appendLine();
     this.bufferView.appendLine();
     this.gutterView.appendLine();
-    this.gutterView.setActiveLine(1);
+    this.gutterView.setActiveLine(0);
 };
 
 Editor.prototype._initEventListeners = function() {
@@ -107,8 +107,8 @@ Editor.prototype._onGutterWidthChanged = function(width) {
 
 Editor.prototype.insert = function(text) {
     this.bufferView.clearSelection();
-    this.buffer.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+    this.buffer.insert(this.cursorView.line, this.cursorView.col, text);
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
     this.cursorView.moveRight(text.length);
 
     this._onCursorMoved();
@@ -117,7 +117,7 @@ Editor.prototype.insert = function(text) {
 Editor.prototype.insertNewLine = function() {
     this.bufferView.clearSelection();
     this.openLine();
-    this.cursorView.moveTo(this.cursorView.line + 1, 1); 
+    this.cursorView.moveTo(this.cursorView.line + 1, 0); 
     this.gutterView.setActiveLine(this.cursorView.line);
 
     this._onCursorMoved();
@@ -125,9 +125,9 @@ Editor.prototype.insertNewLine = function() {
 
 Editor.prototype.openLine = function() {
     this.bufferView.clearSelection();
-    this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
+    this.buffer.insertNewLine(this.cursorView.line, this.cursorView.col);
+    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
+    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line + 1));
     this.gutterView.appendLine();
 };
 
@@ -136,23 +136,23 @@ Editor.prototype.deleteBackChar = function() {
         this.deleteSelection();
         return;
     }
-    if (this.cursorView.col === 1) {
-        if (this.cursorView.line === 1) {
+    if (this.cursorView.col === 0) {
+        if (this.cursorView.line === 0) {
             return;
         }
 
-        const prevLine = this.buffer.getLine(this.cursorView.line - 2);
-        const line = prevLine + this.buffer.getLine(this.cursorView.line - 1);
-        this.buffer.setLine(this.cursorView.line - 2, line);
-        this.buffer.deleteLine(this.cursorView.line - 1);
+        const prevLine = this.buffer.getLine(this.cursorView.line - 1);
+        const line = prevLine + this.buffer.getLine(this.cursorView.line);
+        this.buffer.setLine(this.cursorView.line - 1, line);
+        this.buffer.deleteLine(this.cursorView.line);
         this.bufferView.setLine(this.cursorView.line - 1, line);
         this.bufferView.removeLine(this.cursorView.line);
-        this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length + 1);
+        this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length);
         this.gutterView.setActiveLine(this.cursorView.line);
         this.gutterView.removeLine();
     } else {
-        this.buffer.deleteBack(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+        this.buffer.deleteBack(this.cursorView.line, this.cursorView.col);
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
         this.cursorView.moveLeft();
     }
 
@@ -162,39 +162,31 @@ Editor.prototype.deleteBackChar = function() {
 
 Editor.prototype.deleteForwardChar = function() {
     this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+    if (this.cursorView.col === this.buffer.getLine(this.cursorView.line).length) {
+        if (this.cursorView.line === this.buffer.getLastLineNum()) {
             return;
         }
 
-        const currLine = this.buffer.getLine(this.cursorView.line - 1);
-        const nextLine = this.buffer.getLine(this.cursorView.line);
-        this.buffer.setLine(this.cursorView.line - 1, currLine + nextLine);
-        this.buffer.deleteLine(this.cursorView.line);
+        const currLine = this.buffer.getLine(this.cursorView.line);
+        const nextLine = this.buffer.getLine(this.cursorView.line + 1);
+        this.buffer.setLine(this.cursorView.line, currLine + nextLine);
+        this.buffer.deleteLine(this.cursorView.line + 1);
         this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
     } else {
-        this.buffer.deleteForward(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+        this.buffer.deleteForward(this.cursorView.line, this.cursorView.col);
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
     }
 };
 
 Editor.prototype.deleteBackWord = function() {
-    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
-    this._deleteRange(line + 1, col + 1, this.cursorView.line, this.cursorView.col);
+    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line, this.cursorView.col);
+    this._deleteRange(line, col, this.cursorView.line, this.cursorView.col);
 };
 
 Editor.prototype.deleteForwardWord = function() {
-    this.bufferView.clearSelection();
-    this.cursorView.setBlink(false);
-    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
-    const [startLine, endLine] = this.buffer.deleteRange(this.cursorView.line - 1, this.cursorView.col - 1, line, col);
-    for (let i = startLine; i < endLine; i++) {
-        this.bufferView.removeLine(startLine + 1);
-        this.gutterView.removeLine(startLine + 1);
-    }
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.cursorView.setBlink(true);
+    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line, this.cursorView.col);
+    this._deleteRange(this.cursorView.line, this.cursorView.col, line, col);
 };
 
 Editor.prototype.deleteSelection = function() {
@@ -205,41 +197,37 @@ Editor.prototype.deleteSelection = function() {
 // Moves the cursor to the start of the range and clears the buffer's active selection.
 Editor.prototype._deleteRange = function(startLine, startCol, endLine, endCol) {
     this.bufferView.clearSelection();
-    this.buffer.deleteRange(
-        startLine - 1,
-        startCol - 1,
-        endLine - 1,
-        endCol - 1
-    );
+    this.buffer.deleteRange(startLine, startCol, endLine, endCol);
     for (let i = startLine; i < endLine; i++) {
         this.bufferView.removeLine(startLine);
         this.gutterView.removeLine(startLine);
     }
-    this.bufferView.setLine(startLine, this.buffer.getLine(startLine - 1));
-    this.gutterView.setActiveLine(startLine);
-    this.cursorView.moveTo(startLine, startCol);
-
-    this._onCursorMoved();
+    this.bufferView.setLine(startLine, this.buffer.getLine(startLine));
+    if (startLine !== this.cursorView.line || startCol !== this.cursorView.col) {
+        this.gutterView.setActiveLine(startLine);
+        this.cursorView.moveTo(startLine, startCol);
+        this._onCursorMoved();        
+    }
 };
 
 Editor.prototype.killLine = function() {
     this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+    if (this.cursorView.col === this.buffer.getLine(this.cursorView.line).length) {
+        if (this.cursorView.line === this.buffer.getLastLineNum()) {
             return;
         }
 
         const nextLine = this.buffer.getLine(this.cursorView.line);
         this.buffer.deleteLine(this.cursorView.line);
-        this.buffer.setLine(this.cursorView.line - 1, this.buffer.getLine(this.cursorView.line - 1) + nextLine);
+        this.buffer.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line) + nextLine);
         this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
         this.gutterView.removeLine();
     } else {
-        const line = this.buffer.getLine(this.cursorView.line - 1);
-        const upToPoint = line.slice(0, this.cursorView.col - 1);
-        this.buffer.copyRange(this.cursorView.line - 1, this.cursorView.col - 1, this.cursorView.line - 1, line.length);
-        this.buffer.setLine(this.cursorView.line - 1, upToPoint);
+        const line = this.buffer.getLine(this.cursorView.line);
+        const upToPoint = line.slice(0, this.cursorView.col);
+        this.buffer.copyRange(this.cursorView.line, this.cursorView.col, this.cursorView.line, line.length);
+        this.buffer.setLine(this.cursorView.line, upToPoint);
         this.bufferView.setLine(this.cursorView.line, upToPoint);
     }
 };
@@ -247,12 +235,7 @@ Editor.prototype.killLine = function() {
 Editor.prototype.copySelection = function() {
     if (this.bufferView.hasSelection()) {
         const {startLine, startCol, endLine, endCol} = this.bufferView.getSelectionRange().splat();
-        this.buffer.copyRange(
-            startLine - 1,
-            startCol - 1,
-            endLine - 1,
-            endCol - 1
-        );
+        this.buffer.copyRange(startLine, startCol, endLine, endCol);
     }
 };
 
@@ -263,17 +246,16 @@ Editor.prototype.killSelection = function() {
 
 Editor.prototype.paste = function() {
     this.bufferView.clearSelection();
-    const endingPos = this.buffer.pasteAt(this.cursorView.line - 1,
-                                          this.cursorView.col - 1);
+    const endingPos = this.buffer.pasteAt(this.cursorView.line, this.cursorView.col);
     if (endingPos) {
         const [endLine, endCol] = endingPos;
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-        for (let i = this.cursorView.line + 1; i <= endLine + 1; i++) {
-            this.bufferView.insertLine(i, this.buffer.getLine(i - 1));
+        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line));
+        for (let i = this.cursorView.line + 1; i <= endLine; i++) {
+            this.bufferView.insertLine(i, this.buffer.getLine(i));
             this.gutterView.appendLine();
         }
-        this.cursorView.moveTo(endLine + 1, endCol + 1);
-        this.gutterView.setActiveLine(endLine + 1);
+        this.cursorView.moveTo(endLine, endCol);
+        this.gutterView.setActiveLine(endLine);
         
         this._onCursorMoved();
     }
@@ -283,15 +265,9 @@ Editor.prototype.paste = function() {
 // Otherwise, attempts to cycle to the next active match of the previous search term.
 Editor.prototype.search = function(term, direction) {
     this.bufferView.clearSelection();
-    const match = this.buffer.search(
-        term,
-        direction,
-        this.cursorView.line - 1,
-        this.cursorView.col - 1
-    );
-    
+    const match = this.buffer.search(term, direction, this.cursorView.line, this.cursorView.col);
     if (match) {
-        this.cursorView.moveTo(match[0] + 1, match[1] + 1);
+        this.cursorView.moveTo(match[0], match[1]);
         this._onCursorMoved();
     }
 };
@@ -312,11 +288,11 @@ Editor.prototype.saveBuffer = function(as) {
 
 Editor.prototype.moveCursorLeft = function() {
     this.bufferView.clearSelection();
-    if (this.cursorView.col === 1) {
-        if (this.cursorView.line === 1) {
+    if (this.cursorView.col === 0) {
+        if (this.cursorView.line === 0) {
             return;
         }
-        const endOfPrevLine = this.bufferView.getLineWidthCols(this.cursorView.line - 1) + 1;
+        const endOfPrevLine = this.buffer.getLine(this.cursorView.line).length;
         this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
         this.gutterView.setActiveLine(this.cursorView.line);
     } else {
@@ -328,11 +304,11 @@ Editor.prototype.moveCursorLeft = function() {
 
 Editor.prototype.moveCursorRight = function() {
     this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+    if (this.cursorView.col === this.buffer.getLine(this.cursorView.line).length) {
+        if (this.cursorView.line === this.buffer.getLastLineNum()) {
             return;
         }
-        this.cursorView.moveTo(this.cursorView.line + 1, 1);
+        this.cursorView.moveTo(this.cursorView.line + 1, 0);
         this.gutterView.setActiveLine(this.cursorView.line);
     } else {
         this.cursorView.moveRight();
@@ -342,32 +318,32 @@ Editor.prototype.moveCursorRight = function() {
 };
 
 Editor.prototype.moveCursorUp = function() {
-    if (this.cursorView.line === 1) {
+    if (this.cursorView.line === 0) {
         return;
     }
 
     this.bufferView.clearSelection();
     this.cursorView.moveUp();
     this.gutterView.setActiveLine(this.cursorView.line);
-    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-    if (this.cursorView.col > lineWidth + 1) {
-        this.cursorView.setCol(lineWidth + 1);
+    const lineWidth = this.buffer.getLine(this.cursorView.line).length;
+    if (this.cursorView.col > lineWidth) {
+        this.cursorView.setCol(lineWidth);
     }
 
     this._onCursorMoved();
 };
 
 Editor.prototype.moveCursorDown = function() {
-    if (this.cursorView.line === this.bufferView.getLastLineNum()) {
+    if (this.cursorView.line === this.buffer.getLastLineNum()) {
         return;
     }
 
     this.bufferView.clearSelection();
     this.cursorView.moveDown();
     this.gutterView.setActiveLine(this.cursorView.line);
-    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-    if (this.cursorView.col > lineWidth + 1) {
-        this.cursorView.setCol(lineWidth + 1);
+    const lineWidth = this.buffer.getLine(this.cursorView.line).length;
+    if (this.cursorView.col > lineWidth) {
+        this.cursorView.setCol(lineWidth);
     }
 
     this._onCursorMoved();
@@ -375,23 +351,23 @@ Editor.prototype.moveCursorDown = function() {
 
 Editor.prototype.moveCursorForwardWord = function() {
     this.bufferView.clearSelection();
-    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.cursorView.moveTo(line + 1, col + 1);
+    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line, this.cursorView.col);
+    this.cursorView.moveTo(line, col);
 
     this._onCursorMoved();
 };
 
 Editor.prototype.moveCursorBackWord = function() {
     this.bufferView.clearSelection();
-    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.cursorView.moveTo(line + 1, col + 1);
+    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line, this.cursorView.col);
+    this.cursorView.moveTo(line, col);
 
     this._onCursorMoved();
 };
 
 Editor.prototype.moveCursorBeginningOfLine = function() {
     this.bufferView.clearSelection();
-    this.cursorView.setCol(1);
+    this.cursorView.setCol(0);
     this.cursorView.goalCol = this.cursorView.col;
 
     this._onCursorMoved();
@@ -399,15 +375,15 @@ Editor.prototype.moveCursorBeginningOfLine = function() {
 
 Editor.prototype.moveCursorEndOfLine = function() {
     this.bufferView.clearSelection();
-    this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
+    this.cursorView.setCol(this.buffer.getLine(this.cursorView.line).length);
     this.cursorView.goalCol = this.cursorView.col;
 
     this._onCursorMoved();
 };
 
 Editor.prototype.moveCursorTo = function(line, col) {
-    if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
-        col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
+    if (line >= 0 && line <= this.buffer.getLastLineNum() &&
+        col >= 0 && col <= this.buffer.getLine(line).length) {
         this.bufferView.clearSelection();
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
@@ -429,10 +405,10 @@ Editor.prototype.toggleCursorRelPosition = function() {
     const cursorRelPosition = this.getCursorRelPosition();
     if (cursorRelPosition === 'buffer-top') {
         const halfHeight = Math.round(this.bufferView.getVisibleHeightLines() / 2);
-        this.scrollToLine(Math.max(this.cursorView.line - halfHeight + 1, 1));
+        this.scrollToLine(Math.max(this.cursorView.line - halfHeight + 1, 0));
     } else if (cursorRelPosition === 'buffer-middle') {
         const fullHeight = this.bufferView.getVisibleHeightLines();
-        this.scrollToLine(Math.max(this.cursorView.line - fullHeight + 1, 1));
+        this.scrollToLine(Math.max(this.cursorView.line - fullHeight + 1, 0));
     } else {
         this.scrollToLine(this.cursorView.line);
     }
@@ -440,14 +416,14 @@ Editor.prototype.toggleCursorRelPosition = function() {
 
 // Sets the given line as the first visible.
 Editor.prototype.scrollToLine = function(line) {
-    const scrollTop = (line - 1) * this.charHeight;
+    const scrollTop = line * this.charHeight;
     this.domNode.scrollTop = scrollTop;
     this.bufferView.setScrollTop(scrollTop);
 };
 
 // Sets the given column as the first visible. 
 Editor.prototype.scrollToCol = function(col) {
-    const scrollLeft = (col - 1) * this.charWidth;
+    const scrollLeft = col * this.charWidth;
     this.domNode.scrollLeft = scrollLeft;
     this.bufferView.setScrollLeft(scrollLeft);
     this.gutterView.setLeftOffset(scrollLeft);
@@ -557,11 +533,16 @@ Editor.prototype.hasUnsavedChanges = function() {
     return this.buffer.hasUnsavedChanges();
 };
 
+Editor.prototype._onCursorMoved = function() {
+    this._checkScrollCursorIntoView();
+    this.onCursorMoved(this.cursorView.line, this.cursorView.col);
+};
+
 Editor.prototype._checkScrollCursorIntoView = function() {
 
     // Horizontal alignment
     if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.col - this.horizontalCursorMargin);
+        const firstVisible = Math.max(0, this.cursorView.col - this.horizontalCursorMargin);
         this.scrollToCol(firstVisible);
     } else if (this.cursorView.col > this.bufferView.getLastVisibleCol() - this.horizontalCursorMargin) {
         const lastVisible = Math.min(this.cursorView.col + this.horizontalCursorMargin, this.bufferView.getLastColNum());
@@ -571,10 +552,10 @@ Editor.prototype._checkScrollCursorIntoView = function() {
 
     // Vertical alignment
     if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum() + this.verticalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.line - this.verticalCursorMargin);
+        const firstVisible = Math.max(0, this.cursorView.line - this.verticalCursorMargin);
         this.scrollToLine(firstVisible); 
     } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum() - this.verticalCursorMargin) {
-        const lastVisible = Math.min(this.cursorView.line + this.verticalCursorMargin, this.bufferView.getLastLineNum());
+        const lastVisible = Math.min(this.cursorView.line + this.verticalCursorMargin, this.buffer.getLastLineNum());
         const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
         this.scrollToLine(firstVisible);
     }
@@ -596,7 +577,7 @@ Editor.prototype._handleAction = function(action) {
         'COPY_SELECTION':                () => this.copySelection(),
         'PASTE':                         () => this.paste(),
         'TOGGLE_CURSOR_REL_POS':         () => this.toggleCursorRelPosition(),
-        'MOVE_TO_POS':                   (action) => this.moveCursorTo(action.line, action.col),
+        'MOVE_TO_POS':                   (action) => this.moveCursorTo(action.line - 1, action.col - 1),
         'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
         'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
         'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
@@ -624,11 +605,6 @@ Editor.prototype._handleAction = function(action) {
 
 Editor.prototype._handleKeyError = function(error) {
     console.log('Editor: key error: ' + error);
-};
-
-Editor.prototype._onCursorMoved = function() {
-    this._checkScrollCursorIntoView();
-    this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
 module.exports = Editor;

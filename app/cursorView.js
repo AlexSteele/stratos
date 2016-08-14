@@ -3,9 +3,9 @@
 const defaults = {
     charWidth: 10,
     charHeight: 20,
-    startingCol: 1,
-    startingLine: 1,
-    goalCol: 1,
+    startingCol: 0,
+    startingLine: 0,
+    goalCol: 0,
     leftOffset: 25,
     blinkFreqMs: 500
 };
@@ -120,11 +120,11 @@ CursorView.prototype.getLeftOffset = function() {
 };
 
 CursorView.prototype._colToPix = function() {
-    return (this.leftOffset + (this.col - 1) * this.charWidth) + 'px';
+    return (this.leftOffset + (this.col * this.charWidth));
 };
 
 CursorView.prototype._lineToPix = function() {
-    return ((this.line - 1) * this.charHeight) + 'px';
+    return (this.line * this.charHeight);
 };
 
 module.exports = CursorView;

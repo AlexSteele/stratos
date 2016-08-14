@@ -14,7 +14,7 @@ function BufferView(parentElem, settings = defaults) {
     this.domNode.className = 'buffer';
     parentElem.appendChild(this.domNode);
 
-    this.lineElems = [null];
+    this.lineElems = [];
     this.selectionRange = new LineRange();
     this.onClick = settings.onClick || defaults.onClick;
 
@@ -31,7 +31,7 @@ BufferView.prototype.appendLine = function(text = '') {
 };
 
 BufferView.prototype.insertLine = function(num, text) {
-    if (num < 1 || num > this.lineElems.length) {
+    if (num < 0 || num > this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
 
@@ -56,7 +56,7 @@ BufferView.prototype.insertLine = function(num, text) {
 };
 
 BufferView.prototype.setLine = function(num, text) {
-    if (num < 1 || num >= this.lineElems.length) {
+    if (num < 0 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num);
     }
     
@@ -65,7 +65,7 @@ BufferView.prototype.setLine = function(num, text) {
 };
 
 BufferView.prototype.removeLine = function(num) {
-    if (num < 1 || num >= this.lineElems.length) {
+    if (num < 0 || num >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + num); 
     }
 
@@ -109,15 +109,15 @@ BufferView.prototype.clearSelection = function() {
 
 // colEnd is not included in the highlighted range.
 BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
-    if (lineNum < 1 || lineNum >= this.lineElems.length) {
+    if (lineNum < 0 || lineNum >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + lineNum);
     }
     const line = this.lineElems[lineNum];
-    const start = colStart || 1;
-    const end = colEnd || line.textNode.textContent.length + 1;
+    const start = colStart || 0;
+    const end = colEnd || line.textNode.textContent.length;
     const node = document.createElement('div');
     node.className = 'line-decoration selection';
-    node.style.left = (start - 1) * this.charWidth;
+    node.style.left = start * this.charWidth;
     node.style.width = (end - start) * this.charWidth;
     node.style.height = this.charHeight;
     line.selectionNode = node;
@@ -135,7 +135,7 @@ BufferView.prototype.getVisibleHeightLines = function() {
 };
 
 BufferView.prototype.getFirstVisibleLineNum = function() {
-    return Math.round(this.scrollTop / this.charHeight) + 1;
+    return Math.round(this.scrollTop / this.charHeight);
 };
 
 BufferView.prototype.getLastVisibleLineNum = function() {
@@ -169,7 +169,7 @@ BufferView.prototype.getVisibleWidthCols = function() {
 };
 
 BufferView.prototype.getFirstVisibleCol = function() {
-    return Math.round(this.scrollLeft / this.charWidth) + 1;
+    return Math.round(this.scrollLeft / this.charWidth);
 };
 
 BufferView.prototype.getLastVisibleCol = function() {
@@ -177,7 +177,7 @@ BufferView.prototype.getLastVisibleCol = function() {
 };
 
 BufferView.prototype.getLineWidthCols = function(lineNum) {
-    if (lineNum < 1 || lineNum >= this.lineElems.length) {
+    if (lineNum < 0 || lineNum >= this.lineElems.length) {
         throw new Error('BufferView: No line with number ' + lineNum);
     }
 
@@ -193,7 +193,7 @@ BufferView.prototype.getWidth = function() {
 };
 
 BufferView.prototype.getLastColNum = function() {
-    return this.getWidthCols();
+    return this.getWidthCols() - 1;
 };
 
 BufferView.prototype.setScrollTop = function(to) {
