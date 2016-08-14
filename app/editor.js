@@ -8,7 +8,6 @@ const MouseListener = require('./mouseListener.js');
 
 const defaults = {
     tabName: '',
-    keyMap: {},
     horizontalCursorMargin: 1,  // columns
     verticalCursorMargin: 1,    // lines
     height: '100%',
@@ -35,7 +34,6 @@ function Editor(parentElem, buffer, settings = defaults) {
 
     this.buffer = buffer;
     this.tabName = settings.tabName || defaults.tabName;
-    this.keyMap = settings.keyMap || defaults.keyMap;
     this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
     this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
     this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
