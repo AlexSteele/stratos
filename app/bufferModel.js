@@ -115,14 +115,14 @@ BufferModel.prototype.deleteRange = function(startLine, startCol, endLine, endCo
 
 BufferModel.prototype.copyRange = function(startLine, startCol, endLine, endCol) {
     const range = this.getRange(startLine, startCol, endLine, endCol);
-    this.clipBoard.add(range.join('\n'));
+    this.clipBoard.write(range.join('\n'));
 };
 
 // Returns the position of the last character of the pasted text.
 BufferModel.prototype.pasteAt = function(startLine, startCol) {
     this._validatePosHard(startLine, startCol);
 
-    const rawClip = this.clipBoard.peek();
+    const rawClip = this.clipBoard.read();
     
     if (!rawClip) return null;
 
