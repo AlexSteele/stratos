@@ -74,18 +74,43 @@ BufferView.prototype.removeLine = function(num) {
 };
 
 BufferView.prototype.setSelectionRange = function(startLine, startCol, endLine, endCol) {
-    // TODO: Compute diff. Don't clear whole thing.
-    this.clearSelection();
-    this.selectionRange.setTo(startLine, startCol, endLine, endCol);
+    if (this.hasSelection()) {
+        
+        // Remove the boundary highlights from the existing range...
+        this._removeSelectionHighlight(this.selectionRange.startLine);
+        if (this.selectionRange.spansMultipleLines()) {
+            this._removeSelectionHighlight(this.selectionRange.endLine);
+        }
+        
+        // ...and the non-overlapping ones.
+        for (let i = this.selectionRange.startLine + 1;
+             i <= startLine && i < this.selectionRange.endLine; i++) {
+            this._removeSelectionHighlight(i);
+        }
+        for (let i = this.selectionRange.endLine - 1;
+             i >= endLine && i > this.selectionRange.startLine; i--) {
+            this._removeSelectionHighlight(i);
+        }
+    }
+
+    // Add the boundary highlights from the new range.
     if (startLine === endLine) {
         this._addSelectionHighlight(startLine, startCol, endCol);
     } else {
         this._addSelectionHighlight(startLine, startCol);
-        for (let i = startLine + 1; i < endLine; i++) {
-            this._addSelectionHighlight(i);
-        }
-        this._addSelectionHighlight(endLine, undefined, endCol);    
-    }    
+        this._addSelectionHighlight(endLine, 0, endCol);    
+    }
+
+    // ... and the non-overlapping ones.
+    for (let i = startLine + 1;
+         i < endLine && i <= this.selectionRange.startLine; i++) {
+        this._addSelectionHighlight(i);
+    }
+    for (let i = endLine - 1;
+         i > startLine && i >= this.selectionRange.endLine; i--) {
+        this._addSelectionHighlight(i);
+    }
+    this.selectionRange.setTo(startLine, startCol, endLine, endCol);
 };
 
 BufferView.prototype.getSelectionRange = function() {
@@ -100,18 +125,14 @@ BufferView.prototype.clearSelection = function() {
     if (this.selectionRange.isEmpty()) return;
 
     const {startLine, startCol, endLine, endCol} = this.selectionRange.splat();
-    this.lineElems.slice(startLine, endLine + 1).forEach(e => {
-        e.domNode.removeChild(e.selectionNode);
-        delete e.selectionNode;
-    });
+    for (let i = startLine; i <= endLine; i++) {
+        this._removeSelectionHighlight(i);
+    }
     this.selectionRange.clear();
 };
 
 // colEnd is not included in the highlighted range.
 BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
-    if (lineNum < 0 || lineNum >= this.lineElems.length) {
-        throw new Error('BufferView: No line with number ' + lineNum);
-    }
     const line = this.lineElems[lineNum];
     const start = colStart || 0;
     const end = colEnd || line.textNode.textContent.length;
@@ -122,6 +143,12 @@ BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd
     node.style.height = this.charHeight;
     line.selectionNode = node;
     line.domNode.appendChild(node);
+};
+
+BufferView.prototype._removeSelectionHighlight = function(lineNum) {
+    const line = this.lineElems[lineNum];
+    line.domNode.removeChild(line.selectionNode);
+    delete line.selectionNode;
 };
 
 // This function is merely for record keeping.
