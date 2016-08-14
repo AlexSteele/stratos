@@ -37,4 +37,8 @@ LineRange.prototype.splat = function() {
     };
 };
 
+LineRange.prototype.spansMultipleLines = function() {
+    return !this.isEmpty() && this.startLine !== this.endLine;
+};
+
 module.exports = LineRange;
