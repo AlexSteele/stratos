@@ -139,9 +139,7 @@ BufferView.prototype.getFirstVisibleLineNum = function() {
 };
 
 BufferView.prototype.getLastVisibleLineNum = function() {
-    const lastOnScreen = this.getFirstVisibleLineNum() + this.getVisibleHeightLines() - 1;
-    const lastLineNum = this.getLastLineNum();
-    return Math.min(lastOnScreen, lastLineNum);
+    return this.getFirstVisibleLineNum() + this.getVisibleHeightLines() - 1;
 };
 
 BufferView.prototype.setLeftOffset = function(to) {
