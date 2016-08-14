@@ -1,2 +1,2 @@
 # stratos
-Electron Frontend for Orb 
+A text editor built with Electron and vanilla js.
