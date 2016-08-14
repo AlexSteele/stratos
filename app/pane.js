@@ -1,527 +1,310 @@
 'use strict';
 
-const BufferView = require('./bufferView.js');
-const CursorView = require('./cursorView.js');
-const GutterView = require('./gutterView.js');
+const BufferModel = require('./bufferModel.js');
 const KeyListener = require('./keyListener.js');
-const MouseListener = require('./mouseListener.js');
+const {numDigitsIn} = require('./utils.js');
+const Editor = require('./editor.js');
+const TabBar = require('./tabBar.js');
 
 const defaults = {
-    tabName: '',
-    keyMap: {},
-    horizontalCursorMargin: 1,  // columns
-    verticalCursorMargin: 1,    // lines
-    height: '100%',
-    width: '100%',
-    topOffset: '0px',
+    keyMaps: {},
+    height: 0,
+    width: 0,
+    topOffset: 0,
+    leftOffset: 0,
+    neighbors: {
+        above: undefined,
+        below: undefined,
+        left:  undefined,
+        right: undefined
+    },
     sharedEditorComponentSettings: {
         charWidth: 0,
-        charheight: 0
+        charHeight: 0
     },
-    onUnknownAction: (action) => { throw new Error('Pane: No handler for action: ' + action); },
-    onNameChanged: (oldName, newName) => { throw new Error('Pane: No handler for onNameChanged'); },
-    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); }
+    bufferSettings: {},
+    onUnknownAction: (action) => { throw new Error('Pane: No handler for action ' + action); },
+    onCursorMoved: (line, col) => { throw new Error('Pane: No handler for onCursorMoved.'); },
+    onNewEditor: () => { throw new Error('Pane: No handler for onNewEditor.'); },
+    onSwitchEditor: (newActivePane) => { throw new Error('Pane: No handler for onSwitchEditor.'); },
+    onCloseEditor: () => { throw new Error('Pane: No handler for onCloseEditor.'); },
+    onActiveEditorNameChanged: (newName) => { throw new Error('Pane: No handler for onActiveEditorNameChanged.'); },
+    onFocus: (this_Pane) => { throw new Error('Pane: No handler for onFocus.'); }
 };
 
-function Pane(parentElem, buffer, settings = defaults) {
+function Pane(parentElem, settings = defaults) {
+    this.editors = [];
+    this.activeEditor = null;
+    this.prevActivePane = null;
+    this._isActive = false;
 
     this.domNode = document.createElement('div');
     this.domNode.className = 'pane';
-    this.domNode.style.height = settings.height || defaults.height;
-    this.domNode.style.width = settings.width || defaults.width;
-    this.domNode.style.top = settings.topOffset || defaults.topOffset;
-    this.domNode.tabIndex = 1;
+    this.setHeight(settings.height == null ? defaults.height : settings.height);
+    this.setWidth(settings.width == null ? defaults.width : settings.width);
+    this.setTopOffset(settings.topOffset == null ? defaults.topOffset : settings.topOffset);
+    this.setLeftOffset(settings.leftOffset == null ? defaults.leftOffset : settings.leftOffset);
     parentElem.appendChild(this.domNode);
 
-    this.buffer = buffer;
-    this.tabName = settings.tabName || defaults.tabName;
-    this.keyMap = settings.keyMap || defaults.keyMap;
-    this.horizontalCursorMargin = settings.horizontalCursorMargin || defaults.horizontalCursorMargin;
-    this.verticalCursorMargin = settings.verticalCursorMargin || defaults.verticalCursorMargin;
-    this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
+    this.parentElem = parentElem;
+    this.keyMaps = settings.keyMaps || defaults.keyMaps;
+    this.neighbors = settings.neighbors || defaults.neighbors;
+    this.sharedEditorComponentSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
+    this.bufferSettings = settings.bufferSettings || defaults.bufferSettings;
     this.onUnknownAction = settings.onUnknownAction || defaults.onUnknownAction;
-    this.onNameChanged = settings.onNameChanged || defaults.onNameChanged;
-    
-    const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
-    this.charWidth = sharedEditorSettings.charWidth;
-    this.charHeight = sharedEditorSettings.charHeight;    
-    this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings));
-    this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
-    this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
-    this.mouseListener = new MouseListener(this.bufferView, this.cursorView, this.gutterView, {onCursorMoved: this.onCursorMoved});
-    this.keyListener = new KeyListener(this.domNode, {
-        keyMap: this.buffer.getMode().keyMap,
-        allowDefaultOnKeyError: false,
+    this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
+    this.onNewEditor = settings.onNewEditor || defaults.onNewEditor;
+    this.onSwitchEditor = settings.onSwitchEditor || defaults.onSwitchEditor;
+    this.onCloseEditor = settings.onCloseEditor || defaults.onCloseEditor;
+    this.onActiveEditorNameChanged = settings.onActiveEditorNameChanged || defaults.onActiveEditorNameChanged;
+    this.onFocus = settings.onFocus || defaults.onFocus;
+        
+    // Only active when no panes are open. This is to allow, for instance,
+    // an 'open tab' keybinding even when no EditorPanes are active.
+    this.noEditorsKeyListener = new KeyListener(document.body, {
+        keyMap: this.keyMaps['no-editors'],
+        allowDefaultOnKeyError: true,
         onKeyAction: (action) => this._handleAction(action),
-        onKeyError: (error) => this._handleKeyError(error)
+        onKeyError: (error) => console.log('Pane: Key error: ' + error)
+    });
+    
+    this.tabBar = new TabBar(this.domNode, {
+        onTabClick: (name) => this.switchEditor(name)
     });
 
-    this._initComponents();
     this._initEventListeners();
 
-    // Inactive by default.
+    // Inactive with one tab/editor by default.
+    this.newEditor();
     this.setInactive();
-}
-
-Pane.prototype._initComponents = function() {
-    this.cursorView.setLeftOffset(this.gutterView.getWidth());
-    this.bufferView.setLeftOffset(this.gutterView.getWidth()); 
-    this.bufferView.setVisibleHeight(this.getHeight());
-    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
-    
-    if (this.buffer.hasFile()) {
-        try {
-            this.buffer.reloadFromFile();
-            const lines = this.buffer.getLines();
-            lines.forEach(e => {
-                this.bufferView.appendLine(e);
-                this.gutterView.appendLine();
-            });
-            if (lines.length > 0) {
-                this.gutterView.setActiveLine(1);
-            }
-            return;
-        } catch (e) {
-            // TODO: Show error dialog.
-            console.warn(e);
-        }
-    } 
-    this.buffer.appendLine();
-    this.bufferView.appendLine();
-    this.gutterView.appendLine();
-    this.gutterView.setActiveLine(1);
 };
 
 Pane.prototype._initEventListeners = function() {
-    this.domNode.addEventListener('scroll', (e) => {
-        this.bufferView.setScrollTop(this.domNode.scrollTop);
-        this.bufferView.setScrollLeft(this.domNode.scrollLeft);
-        this.gutterView.setLeftOffset(this.domNode.scrollLeft);
+    this.domNode.addEventListener('mousedown', () => {
+        if (!this.isActive()) {
+            this.onFocus(this);
+        }
     });
 };
 
-Pane.prototype._onGutterWidthChanged = function(width) {
-    this.cursorView.setLeftOffset(width);
-    this.bufferView.setLeftOffset(width);
-};
-
-Pane.prototype.insert = function(text) {
-    this.bufferView.clearSelection();
-    this.buffer.insert(this.cursorView.line - 1, this.cursorView.col - 1, text);
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.cursorView.moveRight(text.length);
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.insertNewLine = function() {
-    this.bufferView.clearSelection();
-    this.openLine();
-    this.cursorView.moveTo(this.cursorView.line + 1, 1); 
-    this.gutterView.setActiveLine(this.cursorView.line);
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.openLine = function() {
-    this.bufferView.clearSelection();
-    this.buffer.insertNewLine(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.bufferView.insertLine(this.cursorView.line + 1, this.buffer.getLine(this.cursorView.line));
-    this.gutterView.appendLine();
-};
-
-Pane.prototype.deleteBackChar = function() {
-    if (this.bufferView.hasSelection()) {
-        this.deleteSelection();
-        return;
-    }
-    if (this.cursorView.col === 1) {
-        if (this.cursorView.line === 1) {
-            return;
+Pane.prototype.newEditor = function(name = 'untitled', fileName) {
+    const buffer = new BufferModel(Object.assign({}, this.bufferSettings, {fileName: fileName}));
+    const tabName = fileName ? this._getUniqueTabName(buffer.getFileBaseName()) : this._getUniqueTabName(name);
+    const tabsHeight = this.tabBar.getVisibleHeight();
+    const editor = new Editor(this.domNode, buffer, {
+        buffer,
+        tabName,
+        keyMap: this.keyMaps['editor'],
+        height: this.getHeight() - tabsHeight,
+        width: this.getWidth(),
+        topOffset: tabsHeight,
+        sharedEditorComponentSettings: this.sharedEditorComponentSettings,
+        onUnknownAction: (action) => this._handleAction(action),
+        onCursorMoved: this.onCursorMoved,
+        onNameChanged: (oldName, newName) => {
+            this.tabBar.rename(oldName, newName);
+            this.onActiveEditorNameChanged(newName);
         }
-
-        const prevLine = this.buffer.getLine(this.cursorView.line - 2);
-        const line = prevLine + this.buffer.getLine(this.cursorView.line - 1);
-        this.buffer.setLine(this.cursorView.line - 2, line);
-        this.buffer.deleteLine(this.cursorView.line - 1);
-        this.bufferView.setLine(this.cursorView.line - 1, line);
-        this.bufferView.removeLine(this.cursorView.line);
-        this.cursorView.moveTo(this.cursorView.line - 1, prevLine.length + 1);
-        this.gutterView.setActiveLine(this.cursorView.line);
-        this.gutterView.removeLine();
-    } else {
-        this.buffer.deleteBack(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-        this.cursorView.moveLeft();
-    }
-
-    this._onCursorMoved();
-};
-
-
-Pane.prototype.deleteForwardChar = function() {
-    this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
-            return;
-        }
-
-        const currLine = this.buffer.getLine(this.cursorView.line - 1);
-        const nextLine = this.buffer.getLine(this.cursorView.line);
-        this.buffer.setLine(this.cursorView.line - 1, currLine + nextLine);
-        this.buffer.deleteLine(this.cursorView.line);
-        this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    } else {
-        this.buffer.deleteForward(this.cursorView.line - 1, this.cursorView.col - 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    }
-};
-
-Pane.prototype.deleteBackWord = function() {
-    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
-    this._deleteRange(line + 1, col + 1, this.cursorView.line, this.cursorView.col);
-};
-
-Pane.prototype.deleteForwardWord = function() {
-    this.bufferView.clearSelection();
-    this.cursorView.setBlink(false);
-    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
-    const [startLine, endLine] = this.buffer.deleteRange(this.cursorView.line - 1, this.cursorView.col - 1, line, col);
-    for (let i = startLine; i < endLine; i++) {
-        this.bufferView.removeLine(startLine + 1);
-        this.gutterView.removeLine(startLine + 1);
-    }
-    this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-    this.cursorView.setBlink(true);
-};
-
-Pane.prototype.deleteSelection = function() {
-    const {startLine, startCol, endLine, endCol} = this.bufferView.getSelectionRange().splat();
-    this._deleteRange(startLine, startCol, endLine, endCol);
-};
-
-// Moves the cursor to the start of the range and clears the buffer's active selection.
-Pane.prototype._deleteRange = function(startLine, startCol, endLine, endCol) {
-    this.bufferView.clearSelection();
-    this.buffer.deleteRange(
-        startLine - 1,
-        startCol - 1,
-        endLine - 1,
-        endCol - 1
-    );
-    for (let i = startLine; i < endLine; i++) {
-        this.bufferView.removeLine(startLine);
-        this.gutterView.removeLine(startLine);
-    }
-    this.bufferView.setLine(startLine, this.buffer.getLine(startLine - 1));
-    this.gutterView.setActiveLine(startLine);
-    this.cursorView.moveTo(startLine, startCol);
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.killLine = function() {
-    this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
-            return;
-        }
-
-        const nextLine = this.buffer.getLine(this.cursorView.line);
-        this.buffer.deleteLine(this.cursorView.line);
-        this.buffer.setLine(this.cursorView.line - 1, this.buffer.getLine(this.cursorView.line - 1) + nextLine);
-        this.bufferView.removeLine(this.cursorView.line + 1);
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-        this.gutterView.removeLine();
-    } else {
-        const line = this.buffer.getLine(this.cursorView.line - 1);
-        const upToPoint = line.slice(0, this.cursorView.col - 1);
-        this.buffer.copyRange(this.cursorView.line - 1, this.cursorView.col - 1, this.cursorView.line - 1, line.length);
-        this.buffer.setLine(this.cursorView.line - 1, upToPoint);
-        this.bufferView.setLine(this.cursorView.line, upToPoint);
-    }
-};
-
-Pane.prototype.copySelection = function() {
-    if (this.bufferView.hasSelection()) {
-        const {startLine, startCol, endLine, endCol} = this.bufferView.getSelectionRange().splat();
-        this.buffer.copyRange(
-            startLine - 1,
-            startCol - 1,
-            endLine - 1,
-            endCol - 1
-        );
-    }
-};
-
-Pane.prototype.killSelection = function() {
-    this.copySelection();
-    this.deleteSelection();
-};
-
-Pane.prototype.paste = function() {
-    this.bufferView.clearSelection();
-    const endingPos = this.buffer.pasteAt(this.cursorView.line - 1,
-                                          this.cursorView.col - 1);
-    if (endingPos) {
-        const [endLine, endCol] = endingPos;
-        this.bufferView.setLine(this.cursorView.line, this.buffer.getLine(this.cursorView.line - 1));
-        for (let i = this.cursorView.line + 1; i <= endLine + 1; i++) {
-            this.bufferView.insertLine(i, this.buffer.getLine(i - 1));
-            this.gutterView.appendLine();
-        }
-        this.cursorView.moveTo(endLine + 1, endCol + 1);
-        this.gutterView.setActiveLine(endLine + 1);
-        
-        this._onCursorMoved();
-    }
-};
-
-// If term is given, starts a new search for term starting at the current cursor position.
-// Otherwise, attempts to cycle to the next active match of the previous search term.
-Pane.prototype.search = function(term, direction) {
-    this.bufferView.clearSelection();
-    const match = this.buffer.search(
-        term,
-        direction,
-        this.cursorView.line - 1,
-        this.cursorView.col - 1
-    );
+    });
     
-    if (match) {
-        this.cursorView.moveTo(match[0] + 1, match[1] + 1);
-        this._onCursorMoved();
+    this.editors.push(editor);
+    this.tabBar.add(tabName);
+    this.switchEditor(tabName);
+
+    if (this.editors.length === 1) {
+        this.noEditorsKeyListener.unattach();
     }
+
+    this.onNewEditor(editor);
 };
 
-Pane.prototype.saveBuffer = function(as) {
-    try {
-        this.buffer.save(as);
-        if (as && as !== this.tabName) {
-            const base = this.buffer.getFileBaseName();
-            this.onNameChanged(this.tabName, base);
-            this.tabName = base;
+// If _tabName is undefined, switches to the previously opened tab.
+Pane.prototype.switchEditor = function(tabName) {
+    if (this.activeEditor && tabName === this.activeEditor.tabName) return;
+    
+    const toSwitchTo = tabName ?
+              this.editors.find(e => e.tabName === tabName) :
+              this.prevActivePane;
+
+    if (!toSwitchTo) return;
+    
+    if (this.activeEditor) {
+        this.activeEditor.setInactive();
+        this.activeEditor.hide();
+    }
+
+    this.prevActivePane = this.activeEditor;
+    this.activeEditor = toSwitchTo;
+    this.activeEditor.show();
+
+    if (this.isActive()) {
+        this.activeEditor.setActive();
+    }
+    
+    this.tabBar.setSelected(this.activeEditor.tabName);
+    this.onSwitchEditor(this.activeEditor);
+};
+
+// If tabName is undefined, closes the active tab.
+Pane.prototype.closeEditor = function(_tabName) {
+    if (!_tabName && !this.activeEditor) return;
+
+    const tabName = _tabName || this.activeEditor.tabName;
+    const paneIndex = this.editors.findIndex(e => e.tabName === tabName);
+    const pane = this.editors.splice(paneIndex, 1)[0];
+
+    this.tabBar.remove(pane.tabName);
+    this.domNode.removeChild(pane.domNode);
+    
+    if (pane === this.activeEditor) {
+        this.activeEditor = null;
+        this.switchEditor();
+    } else if (pane === this.prevActivePane) {
+        this.prevActivePane = null;
+    }
+
+    // We lose the prevActivePane when either the activePane or prevActivePane is closed.
+    if (!this.prevActivePane) {
+        this.prevActivePane = this.editors.find(e => e !== this.activeEditor) || null;
+    }
+
+    if (this.editors.length === 0) {
+        this.noEditorsKeyListener.attach();
+    }
+
+    this.onCloseEditor();
+};
+
+Pane.prototype.closeAllEditors = function() {
+    this.editors.forEach(e => {
+        this.tabBar.remove(e.tabName);
+        this.domNode.removeChild(e.domNode);
+    });
+    this.editors = [];
+    this.activeEditor = null;
+    this.prevActivePane = null;
+    this.noEditorsKeyListener.attach();
+};
+
+// Returns the first neighbor whose left offset (if side is 'above' or 'below')
+// or top offset (if side is 'left' or 'right') is greater than this group's
+// left or top offset, respectfully.
+Pane.prototype.getFirstFullNeighbor = function(side) {
+    const startsAfterEdge = (side === 'above' || side === 'below') ?
+              (neighbor) => neighbor.getLeftOffset() >= this.getLeftOffset() :
+              (neighbor) => neighbor.getTopOffset() >= this.getTopOffset();
+
+    return this.getNeighbors(side).find(e => startsAfterEdge(e));
+};
+
+Pane.prototype.getNeighbors = function(side) {
+    if (side !== 'above' && side !== 'below' && side !== 'left' && side !== 'right') {
+        throw new Error('Unrecognized side: ' + side);
+    }
+    
+    if (!this.neighbors[side]) return [];
+
+    const searchDirections = (side === 'above' || side === 'below') ? ['left', 'right'] : ['above', 'below'];
+    const neighbors = searchDirections.map(direction => {
+        const toAdd = [];
+        for (let curr = this.neighbors[side].neighbors[direction];
+             curr && this.doesShareBorder(curr, side);
+             curr = curr.neighbors[direction])
+        {
+            toAdd.push(curr);
         }
-    } catch (e) {
-        // TODO: Implement.
-        console.warn(e);
+        return toAdd;
+    });
+    return neighbors[0].reverse().concat(this.neighbors[side]).concat(neighbors[1]);  
+};
+
+// Returns whether the given Pane shares a border with this group
+// on the given side. Sharing a border requires overlap of more than
+// a single pixel.
+Pane.prototype.doesShareBorder = function(group, side) {
+    if (side !== 'above' && side !== 'below' && side !== 'left' && side !== 'right') {
+        throw new Error('Unrecognized side: ' + side);
+    }
+
+    function doesOverlap(x1, x2, y1, y2) {
+        return x1 < y2 && y1 < x2;
+    }
+
+    switch (side) {
+    case 'above':
+        return group.getBottomOffset() === this.getTopOffset() &&
+            doesOverlap(this.getLeftOffset(), this.getRightOffset(),
+                        group.getLeftOffset(), group.getRightOffset());
+    case 'below':
+        return group.getTopOffset() === this.getBottomOffset() &&
+            doesOverlap(this.getLeftOffset(), this.getRightOffset(),
+                        group.getLeftOffset(), group.getRightOffset());
+    case 'left':
+        return group.getRightOffset() === this.getLeftOffset() &&
+            doesOverlap(this.getTopOffset(), this.getBottomOffset(),
+                        group.getTopOffset(), group.getBottomOffset());
+    case 'right':
+        return group.getLeftOffset() === this.getRightOffset() &&
+            doesOverlap(this.getTopOffset(),this.getBottomOffset(),
+                        group.getTopOffset(), group.getBottomOffset());
     }
 };
 
-Pane.prototype.moveCursorLeft = function() {
-    this.bufferView.clearSelection();
-    if (this.cursorView.col === 1) {
-        if (this.cursorView.line === 1) {
-            return;
-        }
-        const endOfPrevLine = this.bufferView.getLineWidthCols(this.cursorView.line - 1) + 1;
-        this.cursorView.moveTo(this.cursorView.line - 1, endOfPrevLine);
-        this.gutterView.setActiveLine(this.cursorView.line);
+Pane.prototype.showTabBar = function() {
+    if (!this.tabBar.isVisible()) {
+        this.tabBar.show();
+        this.editors.forEach(e => e.setTopOffset(this.tabBar.getVisibleHeight()));
+        this._resizePanes();
+    }
+};
+
+Pane.prototype.hideTabBar = function() {
+    if (this.tabBar.isVisible()) {
+        this.tabBar.hide();
+        this.editors.forEach(e => e.setTopOffset(0));
+        this._resizePanes();
+    }
+};
+
+Pane.prototype.setActive = function() {
+    this._isActive = true;
+    if (this.activeEditor) {
+        this.activeEditor.setActive();
+        this.tabBar.setActive();
     } else {
-        this.cursorView.moveLeft();
+        this.domNode.focus();
     }
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorRight = function() {
-    this.bufferView.clearSelection();
-    if (this.cursorView.col === this.bufferView.getLineWidthCols(this.cursorView.line) + 1) {
-        if (this.cursorView.line === this.bufferView.getLastLineNum()) {
-            return;
-        }
-        this.cursorView.moveTo(this.cursorView.line + 1, 1);
-        this.gutterView.setActiveLine(this.cursorView.line);
-    } else {
-        this.cursorView.moveRight();
-    }
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorUp = function() {
-    if (this.cursorView.line === 1) {
-        return;
-    }
-
-    this.bufferView.clearSelection();
-    this.cursorView.moveUp();
-    this.gutterView.setActiveLine(this.cursorView.line);
-    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-    if (this.cursorView.col > lineWidth + 1) {
-        this.cursorView.setCol(lineWidth + 1);
-    }
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorDown = function() {
-    if (this.cursorView.line === this.bufferView.getLastLineNum()) {
-        return;
-    }
-
-    this.bufferView.clearSelection();
-    this.cursorView.moveDown();
-    this.gutterView.setActiveLine(this.cursorView.line);
-    const lineWidth = this.bufferView.getLineWidthCols(this.cursorView.line);
-    if (this.cursorView.col > lineWidth + 1) {
-        this.cursorView.setCol(lineWidth + 1);
-    }
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorForwardWord = function() {
-    this.bufferView.clearSelection();
-    const [line, col] = this.buffer.getNextWordEnd(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.cursorView.moveTo(line + 1, col + 1);
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorBackWord = function() {
-    this.bufferView.clearSelection();
-    const [line, col] = this.buffer.getLastWordStart(this.cursorView.line - 1, this.cursorView.col - 1);
-    this.cursorView.moveTo(line + 1, col + 1);
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorBeginningOfLine = function() {
-    this.bufferView.clearSelection();
-    this.cursorView.setCol(1);
-    this.cursorView.goalCol = this.cursorView.col;
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorEndOfLine = function() {
-    this.bufferView.clearSelection();
-    this.cursorView.setCol(this.bufferView.getLineWidthCols(this.cursorView.line) + 1);
-    this.cursorView.goalCol = this.cursorView.col;
-
-    this._onCursorMoved();
-};
-
-Pane.prototype.moveCursorTo = function(line, col) {
-    if (line >= 1 && line <= this.bufferView.getLastLineNum() &&
-        col >= 1 && col <= this.bufferView.getLineWidthCols(line) + 1) {
-        this.bufferView.clearSelection();
-        this.cursorView.moveTo(line, col);
-        this.gutterView.setActiveLine(this.cursorView.line);
-        
-        this._onCursorMoved();
-    }
-};
-
-Pane.prototype.getCursorRelPosition = function() {
-    const first = this.bufferView.getFirstVisibleLineNum();
-    const height = this.bufferView.getVisibleHeightLines();
-    const ratio = (this.cursorView.line - first) / height;
-    if (ratio < 0.25) return 'buffer-top';
-    if (ratio < 0.75) return 'buffer-middle';
-    else              return 'buffer-bottom';
-};
-
-Pane.prototype.toggleCursorRelPosition = function() {
-    const cursorRelPosition = this.getCursorRelPosition();
-    if (cursorRelPosition === 'buffer-top') {
-        const halfHeight = Math.round(this.bufferView.getVisibleHeightLines() / 2);
-        this.scrollToLine(Math.max(this.cursorView.line - halfHeight + 1, 1));
-    } else if (cursorRelPosition === 'buffer-middle') {
-        const fullHeight = this.bufferView.getVisibleHeightLines();
-        this.scrollToLine(Math.max(this.cursorView.line - fullHeight + 1, 1));
-    } else {
-        this.scrollToLine(this.cursorView.line);
-    }
-};
-
-// Sets the given line as the first visible.
-Pane.prototype.scrollToLine = function(line) {
-    const scrollTop = (line - 1) * this.charHeight;
-    this.domNode.scrollTop = scrollTop;
-    this.bufferView.setScrollTop(scrollTop);
-};
-
-// Sets the given column as the first visible. 
-Pane.prototype.scrollToCol = function(col) {
-    const scrollLeft = (col - 1) * this.charWidth;
-    this.domNode.scrollLeft = scrollLeft;
-    this.bufferView.setScrollLeft(scrollLeft);
-    this.gutterView.setLeftOffset(scrollLeft);
-};
-
-Pane.prototype.show = function() {
-    if (!this.isVisible()) {
-        this.cursorView.show();
-        this.domNode.classList.remove('editor-pane-hidden');
-    }    
-};
-
-Pane.prototype.hide = function() {
-    if (this.isVisible()) {
-        this.cursorView.hide();
-        this.domNode.classList.add('editor-pane-hidden');
-    }    
-};
-
-Pane.prototype.isVisible = function() {
-    return !this.domNode.classList.contains('editor-pane-hidden');
-};
-
-Pane.prototype.showGutter = function() {
-    if (!this.gutterView.isVisible()) {
-        this.gutterView.show();
-        const width = this.gutterView.getWidth();
-        this.bufferView.setLeftOffset(width);
-        this.cursorView.setLeftOffset(width);
-    }
-};
-
-Pane.prototype.hideGutter = function() {
-    if (this.gutterView.isVisible()) {
-        this.gutterView.hide();
-        const width = this.gutterView.getWidth();
-        this.bufferView.setLeftOffset(width);
-        this.cursorView.setLeftOffset(width);
-    }
-};
-
-Pane.prototype.setActive = function(on) {
-    this.cursorView.setBlink(true);
-    this.domNode.focus();
-    this.mouseListener.setActive();
-    this.domNode.classList.remove('editor-pane-inactive');    
 };
 
 Pane.prototype.setInactive = function() {
-    this.cursorView.setBlink(false);
-    this.domNode.blur();
-    this.mouseListener.setActive();
-    this.domNode.classList.add('editor-pane-inactive');    
+    this._isActive = false;
+    if (this.activeEditor) {
+        this.activeEditor.setInactive();
+        this.tabBar.setInactive();
+    } else {
+        this.domNode.blur();
+    }
 };
 
 Pane.prototype.isActive = function() {
-    return !this.domNode.classList.contains('editor-pane-inactive');
+    return this._isActive;
 };
 
-Pane.prototype.setCursorBlink = function(on) {
-    this.cursorView.setBlink(on);
+Pane.prototype.show = function() {
+    this.domNode.classList.remove('hidden');
 };
 
-Pane.prototype.setLeftOffset = function(to) {
-    this.domNode.style.left = to + 'px';
+Pane.prototype.hide = function() {
+    this.domNode.classList.add('hidden');
 };
 
-Pane.prototype.setTopOffset = function(to) {
-    this.domNode.style.top = to + 'px';
+Pane.prototype.getEditorCount = function() {
+    return this.editors.length;
 };
 
 Pane.prototype.setHeight = function(to) {
     this.domNode.style.height = to + 'px';
-    this.bufferView.setVisibleHeight(this.getHeight());
+    this._resizePanes();
 };
 
 Pane.prototype.getHeight = function() {
@@ -534,101 +317,103 @@ Pane.prototype.getHeight = function() {
 
 Pane.prototype.setWidth = function(to) {
     this.domNode.style.width = to + 'px';
-    this.bufferView.setVisibleWidth(this.getWidth() - this.gutterView.getWidth());
+    this._resizePanes();
 };
 
 Pane.prototype.getWidth = function() {
     const width = parseInt(this.domNode.style.width);
     if (width == null) {
-        throw new Error('Pane: Unable to parse width.');
+        throw new Error('PangeGroup: Unable to parse width.');
     }
     return width;
 };
 
-Pane.prototype.getCursorPosition = function() {
-    return [this.cursorView.line, this.cursorView.col];
+Pane.prototype.setTopOffset = function(to) {
+    this.domNode.style.top = to + 'px';
 };
 
-Pane.prototype.getModeName = function() {
-    return this.buffer.getMode().name;
-};
-
-Pane.prototype.hasUnsavedChanges = function() {
-    return this.buffer.hasUnsavedChanges();
-};
-
-Pane.prototype._checkScrollCursorIntoView = function() {
-
-    // Horizontal alignment
-    if (this.cursorView.col < this.bufferView.getFirstVisibleCol() + this.horizontalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.col - this.horizontalCursorMargin);
-        this.scrollToCol(firstVisible);
-    } else if (this.cursorView.col > this.bufferView.getLastVisibleCol() - this.horizontalCursorMargin) {
-        const lastVisible = Math.min(this.cursorView.col + this.horizontalCursorMargin, this.bufferView.getLastColNum());
-        const firstVisible = lastVisible - this.bufferView.getVisibleWidthCols() + 1;
-        this.scrollToCol(firstVisible);
+Pane.prototype.getTopOffset = function() {
+    const offset = parseInt(this.domNode.style.top);
+    if (offset == null) {
+        throw new Error('Pane: Unable to parse topOffset.');
     }
+    return offset;
+};
 
-    // Vertical alignment
-    if (this.cursorView.line < this.bufferView.getFirstVisibleLineNum() + this.verticalCursorMargin) {
-        const firstVisible = Math.max(1, this.cursorView.line - this.verticalCursorMargin);
-        this.scrollToLine(firstVisible); 
-    } else if (this.cursorView.line > this.bufferView.getLastVisibleLineNum() - this.verticalCursorMargin) {
-        const lastVisible = Math.min(this.cursorView.line + this.verticalCursorMargin, this.bufferView.getLastLineNum());
-        const firstVisible = lastVisible - this.bufferView.getVisibleHeightLines() + 1;
-        this.scrollToLine(firstVisible);
+Pane.prototype.setLeftOffset = function(to) {
+    this.domNode.style.left = to + 'px';
+};
+
+Pane.prototype.getLeftOffset = function() {
+    const offset = parseInt(this.domNode.style.left);
+    if (offset == null) {
+        throw new Error('Pane: Unable to parse leftOffset.');
     }
+    return offset;
+};
 
+Pane.prototype.getRightOffset = function() {
+    return this.getLeftOffset() + this.getWidth();
+};
+
+Pane.prototype.getBottomOffset = function() {
+    return this.getTopOffset() + this.getHeight();
+};
+
+Pane.prototype._resizePanes = function() {
+    if (!this.activeEditor) return;
+    
+    const panesHeight = this.getHeight() - this.tabBar.getVisibleHeight();
+    const panesWidth = this.getWidth();
+
+    if (this.activeEditor.getHeight() !== panesHeight) {
+        this.editors.forEach(e => e.setHeight(panesHeight));    
+    }
+    if (this.activeEditor.getWidth() !== panesWidth) {
+        this.editors.forEach(e => e.setWidth(panesWidth));    
+    }    
+};
+
+// If an editor pane exists with the same name as that given, returns a unique
+// version of the name of the form `name-{Unique Number}`. Otherwise, returns the given name.
+Pane.prototype._getUniqueTabName = function(name) {    
+    const suffixNum = this.editors.reduce((prev, curr) => {
+        if (prev === 0 && curr.tabName === name) {
+            return prev + 1;
+        }
+        if (prev > 0) {
+            // untitled(1) -> untitled
+            const sansSuffix = curr.tabName.slice(0, curr.tabName.length - numDigitsIn(prev) - 2);
+            if (sansSuffix === name) {
+                return prev + 1;   
+            }
+        }
+
+        return prev;
+    }, 0);
+
+    return suffixNum === 0 ? name : name + '(' + suffixNum + ')';
 };
 
 Pane.prototype._handleAction = function(action) {
 
-    const actionHandlers = {
-        'INSERT':                        (action) => this.insert(action.text),
-        'INSERT_NEW_LINE':               () => this.insertNewLine(),
-        'OPEN_LINE':                     () => this.openLine(),
-        'DELETE_BACK_CHAR':              () => this.deleteBackChar(),
-        'DELETE_FORWARD_CHAR':           () => this.deleteForwardChar(),
-        'DELETE_FORWARD_WORD':           () => this.deleteForwardWord(),
-        'DELETE_BACK_WORD':              () => this.deleteBackWord(),
-        'KILL_LINE':                     () => this.killLine(),
-        'KILL_SELECTION':                () => this.killSelection(),
-        'COPY_SELECTION':                () => this.copySelection(),
-        'PASTE':                         () => this.paste(),
-        'TOGGLE_CURSOR_REL_POS':         () => this.toggleCursorRelPosition(),
-        'MOVE_TO_POS':                   (action) => this.moveCursorTo(action.line, action.col),
-        'MOVE_CURSOR_LEFT':              () => this.moveCursorLeft(),
-        'MOVE_CURSOR_RIGHT':             () => this.moveCursorRight(),
-        'MOVE_CURSOR_UP':                () => this.moveCursorUp(),
-        'MOVE_CURSOR_DOWN':              () => this.moveCursorDown(),
-        'MOVE_CURSOR_FORWARD_WORD':      () => this.moveCursorForwardWord(),
-        'MOVE_CURSOR_BACK_WORD':         () => this.moveCursorBackWord(),
-        'MOVE_CURSOR_BEGINNING_OF_LINE': () => this.moveCursorBeginningOfLine(),
-        'MOVE_CURSOR_END_OF_LINE':       () => this.moveCursorEndOfLine(),
-        'SHOW_GUTTER':                   () => this.showGutter(),
-        'HIDE_GUTTER':                   () => this.hideGutter(),
-        'SEARCH_FORWARD':                (action) => this.search(action.text, 'forward'),
-        'SEARCH_BACK':                   (action) => this.search(action.text, 'back'),
-        'SAVE_BUFFER':                   () => this.saveBuffer(),
-        'SAVE_BUFFER_AS':                (action) => this.saveBuffer(action.name)
+    const handlers = {
+        'NEW_EDITOR':    (action) => this.newEditor(action.name),
+        'OPEN_FILE':     (action) => this.newEditor(action.name, action.name),
+        'SWITCH_EDITOR': (action) => this.switchEditor(action.name),
+        'CLOSE_EDITOR':  (action) => this.closeEditor(action.name),
+        'CLOSE_ALL':     () => this.closeAllEditors(),
+        'SHOW_TABS':     () => this.showTabBar(),
+        'HIDE_TABS':     () => this.hideTabBar()
     };
-
-    const handler = actionHandlers[action.type];
+    
+    const handler = handlers[action.type];
 
     if (handler) {
         handler(action);
     } else {
         this.onUnknownAction(action);
     }
-};
-
-Pane.prototype._handleKeyError = function(error) {
-    console.log('Pane: key error: ' + error);
-};
-
-Pane.prototype._onCursorMoved = function() {
-    this._checkScrollCursorIntoView();
-    this.onCursorMoved(this.cursorView.line, this.cursorView.col);
 };
 
 module.exports = Pane;

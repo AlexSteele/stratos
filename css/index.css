@@ -17,22 +17,22 @@ html, body {
   position: relative;
 }
 
-.pane-group {
+.pane {
   position: absolute;
 }
 
-.pane {
+.editor {
   outline-style: none;
   overflow-y: scroll;
   position: absolute;
 }
 
-.editor-pane-hidden {
+.editor-hidden {
   display: none;
   z-index: -1;
 }
 
-.editor-pane-inactive {
+.editor-inactive {
   opacity: 0.75;
 }
 
