@@ -2,20 +2,12 @@
 
 const {sortRange} = require('./utils.js');
 
-const defaults = {
-    onCursorMoved: (line, col) => { throw new Error('MouseListener: No handler for onCursorMoved'); }
-};
-
-function MouseListener(bufferView, cursorView, gutterView, settings = defaults) {
+function MouseListener(bufferView, cursorView, gutterView, keyListener, onCursorMoved) {
     this.bufferView = bufferView;
     this.cursorView = cursorView;
     this.gutterView = gutterView;
-    this.onCursorMoved = settings.onCursorMoved || defaults.onCursorMoved;
-
-    // It's important that the mousemove and mouseup listeners be attached to window,
-    // not bufferView.domNode, otherwise mousemove will often not fire,
-    // and the cursor will continue to track the mouse after the click has been released.
-
+    this.keyListener = keyListener;
+    this.onCursorMoved = onCursorMoved;
     this.mouseDownPosition = null;
 
     // Only active when the mouse is down.
@@ -42,12 +34,22 @@ function MouseListener(bufferView, cursorView, gutterView, settings = defaults) 
 
     this._onMouseDown = (e) => {
         e.preventDefault();
-      
-        this.bufferView.clearSelection();
+
+        if (keyListener.isShiftPressed()) {
+            this.mouseDownPosition = this.mouseDownPosition || [this.cursorView.line, this.cursorView.col];
+            this._onMouseMove(e);
+            return;
+        }
+
         this.mouseDownPosition = this._getBufferPosFromMouse(e.clientX, e.clientY);
         const [line, col] = this.mouseDownPosition;
+        this.bufferView.clearSelection();
         this.cursorView.moveTo(line, col);
         this.gutterView.setActiveLine(this.cursorView.line);
+
+        // It's important that the mousemove and mouseup listeners be attached to window,
+        // not bufferView.domNode, otherwise mousemove will often not fire,
+        // and the cursor will continue to track the mouse after the click has been released.
         window.addEventListener('mouseup', this._onMouseUp);
         window.addEventListener('mousemove', this._onMouseMove);
         this.onCursorMoved(line, col);
@@ -73,7 +75,7 @@ MouseListener.prototype._getBufferPosFromMouse = function(x, y) {
     const adjustedY = y - bounds.top;
     const line = Math.floor(adjustedY / this.bufferView.charHeight);
     const firstLine = this.bufferView.getFirstVisibleLineNum();
-    const lastLine = this.bufferView.getLastVisibleLineNum();
+    const lastLine = Math.min(this.bufferView.getLastVisibleLineNum(), this.bufferView.getLastLineNum());
 
     if (line < firstLine) {
         return [firstLine, 0];

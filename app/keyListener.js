@@ -13,22 +13,21 @@ function KeyListener(elem, settings = defaults) {
     this.keyMap = settings.keyMap || defaults.keyMap;
     this.onKeyAction = settings.onKeyAction || defaults.onKeyAction;
     this.onKeyError = settings.onKeyError || defaults.onKeyError;
-    this.allowDefaultOnKeyError = (typeof settings.allowDefaultOnKeyError === 'undefined') ?
+    this.allowDefaultOnKeyError = settings.allowDefaultOnKeyError == null ?
         defaults.allowDefaultOnKeyError : settings.allowDefaultOnKeyError;
     this.areListenersAttached = false;
-    
-    const activeModifiers = [];
+    this.activeModifiers = [];
 
     this._onKeyDown = (e) => {
         const key = e.key;
         if (keyIsModifier(key)) {
-            activeModifiers.push(e.key);
+            this.activeModifiers.push(e.key);
             return;
         }
 
-        const withModifiers = activeModifiers.length === 0 ?
+        const withModifiers = this.activeModifiers.length === 0 ?
                   key :
-                  activeModifiers.join('-') + '-' + key;
+                  this.activeModifiers.join('-') + '-' + key;
         
         const action = this.keyMap[withModifiers];
 
@@ -37,34 +36,47 @@ function KeyListener(elem, settings = defaults) {
                 return;
             }
             this.onKeyAction(action);
-            e.preventDefault();
-            e.stopPropagation();
-        } else if (!this.allowDefaultOnKeyError) {
+        } else if (this.activeModifiers.length === 1 &&
+                   this.activeModifiers[0] === 'Shift') {
+            const action = this.keyMap[key];
+            if (action.type === 'NATIVE') {
+                return;
+            }
+            this.onKeyAction(action);
+        } else if (this.allowDefaultOnKeyError) {
+            return;
+        } else {
             this.onKeyError(withModifiers);
-            e.preventDefault();
-            e.stopPropagation();
         }
+
+        e.stopPropagation();
+        e.preventDefault();
     };
 
     this._onKeyUp = (e) => {
         e.preventDefault();
 
-        const index = activeModifiers.indexOf(e.key);
+        const index = this.activeModifiers.indexOf(e.key);
         if (index !== -1) {
-            activeModifiers.splice(index, 1);
+            this.activeModifiers.splice(index, 1);
         }
     };
 
     function keyIsModifier(key) {
         return key === 'Control' ||
             key === 'Meta' ||
-            key === 'Alt';
+            key === 'Alt' ||
+            key === 'Shift';
     }
 
     // Drop active modifiers when focus lost.
-    this._onBlur = () => activeModifiers.splice(0, activeModifiers.length);
+    this._onBlur = () => this.activeModifiers.splice(0, this.activeModifiers.length);
 
     this.attach();
+};
+
+KeyListener.prototype.isShiftPressed = function() {
+    return this.activeModifiers.some(e => e === 'Shift');
 };
 
 KeyListener.prototype.attach = function() {

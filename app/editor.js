@@ -41,18 +41,26 @@ function Editor(parentElem, buffer, settings = defaults) {
     this.onNameChanged = settings.onNameChanged || defaults.onNameChanged;
     
     const sharedEditorSettings = settings.sharedEditorComponentSettings || defaults.sharedEditorComponentSettings;
+    const bufferViewSettings = Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings);
+    const gutterViewSettings = Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings);
     this.charWidth = sharedEditorSettings.charWidth;
     this.charHeight = sharedEditorSettings.charHeight;    
-    this.bufferView = new BufferView(this.domNode, Object.assign({}, {onClick: (line, col) => this._onBufferClick(line, col)}, sharedEditorSettings));
+    this.bufferView = new BufferView(this.domNode, bufferViewSettings);
     this.cursorView = new CursorView(this.domNode, sharedEditorSettings);
-    this.gutterView = new GutterView(this.domNode, Object.assign({}, {onWidthChanged: (width) => this._onGutterWidthChanged(width)}, sharedEditorSettings));
-    this.mouseListener = new MouseListener(this.bufferView, this.cursorView, this.gutterView, {onCursorMoved: this.onCursorMoved});
+    this.gutterView = new GutterView(this.domNode, gutterViewSettings);
     this.keyListener = new KeyListener(this.domNode, {
         keyMap: this.buffer.getMode().keyMap,
         allowDefaultOnKeyError: false,
         onKeyAction: (action) => this._handleAction(action),
         onKeyError: (error) => this._handleKeyError(error)
     });
+    this.mouseListener = new MouseListener(
+        this.bufferView,
+        this.cursorView,
+        this.gutterView,
+        this.keyListener,
+        this.onCursorMoved
+    );
 
     this._initComponents();
     this._initEventListeners();
@@ -194,6 +202,7 @@ Editor.prototype.deleteSelection = function() {
 
 // Moves the cursor to the start of the range and clears the buffer's active selection.
 Editor.prototype._deleteRange = function(startLine, startCol, endLine, endCol) {
+    this.cursorView.setBlink(false);
     this.bufferView.clearSelection();
     this.buffer.deleteRange(startLine, startCol, endLine, endCol);
     for (let i = startLine; i < endLine; i++) {
@@ -206,6 +215,7 @@ Editor.prototype._deleteRange = function(startLine, startCol, endLine, endCol) {
         this.cursorView.moveTo(startLine, startCol);
         this._onCursorMoved();        
     }
+    this.cursorView.setBlink(true);
 };
 
 Editor.prototype.killLine = function() {
