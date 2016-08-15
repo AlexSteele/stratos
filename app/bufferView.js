@@ -134,8 +134,8 @@ BufferView.prototype.clearSelection = function() {
 // colEnd is not included in the highlighted range.
 BufferView.prototype._addSelectionHighlight = function(lineNum, colStart, colEnd) {
     const line = this.lineElems[lineNum];
-    const start = colStart || 0;
-    const end = colEnd || line.textNode.textContent.length;
+    const start = colStart != null ? colStart : 0;
+    const end = colEnd != null ? colEnd : line.textNode.textContent.length;
     const node = document.createElement('div');
     node.className = 'line-decoration selection';
     node.style.left = start * this.charWidth;
